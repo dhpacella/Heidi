@@ -1,0 +1,11 @@
+firstName,lastName,email,phone,address,precinct,partyAffiliation,registrationDate
+John,Smith,john.smith@email.com,555-0101,123 Main St,Precinct A,Democrat,2022-03-15
+Jane,Doe,jane.doe@email.com,555-0102,456 Oak Ave,Precinct B,Republican,2021-06-20
+Robert,Johnson,robert.j@email.com,555-0103,789 Pine Rd,Precinct A,Independent,2023-01-10
+Mary,Williams,m.williams@email.com,555-0104,321 Elm St,Precinct C,Democrat,2020-05-12
+Michael,Brown,m.brown@email.com,555-0105,654 Maple Dr,Precinct B,Republican,2022-11-08
+Patricia,Jones,p.jones@email.com,555-0106,987 Birch Ln,Precinct A,Democrat,2023-04-22
+David,Garcia,d.garcia@email.com,555-0107,147 Cedar Ct,Precinct C,Independent,2021-08-30
+Linda,Miller,l.miller@email.com,555-0108,258 Spruce Way,Precinct B,Democrat,2022-02-14
+James,Davis,j.davis@email.com,555-0109,369 Ash Rd,Precinct A,Republican,2020-09-25
+Barbara,Rodriguez,b.rodriguez@email.com,555-0110,741 Willow St,Precinct C,Democrat,2023-07-19

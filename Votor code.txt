@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RunningMate — Voter-File Campaign Platform</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; }
+  .tab-active { background: #1e40af; color: white; }
+  .card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; }
+  .scroll-area::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scroll-area::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  .dropzone { border: 2px dashed #94a3b8; transition: all 0.2s; }
+  .dropzone.drag { border-color: #1d4ed8; background: #eff6ff; }
+  .priority-1 { background: #dc2626; } .priority-2 { background: #ea580c; }
+  .priority-3 { background: #ca8a04; } .priority-4 { background: #16a34a; }
+  .filetab { cursor: pointer; border-left: 3px solid transparent; }
+  .filetab.active { background: #dbeafe; border-left-color: #1d4ed8; }
+  .badge-voter { background: #dbeafe; color: #1e40af; }
+  .badge-voter_individual { background: #c7d2fe; color: #3730a3; }
+  .badge-voter_enriched { background: #fce7f3; color: #9f1239; }
+  .badge-results { background: #fef3c7; color: #92400e; }
+  .badge-turnout { background: #dcfce7; color: #166534; }
+  .badge-geo { background: #f3e8ff; color: #6b21a8; }
+  .badge-other { background: #e2e8f0; color: #334155; }
+  .range-slider { -webkit-appearance: none; height: 6px; background: #e2e8f0; border-radius: 3px; outline: none; }
+  .range-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: #1d4ed8; border-radius: 50%; cursor: pointer; }
+  .badge-super { background: linear-gradient(135deg,#fbbf24,#f59e0b); color: white; }
+  .badge-bi { background: linear-gradient(135deg,#a78bfa,#7c3aed); color: white; }
+  .badge-prop { background: linear-gradient(135deg,#22c55e,#16a34a); color: white; }
+  .badge-merged { background: linear-gradient(135deg,#f472b6,#db2777); color: white; }
+  .badge-low { background: #cbd5e1; color: #475569; }
+  .badge-d { background: #1d4ed8; color: white; }
+  .badge-r { background: #dc2626; color: white; }
+  .badge-u { background: #7c3aed; color: white; }
+  .seg-card { transition: all 0.15s; cursor: pointer; }
+  .seg-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  #realmap { cursor: grab; background: linear-gradient(135deg,#f1f5f9,#e2e8f0); }
+  #realmap:active { cursor: grabbing; }
+  .marker { cursor: pointer; transition: r 0.15s; }
+  .marker:hover { stroke: #000; stroke-width: 2; }
+</style>
+</head>
+<body class="text-slate-800">
+
+<header class="bg-gradient-to-r from-blue-900 to-blue-700 text-white">
+  <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-3">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-white text-blue-800 rounded-lg flex items-center justify-center font-bold text-xl">R</div>
+      <div>
+        <h1 class="text-xl font-bold">RunningMate</h1>
+        <p class="text-xs text-blue-200">Voter-File Campaign Platform · Auto-merge by State Voter ID</p>
+      </div>
+    </div>
+    <div class="flex gap-2 text-xs flex-wrap">
+      <button onclick="saveSessionLS()" class="bg-blue-800 hover:bg-blue-950 px-3 py-1.5 rounded-md">💾 Save</button>
+      <button onclick="loadSessionLS()" class="bg-blue-800 hover:bg-blue-950 px-3 py-1.5 rounded-md">📂 Load</button>
+      <button onclick="exportSession()" class="bg-blue-800 hover:bg-blue-950 px-3 py-1.5 rounded-md">⬇ Export JSON</button>
+      <label class="bg-blue-800 hover:bg-blue-950 px-3 py-1.5 rounded-md cursor-pointer">⬆ Import<input type="file" id="importJSON" accept=".json" class="hidden"></label>
+      <button onclick="resetApp()" class="bg-red-700 hover:bg-red-800 px-3 py-1.5 rounded-md">↺ Reset</button>
+    </div>
+  </div>
+</header>
+
+<!-- UPLOAD -->
+<section id="screenUpload" class="max-w-5xl mx-auto px-4 py-10">
+  <div class="card p-8">
+    <h2 class="text-2xl font-bold mb-2">Upload Campaign Data</h2>
+    <p class="text-slate-600 mb-6">Upload one or more voter files. The app auto-detects IL-style voter files (STATE ID + "VOTE TYPE" columns) and enriched voter files (StateVoterId + VH## columns). When both are present, records are <b>merged on State Voter ID</b>.</p>
+
+    <div id="dropzone" class="dropzone rounded-lg p-8 text-center cursor-pointer mb-4">
+      <div class="text-4xl mb-2">📊</div>
+      <p class="font-medium">Drop file(s) here or <span class="text-blue-700 underline">browse</span></p>
+      <p class="text-xs text-slate-500 mt-1">.xlsx, .xls, .csv — multiple files supported</p>
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden" multiple>
+    </div>
+
+    <div id="uploadedFiles" class="space-y-2 mb-6"></div>
+
+    <div class="grid md:grid-cols-3 gap-4 mb-6">
+      <div class="p-4 bg-indigo-50 rounded-lg">
+        <div class="inline-block badge-voter_individual px-2 py-0.5 rounded text-xs font-semibold mb-1">IL Voter File</div>
+        <p class="text-xs text-slate-600">STATE ID + "GENERAL ELECTION 2020 - VOTE TYPE" style headers.</p>
+      </div>
+      <div class="p-4 bg-pink-50 rounded-lg">
+        <div class="inline-block badge-voter_enriched px-2 py-0.5 rounded text-xs font-semibold mb-1">Enriched Voter File</div>
+        <p class="text-xs text-slate-600">StateVoterId + VH## columns + phone/DOB/party/districts. <b>Merges into IL file on State Voter ID.</b></p>
+      </div>
+      <div class="p-4 bg-purple-50 rounded-lg">
+        <div class="inline-block badge-geo px-2 py-0.5 rounded text-xs font-semibold mb-1">Geo / Results</div>
+        <p class="text-xs text-slate-600">Precinct lat/lng and past results (optional).</p>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3">
+      <button onclick="downloadVoterTemplate()" class="text-blue-700 underline text-xs hover:text-blue-900">↓ IL voter template</button>
+      <button onclick="downloadEnrichedTemplate()" class="text-blue-700 underline text-xs hover:text-blue-900">↓ Enriched voter template</button>
+      <button onclick="downloadGeoTemplate()" class="text-blue-700 underline text-xs hover:text-blue-900">↓ geo template</button>
+      <button onclick="downloadResultsTemplate()" class="text-blue-700 underline text-xs hover:text-blue-900">↓ past-results template</button>
+    </div>
+
+    <div class="mt-6 flex gap-3">
+      <button id="toMapperBtn" onclick="showMappingScreen()" disabled class="bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-800 disabled:opacity-40">Continue to Mapping →</button>
+    </div>
+  </div>
+</section>
+
+<!-- MAPPING -->
+<section id="screenMap" class="max-w-6xl mx-auto px-4 py-10 hidden">
+  <div class="card p-6">
+    <h2 class="text-2xl font-bold mb-1">Map Columns</h2>
+    <p class="text-sm text-slate-500 mb-6">Election history columns are auto-detected (both "VOTE TYPE" style and VH## style). Just confirm core identity / address fields.</p>
+    <div class="grid md:grid-cols-4 gap-5">
+      <div class="md:col-span-1">
+        <h3 class="text-xs font-bold uppercase text-slate-500 mb-2">Your Files</h3>
+        <div id="fileTabs" class="space-y-1"></div>
+      </div>
+      <div class="md:col-span-3">
+        <div id="activeFileHeader" class="mb-3"></div>
+        <div id="electionDetect" class="mb-4"></div>
+        <div id="mapperFields" class="space-y-2 mb-5"></div>
+        <div class="card bg-slate-50 p-3 mb-5">
+          <h3 class="font-semibold text-xs mb-2">Preview (first 3 rows)</h3>
+          <div class="overflow-x-auto scroll-area"><table class="text-xs w-full" id="previewTable"></table></div>
+        </div>
+        <div class="flex gap-3">
+          <button onclick="backToUpload()" class="px-4 py-2 border rounded-lg text-sm hover:bg-slate-50">← Back</button>
+          <button onclick="processMapping()" class="bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-800">Build Dashboard →</button>
+        </div>
+        <p id="mapError" class="mt-3 text-sm text-red-600 hidden"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DASHBOARD -->
+<section id="screenDash" class="hidden">
+  <nav class="bg-white border-b sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-2 overflow-x-auto scroll-area">
+      <div class="flex gap-1 whitespace-nowrap py-2" id="tabs">
+        <button data-tab="overview" class="tab-btn tab-active px-4 py-2 rounded-lg text-sm font-medium">Overview</button>
+        <button data-tab="files" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-100">Files & Merge</button>
+        <button data-tab="voters" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-100">👤 Voters</button>
+        <button data-tab="targeting" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-100">🎯 Targeting</button>
+        <button data-tab="precincts" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-100">Precincts</button>
+        <button data-tab="map" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-100">Real Map</button>
+        <button data-tab="priority" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-100">Priority</button>
+        <button data-tab="winnum" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-100">Win Number</button>
+        <button data-tab="export" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-100">Export</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto px-4 py-6">
+
+    <!-- Overview -->
+    <section data-panel="overview" class="panel">
+      <div id="mergeBanner" class="mb-4"></div>
+      <div id="kpiCards" class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6"></div>
+      <div class="grid md:grid-cols-2 gap-4 mb-6">
+        <div class="card p-5"><h3 class="font-bold mb-3">Party Composition</h3><canvas id="victoryChart" height="180"></canvas></div>
+        <div class="card p-5"><h3 class="font-bold mb-3">Propensity Distribution</h3><canvas id="propChart" height="180"></canvas></div>
+      </div>
+      <div class="card p-5">
+        <h3 class="font-bold mb-3">Detected Elections</h3>
+        <div id="electionsList" class="text-xs"></div>
+      </div>
+    </section>
+
+    <!-- Files -->
+    <section data-panel="files" class="panel hidden">
+      <div id="mergeStats" class="mb-4"></div>
+      <div class="card p-5 mb-4">
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="text-lg font-bold">Manage Data Sources</h2>
+          <label class="bg-blue-700 text-white px-4 py-1.5 rounded-lg text-sm cursor-pointer hover:bg-blue-800">+ Add File<input type="file" id="addMoreFiles" accept=".xlsx,.xls,.csv" class="hidden" multiple></label>
+        </div>
+        <div id="filesList" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <!-- Voters -->
+    <section data-panel="voters" class="panel hidden">
+      <div class="card p-5">
+        <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+          <div>
+            <h2 class="text-lg font-bold">Individual Voter Records (<span id="voterCount">0</span>)</h2>
+            <p class="text-xs text-slate-500">Scored for propensity, partisan lean, Super Voter & Bipartisan. <span class="badge-merged px-1.5 py-0.5 rounded text-xs">🔗 Merged</span> = matched across both files.</p>
+          </div>
+          <div class="flex gap-2 flex-wrap">
+            <input id="voterSearch" placeholder="Search name / ID / phone..." class="border rounded px-2 py-1 text-xs">
+            <select id="voterPartyFilter" class="border rounded px-2 py-1 text-xs">
+              <option value="">All parties</option>
+              <option value="D">Democrat</option>
+              <option value="R">Republican</option>
+              <option value="U">Unaffiliated / No primary</option>
+            </select>
+            <select id="voterSegFilter" class="border rounded px-2 py-1 text-xs">
+              <option value="">All segments</option>
+              <option value="super">⭐ Super Voters</option>
+              <option value="bi">🔀 Bipartisan</option>
+              <option value="prop">🟢 High-Propensity</option>
+              <option value="low">⚪ Low-Propensity</option>
+              <option value="merged">🔗 Merged only</option>
+              <option value="hasphone">📞 Has phone</option>
+            </select>
+          </div>
+        </div>
+        <div class="overflow-x-auto scroll-area max-h-screen">
+          <table class="w-full text-xs">
+            <thead class="bg-slate-100 text-xs uppercase sticky top-0"><tr>
+              <th class="p-2 text-left">ID</th>
+              <th class="p-2 text-left">Name</th>
+              <th class="p-2 text-right">Age</th>
+              <th class="p-2 text-left">Phone</th>
+              <th class="p-2 text-left">Precinct</th>
+              <th class="p-2 text-center">Party</th>
+              <th class="p-2 text-right">Prop</th>
+              <th class="p-2 text-right">Elect</th>
+              <th class="p-2 text-right">D/R</th>
+              <th class="p-2 text-center">Tags</th>
+            </tr></thead>
+            <tbody id="voterTbody"></tbody>
+          </table>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">Showing first 500 rows of filtered list. Use Export → Voters CSV for the full filtered file.</p>
+      </div>
+    </section>
+
+    <!-- Targeting -->
+    <section data-panel="targeting" class="panel hidden">
+      <div class="card p-5 mb-4">
+        <h2 class="text-lg font-bold mb-1">🎯 Voter Targeting & Scoring</h2>
+        <p class="text-sm text-slate-500 mb-4">Pick a preset or build custom. Filters apply to individual voters; precinct KPIs roll up automatically.</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="seg-card card p-4 border-l-4 border-yellow-500" onclick="applyPreset('super')">
+            <div class="badge-super inline-block px-2 py-0.5 rounded text-xs font-bold mb-2">SUPER VOTERS</div>
+            <p class="text-xs text-slate-600 font-medium">Most Reliable Turnout</p>
+            <p class="text-xs text-slate-500 mt-1">Voted 4+ of last 5. GOTV anchor.</p>
+            <p id="count-super" class="text-2xl font-bold text-yellow-600 mt-2">—</p>
+          </div>
+          <div class="seg-card card p-4 border-l-4 border-purple-500" onclick="applyPreset('bipartisan')">
+            <div class="badge-bi inline-block px-2 py-0.5 rounded text-xs font-bold mb-2">BIPARTISAN</div>
+            <p class="text-xs text-slate-600 font-medium">Crossover Ballot History</p>
+            <p class="text-xs text-slate-500 mt-1">D & R ballots, or never-primary high-turnout. Persuasion.</p>
+            <p id="count-bi" class="text-2xl font-bold text-purple-600 mt-2">—</p>
+          </div>
+          <div class="seg-card card p-4 border-l-4 border-green-500" onclick="applyPreset('highprop')">
+            <div class="badge-prop inline-block px-2 py-0.5 rounded text-xs font-bold mb-2">HIGH-PROPENSITY</div>
+            <p class="text-xs text-slate-600 font-medium">Model Score ≥70</p>
+            <p class="text-xs text-slate-500 mt-1">Recency-weighted turnout model.</p>
+            <p id="count-prop" class="text-2xl font-bold text-green-600 mt-2">—</p>
+          </div>
+          <div class="seg-card card p-4 border-l-4 border-slate-400" onclick="applyPreset('lowprop')">
+            <div class="badge-low inline-block px-2 py-0.5 rounded text-xs font-bold mb-2">LOW-PROPENSITY</div>
+            <p class="text-xs text-slate-600 font-medium">Mobilization Targets</p>
+            <p class="text-xs text-slate-500 mt-1">Score &lt;40 + favorable lean.</p>
+            <p id="count-low" class="text-2xl font-bold text-slate-600 mt-2">—</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="md:col-span-1 space-y-4">
+          <div class="card p-4">
+            <h3 class="font-bold text-sm mb-3">📊 Scoring Weights</h3>
+            <div class="space-y-3">
+              <div><div class="flex justify-between text-xs"><label>Propensity</label><span id="w1Val">40</span>%</div><input type="range" id="w1" min="0" max="100" value="40" class="range-slider w-full"></div>
+              <div><div class="flex justify-between text-xs"><label>Partisan Lean (our side)</label><span id="w2Val">30</span>%</div><input type="range" id="w2" min="0" max="100" value="30" class="range-slider w-full"></div>
+              <div><div class="flex justify-between text-xs"><label>Persuadability</label><span id="w3Val">20</span>%</div><input type="range" id="w3" min="0" max="100" value="20" class="range-slider w-full"></div>
+              <div><div class="flex justify-between text-xs"><label>Volume</label><span id="w4Val">10</span>%</div><input type="range" id="w4" min="0" max="100" value="10" class="range-slider w-full"></div>
+            </div>
+            <div class="mt-3 flex gap-2">
+              <button onclick="setPartySide('D')" id="sideD" class="flex-1 py-1.5 text-xs rounded bg-blue-700 text-white">Our side: D</button>
+              <button onclick="setPartySide('R')" id="sideR" class="flex-1 py-1.5 text-xs rounded bg-slate-200">R</button>
+            </div>
+          </div>
+
+          <div class="card p-4">
+            <h3 class="font-bold text-sm mb-3">🔍 Filters</h3>
+            <div class="space-y-3 text-xs">
+              <div><label class="font-medium">Propensity</label>
+                <div class="flex gap-2 items-center mt-1">
+                  <input type="number" id="fPropMin" value="0" min="0" max="100" class="border rounded px-2 py-1 w-16 filter-input">
+                  <span>to</span>
+                  <input type="number" id="fPropMax" value="100" min="0" max="100" class="border rounded px-2 py-1 w-16 filter-input">
+                </div>
+              </div>
+              <div><label class="font-medium">Lean (our side)</label>
+                <div class="flex gap-2 items-center mt-1">
+                  <input type="number" id="fLeanMin" value="-100" class="border rounded px-2 py-1 w-16 filter-input">
+                  <span>to</span>
+                  <input type="number" id="fLeanMax" value="100" class="border rounded px-2 py-1 w-16 filter-input">
+                </div>
+              </div>
+              <div><label class="font-medium">Min Age</label><input type="number" id="fMinAge" value="0" class="border rounded px-2 py-1 w-full mt-1 filter-input"></div>
+              <div><label class="font-medium">Max Age</label><input type="number" id="fMaxAge" value="120" class="border rounded px-2 py-1 w-full mt-1 filter-input"></div>
+              <div><label class="font-medium flex items-center gap-2"><input type="checkbox" id="fSuperOnly" class="filter-input">⭐ Super Voters only</label></div>
+              <div><label class="font-medium flex items-center gap-2"><input type="checkbox" id="fBipartisan" class="filter-input">🔀 Bipartisan only</label></div>
+              <div><label class="font-medium flex items-center gap-2"><input type="checkbox" id="fHasPhone" class="filter-input">📞 Has phone only</label></div>
+              <div><label class="font-medium">Tier</label>
+                <div class="flex gap-1 mt-1 flex-wrap">
+                  <label class="flex items-center gap-1"><input type="checkbox" class="filter-input tier-chk" value="1" checked>T1</label>
+                  <label class="flex items-center gap-1"><input type="checkbox" class="filter-input tier-chk" value="2" checked>T2</label>
+                  <label class="flex items-center gap-1"><input type="checkbox" class="filter-input tier-chk" value="3" checked>T3</label>
+                  <label class="flex items-center gap-1"><input type="checkbox" class="filter-input tier-chk" value="4" checked>T4</label>
+                </div>
+              </div>
+              <button onclick="resetFilters()" class="w-full py-1.5 text-xs border rounded hover:bg-slate-50 mt-2">Clear filters</button>
+            </div>
+          </div>
+
+          <div class="card p-4">
+            <h3 class="font-bold text-sm mb-2">Actions</h3>
+            <div class="space-y-2">
+              <button onclick="exportTargetsCSV()" class="w-full bg-blue-700 text-white py-1.5 rounded text-xs hover:bg-blue-800">⬇ Export Target Precincts</button>
+              <button onclick="exportVotersCSV()" class="w-full bg-indigo-700 text-white py-1.5 rounded text-xs hover:bg-indigo-800">⬇ Export Matching Voters</button>
+              <button onclick="saveTargetList()" class="w-full bg-slate-700 text-white py-1.5 rounded text-xs hover:bg-slate-800">💾 Save as Named List</button>
+              <div id="savedListsBox" class="text-xs space-y-1 mt-2"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="md:col-span-2">
+          <div class="card p-4 mb-3">
+            <div class="grid grid-cols-4 gap-3 text-center">
+              <div><p class="text-xs text-slate-500">Voters Matched</p><p class="text-xl font-bold text-indigo-700" id="tgVoterCount">—</p></div>
+              <div><p class="text-xs text-slate-500">Precincts</p><p class="text-xl font-bold text-blue-700" id="tgCount">—</p></div>
+              <div><p class="text-xs text-slate-500">Est. Reached</p><p class="text-xl font-bold text-blue-700" id="tgVoters">—</p></div>
+              <div><p class="text-xs text-slate-500">Proj. Votes (Us)</p><p class="text-xl font-bold text-green-700" id="tgOurs">—</p></div>
+            </div>
+          </div>
+          <div class="card p-4 mb-3">
+            <h3 class="font-bold text-sm mb-2">Target Score Distribution</h3>
+            <canvas id="tgDistChart" height="80"></canvas>
+          </div>
+          <div class="card p-4">
+            <div class="flex justify-between items-center mb-2 flex-wrap gap-2">
+              <h3 class="font-bold text-sm">Ranked Precincts</h3>
+              <select id="tgSort" class="border rounded px-2 py-1 text-xs">
+                <option value="score">Target Score ↓</option>
+                <option value="propensity">Propensity ↓</option>
+                <option value="persuasion">Persuadability ↓</option>
+                <option value="lean">Lean ↓</option>
+                <option value="reg">Voters ↓</option>
+              </select>
+            </div>
+            <div class="overflow-x-auto scroll-area max-h-96">
+              <table class="w-full text-xs">
+                <thead class="bg-slate-100 text-xs uppercase sticky top-0"><tr>
+                  <th class="p-2 text-left">Precinct</th>
+                  <th class="p-2 text-right">Score</th>
+                  <th class="p-2 text-right">Prop</th>
+                  <th class="p-2 text-right">Persuade</th>
+                  <th class="p-2 text-right">Lean</th>
+                  <th class="p-2 text-right">Voters</th>
+                  <th class="p-2 text-center">Tags</th>
+                </tr></thead>
+                <tbody id="tgTbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Precincts -->
+    <section data-panel="precincts" class="panel hidden">
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h2 class="text-lg font-bold">Precinct Summary (<span id="precinctCount"></span>)</h2>
+          <input id="precinctSearch" placeholder="Search..." class="border rounded-lg px-3 py-1.5 text-sm">
+        </div>
+        <div class="overflow-x-auto scroll-area">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-100 text-xs uppercase"><tr>
+              <th class="p-2 text-left">Precinct</th>
+              <th class="p-2 text-right">Voters</th>
+              <th class="p-2 text-right">Dem %</th>
+              <th class="p-2 text-right">Rep %</th>
+              <th class="p-2 text-right">Unaff %</th>
+              <th class="p-2 text-right">Avg Prop</th>
+              <th class="p-2 text-right">Super %</th>
+              <th class="p-2 text-right">Lean</th>
+              <th class="p-2 text-center">Tier</th>
+            </tr></thead>
+            <tbody id="precinctTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Map -->
+    <section data-panel="map" class="panel hidden">
+      <div class="card p-5">
+        <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+          <h2 class="text-lg font-bold">Geographic Precinct Map</h2>
+          <div class="flex gap-2 text-xs flex-wrap">
+            <button class="map-mode px-3 py-1 rounded bg-blue-600 text-white" data-mode="priority">Priority</button>
+            <button class="map-mode px-3 py-1 rounded bg-slate-200" data-mode="partisan">Partisan</button>
+            <button class="map-mode px-3 py-1 rounded bg-slate-200" data-mode="propensity">Propensity</button>
+            <button class="map-mode px-3 py-1 rounded bg-slate-200" data-mode="target">Target Score</button>
+            <button onclick="resetMapView()" class="px-3 py-1 rounded bg-slate-200">⌂ Reset</button>
+          </div>
+        </div>
+        <p id="mapStatus" class="text-xs text-slate-500 mb-2"></p>
+        <div class="relative border rounded-lg overflow-hidden" style="height:520px;">
+          <svg id="realmap" class="w-full h-full"></svg>
+          <div id="mapTooltip" class="absolute bg-slate-900 text-white text-xs p-2 rounded pointer-events-none hidden"></div>
+        </div>
+        <div id="mapLegend" class="mt-3 flex flex-wrap gap-2 text-xs"></div>
+      </div>
+    </section>
+
+    <!-- Priority -->
+    <section data-panel="priority" class="panel hidden">
+      <div class="card p-5">
+        <h2 class="text-lg font-bold mb-3">Precinct Prioritization</h2>
+        <div class="grid md:grid-cols-4 gap-2 mb-4 text-xs">
+          <div class="p-3 rounded-lg priority-1 text-white"><b>Tier 1</b><br>GOTV Gold</div>
+          <div class="p-3 rounded-lg priority-2 text-white"><b>Tier 2</b><br>Persuasion Swing</div>
+          <div class="p-3 rounded-lg priority-3 text-white"><b>Tier 3</b><br>Base Lock</div>
+          <div class="p-3 rounded-lg priority-4 text-white"><b>Tier 4</b><br>Low Priority</div>
+        </div>
+        <div class="overflow-x-auto scroll-area">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-100 text-xs uppercase"><tr>
+              <th class="p-2 text-left">Precinct</th><th class="p-2 text-center">Tier</th>
+              <th class="p-2 text-right">Score</th><th class="p-2 text-left">Action</th>
+            </tr></thead>
+            <tbody id="priorityTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Win # -->
+    <section data-panel="winnum" class="panel hidden">
+      <div class="card p-5">
+        <h2 class="text-lg font-bold mb-1">Win Number Calculator</h2>
+        <div class="grid md:grid-cols-2 gap-4 mt-4">
+          <div><label class="text-sm font-medium">Total Voters</label><input type="number" id="wnReg" class="border rounded px-3 py-1.5 w-full wn-input"></div>
+          <div><label class="text-sm font-medium">Projected Turnout %</label><input type="number" id="wnTurnout" step="0.1" class="border rounded px-3 py-1.5 w-full wn-input"></div>
+          <div><label class="text-sm font-medium">Win %</label><input type="number" id="wnWinPct" value="50.1" step="0.1" class="border rounded px-3 py-1.5 w-full wn-input"></div>
+          <div><label class="text-sm font-medium">Persuasion %</label><input type="number" id="wnPersuade" value="12" step="1" class="border rounded px-3 py-1.5 w-full wn-input"></div>
+        </div>
+        <div class="mt-5 grid md:grid-cols-4 gap-3">
+          <div class="bg-blue-700 text-white p-4 rounded-lg"><p class="text-xs opacity-80">Total Votes</p><p class="text-2xl font-bold" id="calcTotal">—</p></div>
+          <div class="bg-green-700 text-white p-4 rounded-lg"><p class="text-xs opacity-80">Win Number</p><p class="text-2xl font-bold" id="calcWin">—</p></div>
+          <div class="bg-amber-600 text-white p-4 rounded-lg"><p class="text-xs opacity-80">Base Needed</p><p class="text-2xl font-bold" id="calcBase">—</p></div>
+          <div class="bg-indigo-700 text-white p-4 rounded-lg"><p class="text-xs opacity-80">Persuasion</p><p class="text-2xl font-bold" id="calcPersuade">—</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Export -->
+    <section data-panel="export" class="panel hidden">
+      <div class="card p-5">
+        <h2 class="text-lg font-bold mb-3">Export</h2>
+        <div class="grid md:grid-cols-2 gap-3">
+          <button onclick="exportPrecinctsCSV()" class="p-4 border rounded-lg hover:bg-slate-50 text-left"><p class="font-medium">📊 Precinct Summary (CSV)</p></button>
+          <button onclick="exportTargetsCSV()" class="p-4 border rounded-lg hover:bg-slate-50 text-left"><p class="font-medium">🎯 Target Precincts (CSV)</p></button>
+          <button onclick="exportVotersCSV()" class="p-4 border rounded-lg hover:bg-slate-50 text-left"><p class="font-medium">👤 Filtered Voters (CSV)</p><p class="text-xs text-slate-500">With all merged fields & scores</p></button>
+          <button onclick="exportAllVotersCSV()" class="p-4 border rounded-lg hover:bg-slate-50 text-left"><p class="font-medium">👥 All Voters — Merged (CSV)</p><p class="text-xs text-slate-500">Every row, fully enriched</p></button>
+          <button onclick="exportFullXLSX()" class="p-4 border rounded-lg hover:bg-slate-50 text-left"><p class="font-medium">📘 Full Workbook (XLSX)</p></button>
+          <button onclick="exportSession()" class="p-4 border rounded-lg hover:bg-slate-50 text-left"><p class="font-medium">💾 Session JSON</p></button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</section>
+
+<div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white px-4 py-2 rounded-lg shadow-lg hidden z-50 text-sm"></div>
+
+<script>
+// ================ STATE ================
+let files = [];
+let activeFileId = null;
+let voters = [];
+let votersById = {};
+let precincts = [];
+let elections = [];
+let mergeInfo = { ilCount:0, enrichedCount:0, merged:0, onlyIL:0, onlyEnriched:0 };
+let savedLists = {};
+let ourSide = 'D';
+let scoreWeights = { propensity:40, lean:30, persuasion:20, volume:10 };
+
+const fieldDefs = {
+  voter_individual: [
+    {key:'voterId',   label:'Voter ID (STATE ID)',    required:true,  syn:['state id','voterid','voter id','stateid']},
+    {key:'firstName', label:'First Name',              syn:['first name','firstname','first']},
+    {key:'middleName',label:'Middle Name',             syn:['middle name','middlename']},
+    {key:'lastName',  label:'Last Name',               required:true,  syn:['last name','lastname','surname']},
+    {key:'age',       label:'Age',                     syn:['age']},
+    {key:'houseNum',  label:'House Number',            syn:['res house number','house number']},
+    {key:'preDir',    label:'Pre Direction',           syn:['res pre dir','pre dir']},
+    {key:'street',    label:'Street',                  syn:['res street','street']},
+    {key:'streetType',label:'Street Type',             syn:['res street type','street type']},
+    {key:'city',      label:'City',                    syn:['res city','city']},
+    {key:'zip',       label:'ZIP',                     syn:['res zip5','zip','zipcode','zip5']},
+    {key:'precinct',  label:'Precinct Label',          required:true,  syn:['precinct label','precinct']},
+    {key:'lat',       label:'Latitude',                syn:['lat','latitude']},
+    {key:'lng',       label:'Longitude',               syn:['lng','lon','long','longitude']},
+  ],
+  voter_enriched: [
+    {key:'voterId',   label:'State Voter ID (merge key)', required:true, syn:['statevoterid','state voter id','voterkey','voter key']},
+    {key:'firstName', label:'First Name',              syn:['firstname','first name']},
+    {key:'middleName',label:'Middle Name',             syn:['middlename','middle name']},
+    {key:'lastName',  label:'Last Name',               syn:['lastname','last name']},
+    {key:'suffix',    label:'Suffix',                  syn:['suffixname','suffix']},
+    {key:'dob',       label:'Date of Birth',           syn:['dob','date of birth']},
+    {key:'age',       label:'Age',                     syn:['age','agerange']},
+    {key:'gender',    label:'Gender',                  syn:['gender','sex']},
+    {key:'phone',     label:'Primary Phone',           syn:['primaryphone','phone']},
+    {key:'landline',  label:'Landline',                syn:['landline']},
+    {key:'mobile',    label:'Mobile',                  syn:['mobile','cell']},
+    {key:'addr1',     label:'Address Line 1',          syn:['primaryaddress1','address1','address']},
+    {key:'city',      label:'City',                    syn:['primarycity','city']},
+    {key:'state',     label:'State',                   syn:['primarystate','state']},
+    {key:'zip',       label:'ZIP',                     syn:['primaryzip','zip']},
+    {key:'precinct',  label:'Precinct',                syn:['precinctname','precinctnumber','precinct']},
+    {key:'county',    label:'County',                  syn:['countyname','county']},
+    {key:'observedParty',  label:'Observed Party',     syn:['observedparty']},
+    {key:'officialParty',  label:'Official Party',     syn:['officialparty']},
+    {key:'calculatedParty',label:'Calculated Party',   syn:['calculatedparty']},
+    {key:'overallFreq',    label:'Overall Frequency',  syn:['overallfrequency']},
+    {key:'generalFreq',    label:'General Frequency',  syn:['generalfrequency']},
+    {key:'primaryFreq',    label:'Primary Frequency',  syn:['primaryfrequency']},
+    {key:'cd',        label:'CD District',             syn:['cdname','cd']},
+    {key:'ld',        label:'LD District',             syn:['ldname','ld']},
+    {key:'sd',        label:'SD District',             syn:['sdname','sd']},
+    {key:'demFlag',   label:'Democrat Flag',           syn:['democrat']},
+    {key:'repFlag',   label:'Republican Flag',         syn:['republican']},
+    {key:'lat',       label:'Latitude',                syn:['lat','latitude']},
+    {key:'lng',       label:'Longitude',               syn:['lng','lon','longitude']},
+  ],
+  voter: [
+    {key:'precinct',label:'Precinct',required:true,syn:['precinct','prec']},
+    {key:'registered',label:'Registered',required:true,syn:['registered','voters','reg']},
+    {key:'dem',label:'Dem %',syn:['dem']},
+    {key:'rep',label:'Rep %',syn:['rep']},
+    {key:'turnout',label:'Turnout %',syn:['turnout']},
+  ],
+  results: [
+    {key:'precinct',label:'Precinct',required:true,syn:['precinct']},
+    {key:'demVotes',label:'Past Dem Votes',syn:['dem']},
+    {key:'repVotes',label:'Past Rep Votes',syn:['rep']},
+  ],
+  geo: [
+    {key:'precinct',label:'Precinct',required:true,syn:['precinct']},
+    {key:'lat',label:'Latitude',required:true,syn:['lat']},
+    {key:'lng',label:'Longitude',required:true,syn:['lng','lon']},
+  ],
+  other: [{key:'precinct',label:'Precinct ID',syn:['precinct']}]
+};
+
+// ================ UPLOAD ================
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+['dragenter','dragover'].forEach(e => dropzone.addEventListener(e, ev => { ev.preventDefault(); dropzone.classList.add('drag'); }));
+['dragleave','drop'].forEach(e => dropzone.addEventListener(e, ev => { ev.preventDefault(); dropzone.classList.remove('drag'); }));
+dropzone.addEventListener('drop', ev => { if (ev.dataTransfer.files.length) handleFiles(ev.dataTransfer.files); });
+dropzone.addEventListener('click', e => { if (e.target === dropzone || e.target.closest('.dropzone') === dropzone) fileInput.click(); });
+fileInput.addEventListener('change', e => { if (e.target.files.length) handleFiles(e.target.files); });
+document.getElementById('addMoreFiles').addEventListener('change', e => {
+  if (e.target.files.length) handleFiles(e.target.files).then(() => { renderFilesList(); rebuild(); renderAll(); });
+});
+document.getElementById('importJSON').addEventListener('change', e => { if (e.target.files.length) importSession(e.target.files[0]); });
+
+async function handleFiles(fileList) {
+  for (const file of fileList) await parseFile(file);
+  renderUploadedFiles();
+  document.getElementById('toMapperBtn').disabled = files.length === 0;
+}
+function parseFile(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, {type:'array'});
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+        if (!rows.length) throw new Error('Empty file');
+        const headers = rows[0].map(h => String(h).trim()).filter(h => h !== '');
+        const dataRows = rows.slice(1).filter(r => r.some(c => c !== '' && c != null)).map(r => {
+          const o = {}; headers.forEach((h,i) => o[h] = r[i] !== undefined ? r[i] : ''); return o;
+        });
+        const id = 'f_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+        const type = detectFileType(headers, file.name);
+        files.push({ id, name:file.name, type, headers, rows:dataRows, mapping:autoMap(type, headers), elections:detectElections(headers, type) });
+        resolve();
+      } catch(err) { showToast('Error: ' + err.message); resolve(); }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function detectFileType(headers, name) {
+  const upper = headers.map(h => h.toUpperCase().replace(/\s+/g,''));
+  const hasStateId  = upper.includes('STATEID');
+  const hasStateVID = upper.includes('STATEVOTERID') || upper.includes('VOTERKEY');
+  const hasVHcols   = upper.some(h => /^VH\d{2}[A-Z]$/.test(h));
+  const hasVoteType = headers.some(h => /- VOTE TYPE$/i.test(h));
+  if ((hasStateVID && hasVHcols) || (hasStateVID && !hasVoteType)) return 'voter_enriched';
+  if (hasStateId && hasVoteType) return 'voter_individual';
+  if (hasVoteType) return 'voter_individual';
+  const h = headers.join(' ').toLowerCase();
+  if (h.includes('lat') && (h.includes('lng') || h.includes('lon')) && !h.includes('registered')) return 'geo';
+  if (h.includes('demvote') || h.includes('d_vote')) return 'results';
+  if (h.includes('registered')) return 'voter';
+  return 'other';
+}
+
+function detectElections(headers, type) {
+  const map = {};
+  headers.forEach(h => {
+    const u = h.toUpperCase().trim();
+    // IL-style
+    const vt = u.match(/^(.+?)\s*-\s*VOTE TYPE$/);
+    const bc = u.match(/^(.+?)\s*-\s*BALLOT CHOICE$/);
+    if (vt) { const k = vt[1].trim(); map[k] = map[k] || {name:k,style:'IL',voteTypeCol:null,ballotChoiceCol:null}; map[k].voteTypeCol = h; }
+    if (bc) { const k = bc[1].trim(); map[k] = map[k] || {name:k,style:'IL',voteTypeCol:null,ballotChoiceCol:null}; map[k].ballotChoiceCol = h; }
+    // VH-style: VH##L where L = G/P/M/Y/S/R/B/A  → VH20G = 2020 General
+    const vh = u.match(/^VH(\d{2})([A-Z])$/);
+    if (vh) {
+      const yy = parseInt(vh[1],10);
+      const year = yy >= 50 ? 1900+yy : 2000+yy;
+      const letter = vh[2];
+      const tMap = {G:'general',P:'primary',M:'consolidated',Y:'consolidated primary',S:'special',R:'runoff',B:'special',A:'special'};
+      const typeLabel = tMap[letter] || 'other';
+      const k = `VH${vh[1]}${letter}`;
+      map[k] = {name:`${year} ${typeLabel}`, style:'VH', voteTypeCol:h, ballotChoiceCol:null, _year:year, _type:typeLabel};
+    }
+  });
+  return Object.values(map).map(e => {
+    if (e.style === 'VH') { e.year = e._year; e.type = e._type; delete e._year; delete e._type; return e; }
+    const ym = e.name.match(/(20\d{2}|19\d{2})/);
+    e.year = ym ? parseInt(ym[1]) : null;
+    const U = e.name.toUpperCase();
+    if (U.includes('GENERAL')) e.type = 'general';
+    else if (U.includes('PRIMARY') || U.includes('PRIMARIA')) e.type = 'primary';
+    else if (U.includes('CONSOLID') || U.includes('CNSLD')) e.type = 'consolidated';
+    else e.type = 'other';
+    return e;
+  }).filter(e => e.year).sort((a,b) => b.year - a.year || (a.type==='general'?-1:1));
+}
+
+function autoMap(type, headers) {
+  const m = {};
+  (fieldDefs[type] || []).forEach(f => {
+    const lower = headers.map(h => h.toLowerCase().replace(/\s+/g,'').trim());
+    for (const syn of (f.syn || [])) {
+      const s = syn.toLowerCase().replace(/\s+/g,'');
+      for (let i = 0; i < lower.length; i++) {
+        if (lower[i] === s) { m[f.key] = headers[i]; return; }
+      }
+      for (let i = 0; i < lower.length; i++) {
+        if (lower[i].includes(s)) { m[f.key] = headers[i]; return; }
+      }
+    }
+  });
+  return m;
+}
+
+function renderUploadedFiles() {
+  const el = document.getElementById('uploadedFiles');
+  if (!files.length) { el.innerHTML = ''; return; }
+  el.innerHTML = files.map(f => `
+    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
+      <div class="flex items-center gap-3 flex-1 min-w-0">
+        <span class="text-xl">📄</span>
+        <div class="min-w-0">
+          <p class="font-medium text-sm truncate">${f.name}</p>
+          <p class="text-xs text-slate-500">${f.rows.length.toLocaleString()} rows · ${f.headers.length} cols${f.elections && f.elections.length?' · '+f.elections.length+' elections':''}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <select onchange="setFileType('${f.id}', this.value)" class="border rounded px-2 py-1 text-xs">
+          ${['voter_individual','voter_enriched','voter','results','geo','other'].map(t => `<option value="${t}" ${f.type===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+        <button onclick="removeFile('${f.id}')" class="text-red-600 hover:text-red-800 text-sm">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+function setFileType(id, type) { const f = files.find(x => x.id === id); if (f) { f.type = type; f.mapping = autoMap(type, f.headers); f.elections = detectElections(f.headers, type); renderUploadedFiles(); } }
+function removeFile(id) { files = files.filter(f => f.id !== id); renderUploadedFiles(); document.getElementById('toMapperBtn').disabled = files.length === 0; }
+
+// ================ MAPPING ================
+function showMappingScreen() {
+  if (!files.length) return;
+  document.getElementById('screenUpload').classList.add('hidden');
+  document.getElementById('screenMap').classList.remove('hidden');
+  activeFileId = files[0].id; renderFileTabs(); renderMapper();
+}
+function backToUpload() {
+  document.getElementById('screenMap').classList.add('hidden');
+  document.getElementById('screenUpload').classList.remove('hidden');
+}
+function renderFileTabs() {
+  document.getElementById('fileTabs').innerHTML = files.map(f => `
+    <div class="filetab p-2 rounded ${f.id===activeFileId?'active':''}" onclick="switchFile('${f.id}')">
+      <p class="text-xs font-medium truncate">${f.name}</p>
+      <span class="inline-block badge-${f.type} px-1.5 py-0.5 rounded text-xs mt-1">${f.type}</span>
+    </div>`).join('');
+}
+function switchFile(id) { activeFileId = id; renderFileTabs(); renderMapper(); }
+
+function renderMapper() {
+  const f = files.find(x => x.id === activeFileId);
+  if (!f) return;
+  document.getElementById('activeFileHeader').innerHTML = `
+    <div class="flex items-center gap-2 mb-2"><h3 class="font-bold">${f.name}</h3><span class="badge-${f.type} px-2 py-0.5 rounded text-xs">${f.type}</span></div>
+    <p class="text-xs text-slate-500">${f.rows.length.toLocaleString()} rows · type:
+      <select onchange="setFileTypeActive(this.value)" class="border rounded px-1 py-0.5 text-xs ml-1">
+        ${['voter_individual','voter_enriched','voter','results','geo','other'].map(t => `<option value="${t}" ${f.type===t?'selected':''}>${t}</option>`).join('')}
+      </select></p>`;
+
+  const elecDiv = document.getElementById('electionDetect');
+  const isVoter = f.type === 'voter_individual' || f.type === 'voter_enriched';
+  if (isVoter && f.elections && f.elections.length) {
+    elecDiv.innerHTML = `<div class="card bg-blue-50 p-3 text-xs">
+      <p class="font-bold mb-1 text-blue-900">✓ ${f.elections.length} elections auto-detected (${f.elections.filter(e=>e.style==='VH').length} VH##, ${f.elections.filter(e=>e.style==='IL').length} IL-style)</p>
+      <div class="flex flex-wrap gap-1">
+        ${f.elections.slice(0,24).map(e => `<span class="bg-white border px-1.5 py-0.5 rounded">${e.year} ${e.type}${e.ballotChoiceCol?' 🗳':''}</span>`).join('')}
+        ${f.elections.length>24?`<span class="text-slate-500">+${f.elections.length-24} more</span>`:''}
+      </div>
+      ${f.type==='voter_enriched'?'<p class="text-slate-600 mt-1">This file will merge into your IL voter file on <b>StateVoterId ↔ STATE ID</b>.</p>':''}
+    </div>`;
+  } else elecDiv.innerHTML = '';
+
+  const defs = fieldDefs[f.type] || [];
+  document.getElementById('mapperFields').innerHTML = defs.map(fd => `
+    <div class="flex items-center gap-3 flex-wrap">
+      <div class="w-56 text-sm">${fd.label}${fd.required?' <span class="text-red-600">*</span>':''}</div>
+      <select data-key="${fd.key}" class="mapSel border rounded px-2 py-1 text-sm flex-1 min-w-40">
+        <option value="">— none —</option>
+        ${f.headers.map(h => `<option value="${h}" ${f.mapping[fd.key]===h?'selected':''}>${h}</option>`).join('')}
+      </select>
+    </div>`).join('');
+  document.querySelectorAll('.mapSel').forEach(s => s.addEventListener('change', () => { f.mapping[s.dataset.key] = s.value; }));
+
+  const pt = document.getElementById('previewTable');
+  const previewHeaders = f.headers.slice(0, 12);
+  pt.innerHTML = `<thead class="bg-slate-200"><tr>${previewHeaders.map(h=>`<th class="p-1 text-left">${h}</th>`).join('')}${f.headers.length>12?'<th class="p-1">...</th>':''}</tr></thead>
+    <tbody>${f.rows.slice(0,3).map(r=>`<tr class="border-b">${previewHeaders.map(h=>`<td class="p-1">${String(r[h]).slice(0,20)}</td>`).join('')}${f.headers.length>12?'<td>...</td>':''}</tr>`).join('')}</tbody>`;
+}
+function setFileTypeActive(type) { const f = files.find(x => x.id === activeFileId); if (f) { f.type = type; f.mapping = autoMap(type, f.headers); f.elections = detectElections(f.headers, type); renderFileTabs(); renderMapper(); } }
+
+function processMapping() {
+  const errs = [];
+  files.forEach(f => (fieldDefs[f.type]||[]).filter(d=>d.required).forEach(d => { if (!f.mapping[d.key]) errs.push(`${f.name}: ${d.label}`); }));
+  const err = document.getElementById('mapError');
+  if (errs.length) { err.textContent = 'Missing: ' + errs.join('; '); err.classList.remove('hidden'); return; }
+  err.classList.add('hidden');
+  rebuild(); launchDashboard();
+}
+
+// ================ PROCESSING ================
+function num(v) {
+  if (v === '' || v == null) return null;
+  if (typeof v === 'number') return v;
+  const n = parseFloat(String(v).replace(/[,%$\s]/g,''));
+  return isNaN(n) ? null : n;
+}
+function classifyBallot(val) {
+  if (!val) return null;
+  const s = String(val).toUpperCase().trim();
+  if (!s) return null;
+  if (s.startsWith('DEM') || s === 'D') return 'D';
+  if (s.startsWith('REP') || s === 'R' || s === 'GOP') return 'R';
+  if (s.startsWith('NONPART') || s.startsWith('NON-PART')) return 'N';
+  if (s.startsWith('GRN') || s.startsWith('GREEN')) return 'G';
+  if (s.startsWith('LIB')) return 'L';
+  return 'O';
+}
+function normParty(v) {
+  if (!v) return null;
+  const s = String(v).toUpperCase().trim();
+  if (!s || s === 'N' || s === 'NONE' || s === 'UNK') return null;
+  if (s.startsWith('DEM') || s === 'D') return 'D';
+  if (s.startsWith('REP') || s === 'R') return 'R';
+  if (s.startsWith('UNA') || s === 'U' || s === 'I' || s.startsWith('IND') || s.startsWith('NON')) return 'U';
+  return null;
+}
+function truthy(v) {
+  if (v === null || v === undefined || v === '') return false;
+  const s = String(v).toUpperCase().trim();
+  return s === 'Y' || s === 'YES' || s === 'TRUE' || s === '1' || s === 'T';
+}
+
+// Build or update a voter from an IL file row
+function buildVoterFromIL(r, f) {
+  const m = f.mapping;
+  const pid = m.precinct ? String(r[m.precinct] ?? '').trim() : '';
+  const voterId = m.voterId ? String(r[m.voterId] ?? '').trim() : '';
+  if (!voterId) return null;
+  const age = m.age ? num(r[m.age]) : null;
+  const firstName = m.firstName ? r[m.firstName] : '';
+  const lastName  = m.lastName  ? r[m.lastName]  : '';
+  const fullName = `${firstName||''} ${lastName||''}`.trim() || `(Voter ${voterId})`;
+  const lat = m.lat ? num(r[m.lat]) : null;
+  const lng = m.lng ? num(r[m.lng]) : null;
+  const houseNum = m.houseNum ? r[m.houseNum] : '';
+  const street = m.street ? r[m.street] : '';
+  const city = m.city ? r[m.city] : '';
+  const zip = m.zip ? r[m.zip] : '';
+  const addr = [houseNum, street, city, zip].filter(x => x && String(x).trim()).join(' ');
+
+  return {
+    id: voterId, name: fullName, firstName: firstName||'', lastName: lastName||'',
+    age: age, precinctId: pid, address: addr, city, zip, lat, lng,
+    sources: { il: true, enriched: false },
+    // Placeholders - filled later:
+    phone:'', mobile:'', landline:'', dob:'', gender:'', suffix:'',
+    observedParty:null, officialParty:null, calculatedParty:null,
+    overallFreq:null, generalFreq:null, primaryFreq:null,
+    cd:'', ld:'', sd:'', county:'', state:'',
+    propensity:0, party:'U', partisanScore:0,
+    dBallots:0, rBallots:0, otherBallots:0,
+    votedGenerals:0, totalGenerals:0, votedPrimaries:0, totalPrimaries:0,
+    last5Count:0, last5Voted:0,
+    isSuperVoter:false, isBipartisanVoter:false,
+    lifetimeElections:0, totalElections:0,
+    electionHistory: [], // {year,type,voted,ballot,source}
+  };
+}
+
+function rebuild() {
+  voters = []; votersById = {}; elections = [];
+  mergeInfo = { ilCount:0, enrichedCount:0, merged:0, onlyIL:0, onlyEnriched:0 };
+  const precMap = {};
+  const getP = (pid) => { if (!precMap[pid]) precMap[pid] = { id:pid, voters:[], lat:null, lng:null, demVotes:null, repVotes:null }; return precMap[pid]; };
+
+  // Union of detected elections across all voter files
+  const elecUnion = {};
+  files.forEach(f => {
+    if (f.type === 'voter_individual' || f.type === 'voter_enriched') {
+      (f.elections || []).forEach(e => {
+        const k = `${e.year}_${e.type}_${e.style||'x'}`;
+        if (!elecUnion[k]) elecUnion[k] = e;
+      });
+    }
+  });
+  elections = Object.values(elecUnion).sort((a,b) => b.year - a.year);
+
+  // Process IL files first (primary records)
+  const ilFiles = files.filter(f => f.type === 'voter_individual');
+  ilFiles.forEach(f => {
+    f.rows.forEach(r => {
+      const v = buildVoterFromIL(r, f);
+      if (!v) return;
+      // Record election history from this file
+      (f.elections||[]).forEach(e => {
+        const vt = e.voteTypeCol ? String(r[e.voteTypeCol] ?? '').trim() : '';
+        const bc = e.ballotChoiceCol ? classifyBallot(r[e.ballotChoiceCol]) : null;
+        const voted = vt !== '' && vt.toUpperCase() !== 'N' && vt.toUpperCase() !== 'NO';
+        v.electionHistory.push({ year:e.year, type:e.type, voted, ballot:bc, source:'IL' });
+      });
+      voters.push(v); votersById[v.id] = v;
+      mergeInfo.ilCount++; mergeInfo.onlyIL++;
+    });
+  });
+
+  // Process enriched files — merge when ID matches, else create
+  const enrichedFiles = files.filter(f => f.type === 'voter_enriched');
+  enrichedFiles.forEach(f => {
+    const m = f.mapping;
+    f.rows.forEach(r => {
+      const voterId = m.voterId ? String(r[m.voterId] ?? '').trim() : '';
+      if (!voterId) return;
+      mergeInfo.enrichedCount++;
+
+      let v = votersById[voterId];
+      const isNew = !v;
+      if (isNew) {
+        // Create from enriched only
+        const firstName = m.firstName ? r[m.firstName] : '';
+        const lastName = m.lastName ? r[m.lastName] : '';
+        const pid = m.precinct ? String(r[m.precinct] ?? '').trim() : '';
+        v = {
+          id: voterId,
+          name: `${firstName||''} ${lastName||''}`.trim() || `(Voter ${voterId})`,
+          firstName: firstName||'', lastName: lastName||'',
+          age: m.age ? num(r[m.age]) : null,
+          precinctId: pid, address: m.addr1 ? r[m.addr1] : '',
+          city: m.city ? r[m.city] : '', zip: m.zip ? r[m.zip] : '',
+          lat: m.lat ? num(r[m.lat]) : null, lng: m.lng ? num(r[m.lng]) : null,
+          sources: { il:false, enriched:true },
+          phone:'', mobile:'', landline:'', dob:'', gender:'', suffix:'',
+          observedParty:null, officialParty:null, calculatedParty:null,
+          overallFreq:null, generalFreq:null, primaryFreq:null,
+          cd:'', ld:'', sd:'', county:'', state:'',
+          propensity:0, party:'U', partisanScore:0,
+          dBallots:0, rBallots:0, otherBallots:0,
+          votedGenerals:0, totalGenerals:0, votedPrimaries:0, totalPrimaries:0,
+          last5Count:0, last5Voted:0,
+          isSuperVoter:false, isBipartisanVoter:false,
+          lifetimeElections:0, totalElections:0, electionHistory:[],
+        };
+        voters.push(v); votersById[v.id] = v;
+        mergeInfo.onlyEnriched++;
+      } else {
+        v.sources.enriched = true;
+        mergeInfo.merged++;
+        mergeInfo.onlyIL--;
+      }
+
+      // Enrich
+      if (m.phone) v.phone = v.phone || String(r[m.phone]||'');
+      if (m.mobile) v.mobile = v.mobile || String(r[m.mobile]||'');
+      if (m.landline) v.landline = v.landline || String(r[m.landline]||'');
+      if (m.dob) v.dob = v.dob || String(r[m.dob]||'');
+      if (m.gender) v.gender = v.gender || String(r[m.gender]||'');
+      if (m.suffix) v.suffix = v.suffix || String(r[m.suffix]||'');
+      if (m.observedParty) v.observedParty = normParty(r[m.observedParty]);
+      if (m.officialParty) v.officialParty = normParty(r[m.officialParty]);
+      if (m.calculatedParty) v.calculatedParty = normParty(r[m.calculatedParty]);
+      if (m.overallFreq) v.overallFreq = num(r[m.overallFreq]);
+      if (m.generalFreq) v.generalFreq = num(r[m.generalFreq]);
+      if (m.primaryFreq) v.primaryFreq = num(r[m.primaryFreq]);
+      if (m.cd) v.cd = String(r[m.cd]||'');
+      if (m.ld) v.ld = String(r[m.ld]||'');
+      if (m.sd) v.sd = String(r[m.sd]||'');
+      if (m.county) v.county = String(r[m.county]||'');
+      if (m.state) v.state = String(r[m.state]||'');
+      if (!v.precinctId && m.precinct) v.precinctId = String(r[m.precinct]||'').trim();
+      if (!v.age && m.age) v.age = num(r[m.age]);
+      if (!v.address && m.addr1) v.address = String(r[m.addr1]||'');
+      if (!v.city && m.city) v.city = String(r[m.city]||'');
+      if (!v.zip && m.zip) v.zip = String(r[m.zip]||'');
+      if (v.lat === null && m.lat) v.lat = num(r[m.lat]);
+      if (v.lng === null && m.lng) v.lng = num(r[m.lng]);
+
+      // Dem/Rep flags supplement party
+      const demFlag = m.demFlag ? truthy(r[m.demFlag]) : false;
+      const repFlag = m.repFlag ? truthy(r[m.repFlag]) : false;
+      if (demFlag) v._flagD = true;
+      if (repFlag) v._flagR = true;
+
+      // VH elections — only add if not already in history (prevent double-count)
+      (f.elections||[]).forEach(e => {
+        const existing = v.electionHistory.find(h => h.year === e.year && h.type === e.type);
+        const vt = e.voteTypeCol ? String(r[e.voteTypeCol] ?? '').trim() : '';
+        const voted = vt !== '' && vt.toUpperCase() !== 'N' && vt.toUpperCase() !== 'NO';
+        if (!existing) {
+          v.electionHistory.push({ year:e.year, type:e.type, voted, ballot:null, source:'VH', raw:vt });
+        } else if (!existing.voted && voted) {
+          // VH confirms turnout IL file missed
+          existing.voted = true;
+        }
+      });
+    });
+  });
+
+  // Now compute scores for every voter using their unified electionHistory
+  voters.forEach(v => {
+    const hist = v.electionHistory;
+    let votedGen = 0, totGen = 0, votedPri = 0, totPri = 0;
+    let dB = 0, rB = 0, oB = 0;
+    hist.forEach(h => {
+      if (h.type === 'general') { totGen++; if (h.voted) votedGen++; }
+      if (h.type === 'primary') {
+        totPri++;
+        if (h.voted) {
+          votedPri++;
+          if (h.ballot === 'D') dB++;
+          else if (h.ballot === 'R') rB++;
+          else if (h.ballot) oB++;
+        }
+      }
+    });
+    if (v._flagD) dB = Math.max(dB, 1);
+    if (v._flagR) rB = Math.max(rB, 1);
+    delete v._flagD; delete v._flagR;
+
+    const sorted = [...hist].sort((a,b) => (b.year||0) - (a.year||0));
+    const last5 = sorted.slice(0,5);
+    const weights = [0.30,0.25,0.20,0.15,0.10].slice(0, last5.length);
+    let wSum = 0, wTot = 0;
+    last5.forEach((h,i) => { if (weights[i]) { wSum += (h.voted?1:0)*weights[i]; wTot += weights[i]; } });
+    let propensity = wTot ? (wSum/wTot)*100 : 0;
+    // If we have frequency scores from enriched file, average in
+    if (v.overallFreq !== null && v.overallFreq !== undefined) {
+      const f = v.overallFreq <= 1 ? v.overallFreq*100 : v.overallFreq;
+      propensity = (propensity*0.6 + f*0.4);
+    }
+
+    let party = 'U', partisanScore = 0;
+    if (dB + rB > 0) {
+      partisanScore = ((dB - rB)/(dB + rB))*100;
+      if (dB > rB*1.5) party = 'D';
+      else if (rB > dB*1.5) party = 'R';
+      else party = 'U';
+    }
+    // If enriched file provides a clear party, honor it (priority: official > calculated > observed)
+    const enrichedParty = v.officialParty || v.calculatedParty || v.observedParty;
+    if (enrichedParty) {
+      party = enrichedParty;
+      // override partisan score signal when no ballot history exists
+      if (dB + rB === 0) partisanScore = enrichedParty === 'D' ? 70 : enrichedParty === 'R' ? -70 : 0;
+    }
+
+    v.propensity = +propensity.toFixed(1);
+    v.party = party;
+    v.partisanScore = +partisanScore.toFixed(1);
+    v.dBallots = dB; v.rBallots = rB; v.otherBallots = oB;
+    v.votedGenerals = votedGen; v.totalGenerals = totGen;
+    v.votedPrimaries = votedPri; v.totalPrimaries = totPri;
+    v.last5Count = last5.length;
+    v.last5Voted = last5.filter(h => h.voted).length;
+    v.isSuperVoter = v.last5Count >= 4 && v.last5Voted >= 4;
+    v.isBipartisanVoter = (dB >= 1 && rB >= 1);
+    v.lifetimeElections = hist.filter(h => h.voted).length;
+    v.totalElections = hist.length;
+
+    // attach voter to precinct map
+    const p = getP(v.precinctId || '(unassigned)');
+    p.voters.push(v);
+    if (v.lat !== null && v.lng !== null && p.lat === null) { p.lat = v.lat; p.lng = v.lng; }
+  });
+
+  // Legacy/precinct-level files
+  files.forEach(f => {
+    if (f.type === 'voter_individual' || f.type === 'voter_enriched') return;
+    const m = f.mapping;
+    f.rows.forEach(r => {
+      const pid = m.precinct ? String(r[m.precinct] ?? '').trim() : '';
+      if (!pid) return;
+      const p = getP(pid);
+      if (f.type === 'results') {
+        const dv = num(r[m.demVotes]); if (dv !== null) p.demVotes = (p.demVotes || 0) + dv;
+        const rv = num(r[m.repVotes]); if (rv !== null) p.repVotes = (p.repVotes || 0) + rv;
+      } else if (f.type === 'geo') {
+        const la = num(r[m.lat]), lo = num(r[m.lng]);
+        if (la !== null && lo !== null) { p.lat = la; p.lng = lo; }
+      } else if (f.type === 'voter' && !voters.length) {
+        const reg = num(r[m.registered]) || 0;
+        p._simpleReg = (p._simpleReg||0) + reg;
+        p._simpleDem = num(r[m.dem]) || 0;
+        p._simpleRep = num(r[m.rep]) || 0;
+        p._simpleTurnout = num(r[m.turnout]) || null;
+      }
+    });
+  });
+
+  // Build precinct summary
+  precincts = Object.values(precMap).map(p => {
+    let reg = 0, demCount = 0, repCount = 0, unaffCount = 0;
+    let propSum = 0, propN = 0, superCount = 0, biCount = 0;
+    let histLean = 0;
+    if (p.voters.length) {
+      reg = p.voters.length;
+      p.voters.forEach(v => {
+        if (v.party === 'D') demCount++; else if (v.party === 'R') repCount++; else unaffCount++;
+        if (v.propensity !== null) { propSum += v.propensity; propN++; }
+        if (v.isSuperVoter) superCount++;
+        if (v.isBipartisanVoter) biCount++;
+      });
+      histLean = p.voters.reduce((s,v)=>s+v.partisanScore,0) / p.voters.length;
+    } else if (p._simpleReg) {
+      reg = p._simpleReg;
+      demCount = Math.round(reg * (p._simpleDem||0)/100);
+      repCount = Math.round(reg * (p._simpleRep||0)/100);
+      unaffCount = Math.max(0, reg - demCount - repCount);
+      histLean = (p._simpleDem||0) - (p._simpleRep||0);
+    }
+    const demPct = reg ? (demCount/reg)*100 : 0;
+    const repPct = reg ? (repCount/reg)*100 : 0;
+    const unaffPct = reg ? (unaffCount/reg)*100 : 0;
+    let propensity = propN ? propSum/propN : (p._simpleTurnout || 50);
+    let lean = histLean;
+    if (p.demVotes && p.repVotes) {
+      const tot = p.demVotes + p.repVotes;
+      lean = lean*0.6 + ((p.demVotes - p.repVotes)/tot*100)*0.4;
+    }
+    const absLean = Math.abs(lean);
+    const persuasion = Math.max(0, Math.min(100, (100 - absLean*2)*0.5 + unaffPct*0.8));
+    const superPct = reg ? (superCount/reg)*100 : (propensity>=70?60:propensity>=60?40:20);
+    let tier;
+    if (absLean > 10 && propensity < 60) tier = 1;
+    else if (absLean <= 10) tier = 2;
+    else if (absLean > 10 && propensity >= 60) tier = 3;
+    else tier = 4;
+    const score = Math.max(0, Math.min(100, Math.round((Math.max(0,lean)*1.5) + (lean>5&&propensity<65?30:0) + (absLean<10?20:0) + reg/100)));
+    return {
+      id: p.id, reg, dem: demCount, rep: repCount, unaff: unaffCount,
+      demPct: +demPct.toFixed(1), repPct: +repPct.toFixed(1), unaffPct: +unaffPct.toFixed(1),
+      propensity: +propensity.toFixed(1), superPct: +superPct.toFixed(1),
+      persuasion: +persuasion.toFixed(1), lean: +lean.toFixed(1),
+      score, tier, lat: p.lat, lng: p.lng,
+      demVotes: p.demVotes, repVotes: p.repVotes, biCount,
+      hasVoterData: p.voters.length > 0,
+    };
+  });
+}
+
+// ================ SCORING ================
+function targetScore(p) {
+  const leanForUs = ourSide === 'D' ? p.lean : -p.lean;
+  const leanNorm = Math.max(0, Math.min(100, leanForUs + 50));
+  const volNorm = Math.min(100, p.reg / 10);
+  const total = scoreWeights.propensity + scoreWeights.lean + scoreWeights.persuasion + scoreWeights.volume || 1;
+  return +((p.propensity*scoreWeights.propensity + leanNorm*scoreWeights.lean + p.persuasion*scoreWeights.persuasion + volNorm*scoreWeights.volume)/total).toFixed(1);
+}
+function isSuper(p) { return p.superPct >= 40 || p.propensity >= 75; }
+function isBipartisan(p) { return Math.abs(p.lean) <= 10 && (p.unaffPct >= 25 || p.persuasion >= 50 || p.biCount >= p.reg*0.1); }
+
+// ================ DASHBOARD ================
+function launchDashboard() {
+  document.getElementById('screenMap').classList.add('hidden');
+  document.getElementById('screenDash').classList.remove('hidden');
+  renderAll();
+}
+function renderAll() {
+  renderOverview(); renderFilesList(); renderPrecinctTable(); renderVoters();
+  renderMap(); renderPriority(); initWinCalc(); updateTargeting(); renderSavedLists();
+  renderMergeBanner(); renderMergeStats();
+}
+function resetApp() {
+  if (!confirm('Clear all data?')) return;
+  files = []; voters = []; votersById = {}; precincts = []; elections = []; activeFileId = null; savedLists = {};
+  document.getElementById('screenDash').classList.add('hidden');
+  document.getElementById('screenMap').classList.add('hidden');
+  document.getElementById('screenUpload').classList.remove('hidden');
+  renderUploadedFiles();
+  document.getElementById('toMapperBtn').disabled = true;
+}
+
+function renderMergeBanner() {
+  const el = document.getElementById('mergeBanner');
+  if (mergeInfo.merged === 0 && mergeInfo.enrichedCount === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="card p-4 bg-gradient-to-r from-pink-50 to-indigo-50 border-pink-200">
+    <div class="flex items-center gap-3 flex-wrap">
+      <span class="text-2xl">🔗</span>
+      <div class="flex-1">
+        <h3 class="font-bold">Voter File Merge Active</h3>
+        <p class="text-xs text-slate-600">
+          <b class="text-pink-700">${mergeInfo.merged.toLocaleString()}</b> voters matched across both files ·
+          <b>${mergeInfo.onlyIL.toLocaleString()}</b> IL-only ·
+          <b>${mergeInfo.onlyEnriched.toLocaleString()}</b> enriched-only ·
+          Match rate: <b>${mergeInfo.enrichedCount?((mergeInfo.merged/mergeInfo.enrichedCount)*100).toFixed(1):0}%</b>
+        </p>
+      </div>
+    </div>
+  </div>`;
+}
+function renderMergeStats() {
+  const el = document.getElementById('mergeStats');
+  if (mergeInfo.enrichedCount === 0) { el.innerHTML = ''; return; }
+  const mr = mergeInfo.enrichedCount ? ((mergeInfo.merged/mergeInfo.enrichedCount)*100).toFixed(1) : 0;
+  el.innerHTML = `<div class="card p-5 bg-gradient-to-r from-pink-50 to-indigo-50">
+    <h3 class="font-bold mb-3">🔗 Merge Diagnostics (StateVoterId ↔ STATE ID)</h3>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 text-center text-sm">
+      <div class="bg-white p-3 rounded"><p class="text-xs text-slate-500">IL rows</p><p class="text-xl font-bold text-indigo-700">${mergeInfo.ilCount.toLocaleString()}</p></div>
+      <div class="bg-white p-3 rounded"><p class="text-xs text-slate-500">Enriched rows</p><p class="text-xl font-bold text-pink-700">${mergeInfo.enrichedCount.toLocaleString()}</p></div>
+      <div class="bg-white p-3 rounded"><p class="text-xs text-slate-500">🔗 Merged</p><p class="text-xl font-bold text-purple-700">${mergeInfo.merged.toLocaleString()}</p></div>
+      <div class="bg-white p-3 rounded"><p class="text-xs text-slate-500">IL only</p><p class="text-xl font-bold text-blue-700">${mergeInfo.onlyIL.toLocaleString()}</p></div>
+      <div class="bg-white p-3 rounded"><p class="text-xs text-slate-500">Match rate</p><p class="text-xl font-bold text-green-700">${mr}%</p></div>
+    </div>
+  </div>`;
+}
+
+function renderOverview() {
+  const totalV = voters.length || precincts.reduce((s,p)=>s+p.reg,0);
+  const dems = voters.length ? voters.filter(v=>v.party==='D').length : precincts.reduce((s,p)=>s+p.dem,0);
+  const reps = voters.length ? voters.filter(v=>v.party==='R').length : precincts.reduce((s,p)=>s+p.rep,0);
+  const unaff = voters.length ? voters.filter(v=>v.party==='U').length : precincts.reduce((s,p)=>s+p.unaff,0);
+  const supers = voters.filter(v=>v.isSuperVoter).length;
+  const avgProp = voters.length ? (voters.reduce((s,v)=>s+v.propensity,0)/voters.length).toFixed(1) : (precincts.length?(precincts.reduce((s,p)=>s+p.propensity,0)/precincts.length).toFixed(1):'—');
+  const withPhone = voters.filter(v => v.phone || v.mobile).length;
+
+  document.getElementById('kpiCards').innerHTML = `
+    <div class="card p-4"><p class="text-xs text-slate-500 uppercase">Voters</p><p class="text-xl font-bold text-blue-800">${totalV.toLocaleString()}</p><p class="text-xs">${precincts.length} precincts</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500 uppercase">Avg Propensity</p><p class="text-xl font-bold text-blue-800">${avgProp}</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500 uppercase">Super Voters</p><p class="text-xl font-bold text-yellow-600">${supers.toLocaleString()}</p><p class="text-xs">${totalV?(supers/totalV*100).toFixed(0):0}%</p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500 uppercase">D / R / U</p><p class="text-base font-bold"><span class="text-blue-700">${dems.toLocaleString()}</span> / <span class="text-red-600">${reps.toLocaleString()}</span> / <span class="text-purple-700">${unaff.toLocaleString()}</span></p></div>
+    <div class="card p-4"><p class="text-xs text-slate-500 uppercase">Phone Coverage</p><p class="text-xl font-bold text-indigo-700">${withPhone.toLocaleString()}</p><p class="text-xs">${totalV?(withPhone/totalV*100).toFixed(0):0}% reachable</p></div>
+  `;
+
+  if (window._c1) window._c1.destroy();
+  window._c1 = new Chart(document.getElementById('victoryChart'), {
+    type:'doughnut',
+    data:{labels:['Democrat','Republican','Unaffiliated'],datasets:[{data:[dems,reps,unaff],backgroundColor:['#1d4ed8','#dc2626','#a78bfa']}]},
+    options:{plugins:{legend:{position:'bottom'}}}
+  });
+  const buckets = [0,0,0,0,0];
+  voters.forEach(v => { const i = Math.min(4, Math.floor(v.propensity/20)); buckets[i]++; });
+  if (window._cp) window._cp.destroy();
+  window._cp = new Chart(document.getElementById('propChart'), {
+    type:'bar',
+    data:{labels:['0-20','20-40','40-60','60-80','80-100'],datasets:[{label:'Voters',data:buckets,backgroundColor:['#cbd5e1','#94a3b8','#60a5fa','#3b82f6','#1d4ed8']}]},
+    options:{plugins:{legend:{display:false}}}
+  });
+
+  const el = document.getElementById('electionsList');
+  if (elections.length) {
+    el.innerHTML = '<div class="grid md:grid-cols-4 gap-2">' + elections.map(e => `
+      <div class="p-2 border rounded flex items-center justify-between">
+        <span><b>${e.year}</b> <span class="text-slate-500">${e.type}</span></span>
+        <span class="text-xs text-slate-400">${e.style||''}</span>
+      </div>`).join('') + '</div>';
+  } else el.innerHTML = '<p class="text-slate-500">No elections detected.</p>';
+}
+
+function renderFilesList() {
+  document.getElementById('filesList').innerHTML = files.map(f => `
+    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
+      <div class="flex items-center gap-3">
+        <span class="badge-${f.type} px-2 py-0.5 rounded text-xs">${f.type}</span>
+        <div><b>${f.name}</b><p class="text-xs text-slate-500">${f.rows.length.toLocaleString()} rows${f.elections&&f.elections.length?' · '+f.elections.length+' elections':''}</p></div>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="reopenMapper('${f.id}')" class="text-blue-700 text-xs hover:underline">Remap</button>
+        <button onclick="removeFileAndRebuild('${f.id}')" class="text-red-600 text-xs hover:underline">Remove</button>
+      </div>
+    </div>`).join('');
+}
+function reopenMapper(id) { activeFileId = id; document.getElementById('screenDash').classList.add('hidden'); document.getElementById('screenMap').classList.remove('hidden'); renderFileTabs(); renderMapper(); }
+function removeFileAndRebuild(id) { files = files.filter(f => f.id !== id); rebuild(); renderAll(); }
+
+function renderPrecinctTable(filter='') {
+  document.getElementById('precinctCount').textContent = precincts.length;
+  const tb = document.getElementById('precinctTbody');
+  tb.innerHTML = precincts.filter(p => p.id.toLowerCase().includes(filter.toLowerCase())).map(p => `
+    <tr class="border-b hover:bg-slate-50">
+      <td class="p-2"><b>${p.id}</b></td>
+      <td class="p-2 text-right">${p.reg.toLocaleString()}</td>
+      <td class="p-2 text-right text-blue-700">${p.demPct}%</td>
+      <td class="p-2 text-right text-red-600">${p.repPct}%</td>
+      <td class="p-2 text-right text-purple-700">${p.unaffPct}%</td>
+      <td class="p-2 text-right font-semibold ${p.propensity>=70?'text-green-700':p.propensity>=50?'text-amber-600':'text-red-600'}">${p.propensity}</td>
+      <td class="p-2 text-right">${p.superPct}%</td>
+      <td class="p-2 text-right ${p.lean>0?'text-blue-700':'text-red-600'} font-medium">${p.lean>0?'+':''}${p.lean}</td>
+      <td class="p-2 text-center"><span class="priority-${p.tier} text-white px-2 py-0.5 rounded text-xs">T${p.tier}</span></td>
+    </tr>`).join('');
+}
+document.getElementById('precinctSearch').addEventListener('input', e => renderPrecinctTable(e.target.value));
+
+// ================ VOTERS ================
+function renderVoters() {
+  document.getElementById('voterCount').textContent = voters.length.toLocaleString();
+  applyVoterFilters();
+}
+function applyVoterFilters() {
+  const q = document.getElementById('voterSearch').value.toLowerCase();
+  const party = document.getElementById('voterPartyFilter').value;
+  const seg = document.getElementById('voterSegFilter').value;
+  let list = voters;
+  if (q) list = list.filter(v => (v.name||'').toLowerCase().includes(q) || (v.id||'').toLowerCase().includes(q) || (v.phone||'').toLowerCase().includes(q) || (v.mobile||'').toLowerCase().includes(q));
+  if (party) list = list.filter(v => v.party === party);
+  if (seg === 'super') list = list.filter(v => v.isSuperVoter);
+  else if (seg === 'bi') list = list.filter(v => v.isBipartisanVoter || v.party === 'U');
+  else if (seg === 'prop') list = list.filter(v => v.propensity >= 70);
+  else if (seg === 'low') list = list.filter(v => v.propensity < 40);
+  else if (seg === 'merged') list = list.filter(v => v.sources.il && v.sources.enriched);
+  else if (seg === 'hasphone') list = list.filter(v => v.phone || v.mobile);
+  const tb = document.getElementById('voterTbody');
+  tb.innerHTML = list.slice(0, 500).map(v => {
+    const tags = [];
+    if (v.sources.il && v.sources.enriched) tags.push('<span class="badge-merged px-1 py-0.5 rounded text-xs">🔗</span>');
+    if (v.isSuperVoter) tags.push('<span class="badge-super px-1 py-0.5 rounded text-xs">⭐</span>');
+    if (v.isBipartisanVoter) tags.push('<span class="badge-bi px-1 py-0.5 rounded text-xs">🔀</span>');
+    if (v.propensity >= 70) tags.push('<span class="badge-prop px-1 py-0.5 rounded text-xs">📈</span>');
+    const phoneDisp = v.mobile || v.phone || '';
+    return `<tr class="border-b hover:bg-slate-50">
+      <td class="p-2 font-mono text-xs">${(v.id||'').slice(0,14)}</td>
+      <td class="p-2"><b>${v.name}</b>${v.gender?'<span class="text-slate-400"> · '+v.gender+'</span>':''}</td>
+      <td class="p-2 text-right">${v.age ?? ''}</td>
+      <td class="p-2 text-xs">${phoneDisp}</td>
+      <td class="p-2 text-xs">${v.precinctId||''}</td>
+      <td class="p-2 text-center"><span class="badge-${v.party.toLowerCase()} px-2 py-0.5 rounded text-xs">${v.party}</span></td>
+      <td class="p-2 text-right font-semibold ${v.propensity>=70?'text-green-700':v.propensity>=40?'text-amber-600':'text-red-600'}">${v.propensity}</td>
+      <td class="p-2 text-right">${v.lifetimeElections}/${v.totalElections}</td>
+      <td class="p-2 text-right text-xs"><span class="text-blue-700">${v.dBallots}D</span>/<span class="text-red-600">${v.rBallots}R</span></td>
+      <td class="p-2 text-center">${tags.join(' ') || '—'}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="10" class="p-4 text-center text-slate-500">No voters match.</td></tr>`;
+}
+['voterSearch','voterPartyFilter','voterSegFilter'].forEach(id => document.getElementById(id).addEventListener('input', applyVoterFilters));
+
+// ================ TARGETING ================
+document.querySelectorAll('#w1,#w2,#w3,#w4').forEach(el => el.addEventListener('input', () => {
+  scoreWeights.propensity = +document.getElementById('w1').value;
+  scoreWeights.lean = +document.getElementById('w2').value;
+  scoreWeights.persuasion = +document.getElementById('w3').value;
+  scoreWeights.volume = +document.getElementById('w4').value;
+  document.getElementById('w1Val').textContent = scoreWeights.propensity;
+  document.getElementById('w2Val').textContent = scoreWeights.lean;
+  document.getElementById('w3Val').textContent = scoreWeights.persuasion;
+  document.getElementById('w4Val').textContent = scoreWeights.volume;
+  updateTargeting();
+}));
+document.querySelectorAll('.filter-input').forEach(el => el.addEventListener('input', updateTargeting));
+document.getElementById('tgSort').addEventListener('change', updateTargeting);
+
+function setPartySide(side) {
+  ourSide = side;
+  document.getElementById('sideD').className = 'flex-1 py-1.5 text-xs rounded ' + (side==='D'?'bg-blue-700 text-white':'bg-slate-200');
+  document.getElementById('sideR').className = 'flex-1 py-1.5 text-xs rounded ' + (side==='R'?'bg-red-700 text-white':'bg-slate-200');
+  updateTargeting(); renderMap();
+}
+function resetFilters() {
+  document.getElementById('fPropMin').value = 0; document.getElementById('fLeanMin').value = -100;
+  document.getElementById('fPropMax').value = 100; document.getElementById('fLeanMax').value = 100;
+  document.getElementById('fMinAge').value = 0; document.getElementById('fMaxAge').value = 120;
+  document.getElementById('fSuperOnly').checked = false;
+  document.getElementById('fBipartisan').checked = false;
+  document.getElementById('fHasPhone').checked = false;
+  document.querySelectorAll('.tier-chk').forEach(c => c.checked = true);
+  updateTargeting();
+}
+function applyPreset(name) {
+  resetFilters();
+  if (name === 'super') { document.getElementById('fPropMin').value = 70; document.getElementById('fSuperOnly').checked = true; }
+  else if (name === 'bipartisan') { document.getElementById('fLeanMin').value = -10; document.getElementById('fLeanMax').value = 10; document.getElementById('fBipartisan').checked = true; }
+  else if (name === 'highprop') { document.getElementById('fPropMin').value = 70; }
+  else if (name === 'lowprop') { document.getElementById('fPropMax').value = 40; if (ourSide==='D') document.getElementById('fLeanMin').value = 5; else document.getElementById('fLeanMax').value = -5; }
+  updateTargeting();
+}
+
+function getFilteredVoters() {
+  const pMin = +document.getElementById('fPropMin').value;
+  const pMax = +document.getElementById('fPropMax').value;
+  const lMin = +document.getElementById('fLeanMin').value;
+  const lMax = +document.getElementById('fLeanMax').value;
+  const aMin = +document.getElementById('fMinAge').value;
+  const aMax = +document.getElementById('fMaxAge').value;
+  const su = document.getElementById('fSuperOnly').checked;
+  const bi = document.getElementById('fBipartisan').checked;
+  const ph = document.getElementById('fHasPhone').checked;
+  return voters.filter(v => {
+    const leanForUs = ourSide==='D' ? v.partisanScore : -v.partisanScore;
+    if (v.propensity < pMin || v.propensity > pMax) return false;
+    if (leanForUs < lMin || leanForUs > lMax) return false;
+    if (v.age !== null && v.age !== undefined && v.age !== '' && (v.age < aMin || v.age > aMax)) return false;
+    if (su && !v.isSuperVoter) return false;
+    if (bi && !(v.isBipartisanVoter || v.party==='U')) return false;
+    if (ph && !(v.phone || v.mobile)) return false;
+    return true;
+  });
+}
+function getFilteredPrecincts() {
+  const pMin = +document.getElementById('fPropMin').value;
+  const pMax = +document.getElementById('fPropMax').value;
+  const lMin = +document.getElementById('fLeanMin').value;
+  const lMax = +document.getElementById('fLeanMax').value;
+  const su = document.getElementById('fSuperOnly').checked;
+  const bi = document.getElementById('fBipartisan').checked;
+  const tiers = [...document.querySelectorAll('.tier-chk')].filter(c => c.checked).map(c => +c.value);
+  return precincts.filter(p => {
+    const leanForUs = ourSide==='D' ? p.lean : -p.lean;
+    if (p.propensity < pMin || p.propensity > pMax) return false;
+    if (leanForUs < lMin || leanForUs > lMax) return false;
+    if (su && !isSuper(p)) return false;
+    if (bi && !isBipartisan(p)) return false;
+    if (!tiers.includes(p.tier)) return false;
+    return true;
+  }).map(p => ({...p, tgScore: targetScore(p)}));
+}
+
+function updateTargeting() {
+  if (!precincts.length) return;
+  if (voters.length) {
+    document.getElementById('count-super').textContent = voters.filter(v=>v.isSuperVoter).length.toLocaleString();
+    document.getElementById('count-bi').textContent = voters.filter(v=>v.isBipartisanVoter||v.party==='U').length.toLocaleString();
+    document.getElementById('count-prop').textContent = voters.filter(v=>v.propensity>=70).length.toLocaleString();
+    document.getElementById('count-low').textContent = voters.filter(v => {
+      const l = ourSide==='D' ? v.partisanScore : -v.partisanScore;
+      return v.propensity<40 && l>0;
+    }).length.toLocaleString();
+  } else {
+    document.getElementById('count-super').textContent = precincts.filter(isSuper).length;
+    document.getElementById('count-bi').textContent = precincts.filter(isBipartisan).length;
+    document.getElementById('count-prop').textContent = precincts.filter(p=>p.propensity>=70).length;
+    document.getElementById('count-low').textContent = precincts.filter(p => { const l=ourSide==='D'?p.lean:-p.lean; return p.propensity<40 && l>0; }).length;
+  }
+  const filteredPrecincts = getFilteredPrecincts();
+  const filteredVoters = voters.length ? getFilteredVoters() : [];
+  const sortKey = document.getElementById('tgSort').value;
+  const sortFn = { score:(a,b)=>b.tgScore-a.tgScore, propensity:(a,b)=>b.propensity-a.propensity, persuasion:(a,b)=>b.persuasion-a.persuasion, lean:(a,b)=>ourSide==='D'?b.lean-a.lean:a.lean-b.lean, reg:(a,b)=>b.reg-a.reg }[sortKey];
+  filteredPrecincts.sort(sortFn);
+  const totReg = filteredPrecincts.reduce((s,p)=>s+p.reg,0);
+  const projOurs = Math.round(filteredPrecincts.reduce((s,p)=>s+(ourSide==='D'?p.dem:p.rep)*(p.propensity/100),0));
+  document.getElementById('tgVoterCount').textContent = (voters.length?filteredVoters.length:totReg).toLocaleString();
+  document.getElementById('tgCount').textContent = filteredPrecincts.length.toLocaleString();
+  document.getElementById('tgVoters').textContent = totReg.toLocaleString();
+  document.getElementById('tgOurs').textContent = projOurs.toLocaleString();
+  const tb = document.getElementById('tgTbody');
+  tb.innerHTML = filteredPrecincts.slice(0,200).map(p => {
+    const l = ourSide==='D'?p.lean:-p.lean;
+    const tags = [];
+    if (isSuper(p)) tags.push('<span class="badge-super px-1 py-0.5 rounded text-xs">⭐</span>');
+    if (isBipartisan(p)) tags.push('<span class="badge-bi px-1 py-0.5 rounded text-xs">🔀</span>');
+    if (p.propensity>=70) tags.push('<span class="badge-prop px-1 py-0.5 rounded text-xs">📈</span>');
+    return `<tr class="border-b hover:bg-slate-50">
+      <td class="p-2"><b>${p.id}</b></td>
+      <td class="p-2 text-right font-bold text-blue-700">${p.tgScore}</td>
+      <td class="p-2 text-right">${p.propensity}</td>
+      <td class="p-2 text-right">${p.persuasion}</td>
+      <td class="p-2 text-right ${l>=0?'text-blue-700':'text-red-600'}">${l>=0?'+':''}${l.toFixed(1)}</td>
+      <td class="p-2 text-right">${p.reg.toLocaleString()}</td>
+      <td class="p-2 text-center">${tags.join(' ')||'—'}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="7" class="p-4 text-center text-slate-500">No precincts match.</td></tr>`;
+  const buckets = [0,0,0,0,0];
+  filteredPrecincts.forEach(p => buckets[Math.min(4, Math.floor(p.tgScore/20))]++);
+  if (window._tgc) window._tgc.destroy();
+  window._tgc = new Chart(document.getElementById('tgDistChart'), {
+    type:'bar',
+    data:{labels:['0-20','20-40','40-60','60-80','80-100'],datasets:[{label:'Precincts',data:buckets,backgroundColor:['#cbd5e1','#94a3b8','#60a5fa','#3b82f6','#1d4ed8']}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}
+  });
+}
+
+function saveTargetList() {
+  const name = prompt('Name this list:'); if (!name) return;
+  const p = getFilteredPrecincts();
+  const v = voters.length ? getFilteredVoters() : [];
+  savedLists[name] = { created: new Date().toISOString(), precinctCount: p.length, voterCount: v.length, precinctIds: p.map(x=>x.id) };
+  renderSavedLists(); showToast(`Saved "${name}"`);
+}
+function renderSavedLists() {
+  const box = document.getElementById('savedListsBox');
+  const names = Object.keys(savedLists);
+  if (!names.length) { box.innerHTML = '<p class="text-slate-400">No saved lists.</p>'; return; }
+  box.innerHTML = '<p class="font-medium mt-2">Saved:</p>' + names.map(n => `<div class="flex justify-between py-1 border-b"><span>📁 ${n} (${savedLists[n].precinctCount}p/${savedLists[n].voterCount||0}v)</span><button onclick="deleteList('${n}')" class="text-red-600">✕</button></div>`).join('');
+}
+function deleteList(n) { delete savedLists[n]; renderSavedLists(); }
+
+// ================ MAP ================
+let mapState = { mode:'priority', tx:0, ty:0, scale:1, dragging:false, sx:0, sy:0 };
+const mapSvg = document.getElementById('realmap');
+function renderMap() {
+  const withCoords = precincts.filter(p => p.lat !== null && p.lng !== null);
+  const status = document.getElementById('mapStatus');
+  if (!withCoords.length) {
+    status.textContent = '⚠ No precinct coordinates. Upload a geo file.';
+    mapSvg.innerHTML = `<text x="50%" y="50%" text-anchor="middle" fill="#64748b" font-size="14">No coordinates available</text>`;
+    document.getElementById('mapLegend').innerHTML = ''; return;
+  }
+  status.textContent = `${withCoords.length} of ${precincts.length} precincts have coordinates.`;
+  const lats = withCoords.map(p=>p.lat), lngs = withCoords.map(p=>p.lng);
+  const mnL = Math.min(...lats), mxL = Math.max(...lats), mnLg = Math.min(...lngs), mxLg = Math.max(...lngs);
+  const pL = (mxL-mnL)*0.1 || 0.01, pLg = (mxLg-mnLg)*0.1 || 0.01;
+  mapState.bounds = { minLat:mnL-pL, maxLat:mxL+pL, minLng:mnLg-pLg, maxLng:mxLg+pLg };
+  drawMap(); renderMapLegend();
+}
+function drawMap() {
+  const rect = mapSvg.getBoundingClientRect();
+  const W = rect.width, H = rect.height, b = mapState.bounds;
+  if (!b) return;
+  const withCoords = precincts.filter(p => p.lat !== null && p.lng !== null);
+  mapSvg.innerHTML = '';
+  mapSvg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('transform', `translate(${mapState.tx},${mapState.ty}) scale(${mapState.scale})`);
+  const pad = 30;
+  withCoords.forEach(p => {
+    const x = pad + ((p.lng-b.minLng)/(b.maxLng-b.minLng))*(W-2*pad);
+    const y = H - pad - ((p.lat-b.minLat)/(b.maxLat-b.minLat))*(H-2*pad);
+    const r = Math.max(6, Math.min(20, Math.sqrt(p.reg/5)));
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx',x); c.setAttribute('cy',y); c.setAttribute('r',r);
+    c.setAttribute('fill',colorFor(p, mapState.mode)); c.setAttribute('fill-opacity','0.75');
+    c.setAttribute('stroke','#fff'); c.setAttribute('stroke-width','1.5'); c.setAttribute('class','marker');
+    c.addEventListener('mouseenter', e => showTooltip(e,p));
+    c.addEventListener('mousemove', e => showTooltip(e,p));
+    c.addEventListener('mouseleave', hideTooltip);
+    c.addEventListener('click', () => alert(`${p.id}\nVoters: ${p.reg}\nD ${p.demPct}% / R ${p.repPct}% / U ${p.unaffPct}%\nProp: ${p.propensity} · Super ${p.superPct}%\nTarget: ${targetScore(p)}\nTier ${p.tier}`));
+    g.appendChild(c);
+  });
+  mapSvg.appendChild(g);
+}
+function colorFor(p, m) {
+  if (m==='priority') return ['#dc2626','#ea580c','#ca8a04','#16a34a'][p.tier-1];
+  if (m==='partisan') { const l = ourSide==='D'?p.lean:-p.lean; if (l>=15)return'#1e3a8a';if (l>=5)return'#3b82f6';if (l>=-5)return'#a78bfa';if (l>=-15)return'#f87171';return'#991b1b'; }
+  if (m==='propensity') { if (p.propensity>=75)return'#166534';if (p.propensity>=60)return'#22c55e';if (p.propensity>=45)return'#eab308';return'#ef4444'; }
+  if (m==='target') { const s=targetScore(p); if (s>=75)return'#1e3a8a';if (s>=60)return'#3b82f6';if (s>=45)return'#60a5fa';if (s>=30)return'#cbd5e1';return'#94a3b8'; }
+  return '#64748b';
+}
+function renderMapLegend() {
+  const l = document.getElementById('mapLegend');
+  const items = {
+    priority:[['#dc2626','T1'],['#ea580c','T2'],['#ca8a04','T3'],['#16a34a','T4']],
+    partisan:[['#1e3a8a','Strong Us'],['#3b82f6','Lean Us'],['#a78bfa','Swing'],['#f87171','Lean Opp'],['#991b1b','Strong Opp']],
+    propensity:[['#166534','75+'],['#22c55e','60-74'],['#eab308','45-59'],['#ef4444','<45']],
+    target:[['#1e3a8a','75+'],['#3b82f6','60-74'],['#60a5fa','45-59'],['#cbd5e1','30-44'],['#94a3b8','<30']]
+  };
+  l.innerHTML = items[mapState.mode].map(([c,t]) => `<span class="px-2 py-0.5 rounded text-white" style="background:${c}">${t}</span>`).join(' ');
+}
+function showTooltip(ev, p) {
+  const t = document.getElementById('mapTooltip'); const box = mapSvg.getBoundingClientRect();
+  t.classList.remove('hidden');
+  t.innerHTML = `<b>${p.id}</b><br>${p.reg} voters<br>D${p.demPct}% R${p.repPct}% U${p.unaffPct}%<br>Prop ${p.propensity} · Super ${p.superPct}%<br>Target ${targetScore(p)}`;
+  t.style.left = (ev.clientX - box.left + 10) + 'px';
+  t.style.top = (ev.clientY - box.top + 10) + 'px';
+}
+function hideTooltip() { document.getElementById('mapTooltip').classList.add('hidden'); }
+mapSvg.addEventListener('mousedown', e => { mapState.dragging=true; mapState.sx=e.clientX-mapState.tx; mapState.sy=e.clientY-mapState.ty; });
+window.addEventListener('mousemove', e => { if(!mapState.dragging)return; mapState.tx=e.clientX-mapState.sx; mapState.ty=e.clientY-mapState.sy; drawMap(); });
+window.addEventListener('mouseup', () => mapState.dragging=false);
+mapSvg.addEventListener('wheel', e => { e.preventDefault(); const d=e.deltaY>0?0.9:1.1; const r=mapSvg.getBoundingClientRect(); const mx=e.clientX-r.left, my=e.clientY-r.top; mapState.tx=mx-(mx-mapState.tx)*d; mapState.ty=my-(my-mapState.ty)*d; mapState.scale*=d; drawMap(); });
+function resetMapView() { mapState.tx=0; mapState.ty=0; mapState.scale=1; drawMap(); }
+document.querySelectorAll('.map-mode').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.map-mode').forEach(x => { x.classList.remove('bg-blue-600','text-white'); x.classList.add('bg-slate-200'); });
+  b.classList.remove('bg-slate-200'); b.classList.add('bg-blue-600','text-white');
+  mapState.mode = b.dataset.mode; drawMap(); renderMapLegend();
+}));
+
+// ================ PRIORITY ================
+function renderPriority() {
+  const acts = {1:'GOTV blitz + canvass',2:'Persuasion + doors',3:'Base ID + recruit',4:'Digital only'};
+  document.getElementById('priorityTbody').innerHTML = [...precincts].sort((a,b)=>b.score-a.score).map(p =>
+    `<tr class="border-b"><td class="p-2"><b>${p.id}</b></td><td class="p-2 text-center"><span class="priority-${p.tier} text-white px-2 py-0.5 rounded text-xs">T${p.tier}</span></td><td class="p-2 text-right font-semibold">${p.score}</td><td class="p-2 text-slate-600">${acts[p.tier]}</td></tr>`).join('');
+}
+
+// ================ WIN ================
+function initWinCalc() {
+  const reg = voters.length || precincts.reduce((s,p)=>s+p.reg,0);
+  const avgP = voters.length ? voters.reduce((s,v)=>s+v.propensity,0)/voters.length : (precincts.length?precincts.reduce((s,p)=>s+p.propensity,0)/precincts.length:60);
+  document.getElementById('wnReg').value = reg;
+  document.getElementById('wnTurnout').value = avgP.toFixed(1);
+  calcWin();
+}
+function calcWin() {
+  const r=+document.getElementById('wnReg').value, t=+document.getElementById('wnTurnout').value/100;
+  const w=+document.getElementById('wnWinPct').value/100, pr=+document.getElementById('wnPersuade').value/100;
+  const tot=Math.round(r*t), win=Math.round(tot*w), pn=Math.round(win*pr);
+  document.getElementById('calcTotal').textContent=tot.toLocaleString();
+  document.getElementById('calcWin').textContent=win.toLocaleString();
+  document.getElementById('calcBase').textContent=(win-pn).toLocaleString();
+  document.getElementById('calcPersuade').textContent=pn.toLocaleString();
+}
+document.querySelectorAll('.wn-input').forEach(i => i.addEventListener('input', calcWin));
+
+// ================ TABS ================
+document.querySelectorAll('#tabs .tab-btn').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('#tabs .tab-btn').forEach(b => b.classList.remove('tab-active'));
+  btn.classList.add('tab-active');
+  document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+  document.querySelector(`[data-panel="${btn.dataset.tab}"]`).classList.remove('hidden');
+  if (btn.dataset.tab==='map') setTimeout(renderMap, 50);
+  if (btn.dataset.tab==='targeting') setTimeout(updateTargeting, 50);
+}));
+
+// ================ SESSION ================
+function snapshot() { return { files, voters, precincts, elections, savedLists, mergeInfo, ourSide, scoreWeights, version:'3.0' }; }
+function restore(s) { if (!s||!s.files) throw new Error('Invalid'); files=s.files; savedLists=s.savedLists||{}; if(s.ourSide)ourSide=s.ourSide; if(s.scoreWeights)scoreWeights=s.scoreWeights; rebuild(); launchDashboard(); }
+function saveSessionLS() { try{localStorage.setItem('rm',JSON.stringify(snapshot()));showToast('Saved.');}catch(e){showToast('⚠ blocked');} }
+function loadSessionLS() { try{const s=localStorage.getItem('rm'); if(!s)return showToast('None'); restore(JSON.parse(s));}catch(e){showToast('⚠ error');} }
+function exportSession() { const b=new Blob([JSON.stringify(snapshot(),null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='runningmate.json'; a.click(); }
+function importSession(f) { const r=new FileReader(); r.onload=e=>{try{restore(JSON.parse(e.target.result));}catch(err){showToast(err.message);}}; r.readAsText(f); }
+
+// ================ EXPORT ================
+function aoaCSV(a) { return a.map(r => r.map(c => `"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\n'); }
+function dlCSV(s,n) { const b=new Blob([s],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=n; a.click(); showToast(n); }
+function precinctsAOA() {
+  const rows = [['Precinct','Voters','Dem','Dem%','Rep','Rep%','Unaff','Unaff%','Propensity','SuperPct','Persuadability','Lean','TargetScore','Tier','Lat','Lng']];
+  precincts.forEach(p => rows.push([p.id,p.reg,p.dem,p.demPct,p.rep,p.repPct,p.unaff,p.unaffPct,p.propensity,p.superPct,p.persuasion,p.lean,targetScore(p),p.tier,p.lat,p.lng]));
+  return rows;
+}
+function votersAOA(list) {
+  const rows = [['VoterID','Source','Name','First','Last','Age','Gender','DOB','Phone','Mobile','Address','City','Zip','County','Precinct','CD','LD','SD','Party','Observed','Official','Calculated','PartisanScore','Propensity','Elections','D_Ballots','R_Ballots','SuperVoter','Bipartisan','Lat','Lng']];
+  list.forEach(v => {
+    const src = v.sources.il && v.sources.enriched ? 'MERGED' : (v.sources.il ? 'IL' : 'ENRICHED');
+    rows.push([v.id, src, v.name, v.firstName, v.lastName, v.age, v.gender, v.dob, v.phone, v.mobile, v.address, v.city, v.zip, v.county, v.precinctId, v.cd, v.ld, v.sd, v.party, v.observedParty||'', v.officialParty||'', v.calculatedParty||'', v.partisanScore, v.propensity, `${v.lifetimeElections}/${v.totalElections}`, v.dBallots, v.rBallots, v.isSuperVoter?'Y':'N', v.isBipartisanVoter?'Y':'N', v.lat, v.lng]);
+  });
+  return rows;
+}
+function exportPrecinctsCSV() { dlCSV(aoaCSV(precinctsAOA()),'precincts.csv'); }
+function exportTargetsCSV() { const f=getFilteredPrecincts(); if(!f.length)return showToast('No matches'); const rows=[['Precinct','TargetScore','Propensity','SuperPct','Persuadability','Lean','Voters','Tier']]; f.forEach(p=>rows.push([p.id,p.tgScore,p.propensity,p.superPct,p.persuasion,ourSide==='D'?p.lean:-p.lean,p.reg,p.tier])); dlCSV(aoaCSV(rows),'target_precincts.csv'); }
+function exportVotersCSV() { if(!voters.length)return showToast('No voter data'); dlCSV(aoaCSV(votersAOA(getFilteredVoters())),'target_voters.csv'); }
+function exportAllVotersCSV() { if(!voters.length)return showToast('No voter data'); dlCSV(aoaCSV(votersAOA(voters)),'all_voters_merged.csv'); }
+function exportFullXLSX() { const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(precinctsAOA()),'Precincts'); if(voters.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(votersAOA(voters)),'Voters_Merged'); XLSX.writeFile(wb,'runningmate.xlsx'); }
+
+// ================ TEMPLATES ================
+function downloadVoterTemplate() {
+  const header = ['STATE ID','COUNTY ID','FIRST NAME','MIDDLE NAME','LAST NAME','SUFFIX','AGE','RES HOUSE NUMBER','RES HOUSE PARTIAL','RES PRE DIR','RES STREET','RES STREET TYPE','RES POST DIR','RES SUB LOCATION TYPE','RES SUB LOCATION','RES CITY','RES ZIP5','MAILING ADDRESS','PRECINCT LABEL','FUTURE ABSENTEE TYPE','FUTURE ABSENTEE BALLOT CHOICE','CB DISTRICT','CC DISTRICT','CG DISTRICT','CO DISTRICT','CT DISTRICT','FP DISTRICT','JS DISTRICT','LB DISTRICT','LE DISTRICT','MT DISTRICT','PK DISTRICT','RB DISTRICT','RE DISTRICT','SC DISTRICT','SH DISTRICT','SK DISTRICT','SN DISTRICT','SP DISTRICT','SS DISTRICT','SU DISTRICT','TW DISTRICT','VL DISTRICT','WD DISTRICT','WR DISTRICT','PRIMARY-PRIMARIA 2026 - VOTE TYPE','PRIMARY-PRIMARIA 2026 - BALLOT CHOICE','CONSOLIDATED-CONSOLIDADA 2025 - VOTE TYPE','CONSOLIDATED PRIMARY-PRIMARIA CONSOLIDADA 2025 - VOTE TYPE','CONSOLIDATED PRIMARY-PRIMARIA CONSOLIDADA 2025 - BALLOT CHOICE','GENERAL-GENERAL 2024 - VOTE TYPE','PRIMARY-PRIMARIA 2024 - VOTE TYPE','PRIMARY-PRIMARIA 2024 - BALLOT CHOICE','CNSLD-CONSOLIDADA 2023 - VOTE TYPE','GENERAL-GENERAL 2022 - VOTE TYPE','PRIMARY-PRIMARIA 2022 - VOTE TYPE','PRIMARY-PRIMARIA 2022 - BALLOT CHOICE','CONSOLIDATED 2021 - VOTE TYPE','GENERAL ELECTION 2020 - VOTE TYPE','PRIMARY ELECTION 2020 - VOTE TYPE','PRIMARY ELECTION 2020 - BALLOT CHOICE','CONSOLIDATED 2019 - VOTE TYPE','GENERAL ELECTION 2018 - VOTE TYPE','PRIMARY ELECTION 2018 - VOTE TYPE','PRIMARY ELECTION 2018 - BALLOT CHOICE','CONSOLIDATED 2017 - VOTE TYPE','CONSOLIDATED PRIMARY 2017 - VOTE TYPE','CONSOLIDATED PRIMARY 2017 - BALLOT CHOICE','GENERAL ELECTION 2016 - VOTE TYPE','PRIMARY ELECTION 2016 - VOTE TYPE','PRIMARY ELECTION 2016 - BALLOT CHOICE','CONSOLIDATED 2015 - VOTE TYPE','CONSOLIDATED PRIMARY 2015 - VOTE TYPE','CONSOLIDATED PRIMARY 2015 - BALLOT CHOICE','GENERAL ELECTION 2014 - VOTE TYPE','PRIMARY ELECTION 2014 - VOTE TYPE','PRIMARY ELECTION 2014 - BALLOT CHOICE','CONS AND/OR SPECIAL 2013 - VOTE TYPE','CONS OR SPECIAL PRIM 2013 - VOTE TYPE','CONS OR SPECIAL PRIM 2013 - BALLOT CHOICE','GENERAL ELECTION 2012 - VOTE TYPE','PRIMARY ELECTION 2012 - VOTE TYPE','PRIMARY ELECTION 2012 - BALLOT CHOICE','CONSOLIDATED 2011 - VOTE TYPE','GENERAL ELECTION 2010 - VOTE TYPE','PRIMARY ELECTION 2010 - VOTE TYPE','PRIMARY ELECTION 2010 - BALLOT CHOICE','CONSOLIDATED 2009 - VOTE TYPE','CONSOLIDATED PRIMARY 2009 - VOTE TYPE','CONSOLIDATED PRIMARY 2009 - BALLOT CHOICE','GENERAL ELECTION 2008 - VOTE TYPE','PRIMARY ELECTION 2008 - VOTE TYPE','PRIMARY ELECTION 2008 - BALLOT CHOICE','CONSOLIDATED 2007 - VOTE TYPE','CONSOLIDATED PRIMARY 2007 - VOTE TYPE','CONSOLIDATED PRIMARY 2007 - BALLOT CHOICE','GENERAL ELECTION 2006 - VOTE TYPE'];
+  dlCSV(aoaCSV([header, ...buildILSamples(header)]), 'voter_template_IL.csv');
+}
+function buildILSamples(header) {
+  const rows = [];
+  const firsts = ['MARIA','JOHN','ASHLEY','DAVID','SOPHIA','ROBERT','JESSICA','MICHAEL','LINDA','JAMES','PATRICIA','WILLIAM','BARBARA','CARLOS','NANCY','RICHARD','DOROTHY','SUSAN','KAREN','KEVIN'];
+  const lasts  = ['GARCIA','SMITH','JOHNSON','RODRIGUEZ','WILLIAMS','BROWN','DAVIS','MILLER','WILSON','MOORE','TAYLOR','ANDERSON','THOMAS','HERNANDEZ','LOPEZ','MARTINEZ','SANCHEZ','LEE','PATEL','KIM'];
+  const precincts = ['ELG-045','ELG-046','ELG-047','STC-012'];
+  const profiles = [
+    {voted:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], ballot:'DEM'},
+    {voted:[1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], ballot:'REP'},
+    {voted:[0,0,0,1,0,1,0,0,0,1,0,0,1,1,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], ballot:'DEM'},
+    {voted:[1,0,0,1,0,1,0,0,0,1,0,0,1,1,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], ballot:'REP'},
+    {voted:[0,0,0,0,0,0,0,0,0,1,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], ballot:null},
+    {voted:[1,1,0,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], ballot:'mix'},
+    {voted:[0,0,0,0,0,1,0,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], ballot:null},
+  ];
+  for (let i = 0; i < 20; i++) {
+    const prof = profiles[i % profiles.length];
+    const pIdx = i % 4;
+    const row = new Array(header.length).fill('');
+    row[header.indexOf('STATE ID')] = 'IL' + (100000+i);
+    row[header.indexOf('COUNTY ID')] = 'KN' + (1000+i);
+    row[header.indexOf('FIRST NAME')] = firsts[i];
+    row[header.indexOf('LAST NAME')] = lasts[i];
+    row[header.indexOf('AGE')] = 25 + (i*3 % 60);
+    row[header.indexOf('RES HOUSE NUMBER')] = 100+i*11;
+    row[header.indexOf('RES STREET')] = ['ELM','OAK','MAIN','CEDAR','PINE','MAPLE'][i%6];
+    row[header.indexOf('RES STREET TYPE')] = 'ST';
+    row[header.indexOf('RES CITY')] = ['ELGIN','ELGIN','ELGIN','ST CHARLES'][pIdx];
+    row[header.indexOf('RES ZIP5')] = '6012'+pIdx;
+    row[header.indexOf('PRECINCT LABEL')] = precincts[pIdx];
+    let eIdx = 0;
+    for (let c = 0; c < header.length; c++) {
+      const h = header[c].toUpperCase();
+      if (h.endsWith('- VOTE TYPE')) { row[c] = prof.voted[eIdx % prof.voted.length] ? 'IV' : ''; eIdx++; }
+      else if (h.endsWith('- BALLOT CHOICE')) {
+        if (row[c-1]) {
+          if (prof.ballot === 'DEM') row[c] = 'DEM';
+          else if (prof.ballot === 'REP') row[c] = 'REP';
+          else if (prof.ballot === 'mix') row[c] = (c%2===0)?'DEM':'REP';
+        }
+      }
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+
+function downloadEnrichedTemplate() {
+  const header = ['LastName','FirstName','MiddleName','SuffixName','PrimaryAddress1','PrimaryCity','PrimaryState','PrimaryZip','PrimaryZip4','PrimaryOddEvenCode','PrimaryHouseNumber','PrimaryHouseHalf','PrimaryStreetPre','PrimaryStreetName','PrimaryStreetType','PrimaryStreetPost','PrimaryUnit','PrimaryUnitNumber','PrimaryPhone','Landline','LandlineTRC','Mobile','MobileTRC','Gender','DOB','AgeRange','ObservedParty','OfficialParty','CalculatedParty','OverAllFrequency','GeneralFrequency','PrimaryFrequency','CDName','LDName','SDName','PrecinctNumber','PrecinctName','VoterKey','HHRecId','CountyName','CountyNumber','ClientId','StateVoterId','HouseholdParty','ElectionCode','RequestDate','SentDate','ReturnedDate','EarlyVoteDate','Democrat','Republican','Other','Military','MilitaryDependent','Overseas','PermAbs','Challenged','Rejected','Spoiled','Federal','Provisional','AppNotApproved','VH26P','VH25B','VH25A','VH24P','VH24G','VH23Y','VH23M','VH22P','VH22G','VH21P','VH21G','VH20P','VH20G','VH19Y','VH19P','VH19M','VH19G','VH18P','VH18G','VH17Y','VH17P','VH17M','VH17G','VH16P','VH16G','VH15Y','VH15S','VH15P','VH15M','VH15G','VH14P','VH14G','VH13R','VH13P','VH13G','VH12P','VH12G','VH11P','VH11M','VH11G','VH10P','VH10G','VH09P','VH09G','VH08S','VH08P','VH08G','VH07P','VH07G','VH06P','VH06G'];
+  // Build 20 rows matching the IL template IDs (IL100000 - IL100019) so the merge demonstrates itself
+  const rows = [];
+  const firsts = ['MARIA','JOHN','ASHLEY','DAVID','SOPHIA','ROBERT','JESSICA','MICHAEL','LINDA','JAMES','PATRICIA','WILLIAM','BARBARA','CARLOS','NANCY','RICHARD','DOROTHY','SUSAN','KAREN','KEVIN'];
+  const lasts  = ['GARCIA','SMITH','JOHNSON','RODRIGUEZ','WILLIAMS','BROWN','DAVIS','MILLER','WILSON','MOORE','TAYLOR','ANDERSON','THOMAS','HERNANDEZ','LOPEZ','MARTINEZ','SANCHEZ','LEE','PATEL','KIM'];
+  const precincts = ['ELG-045','ELG-046','ELG-047','STC-012'];
+  const parties = ['DEM','REP','DEM','REP','UNA','UNA','UNA'];
+  // VH pattern (indices roughly: frequent=1 else 0)
+  const patterns = [
+    '1111111111111111111111111111111111111111111111111'.split('').map(Number), // super D
+    '1101111111111111111111111111111111111111111111111'.split('').map(Number), // super R
+    '0001010001001100010000000000000000000000000000000'.split('').map(Number), // mid D
+    '1001010001001100010000000000000000000000000000000'.split('').map(Number), // mid R
+    '0000000001001000010000000000000000000000000000000'.split('').map(Number), // low U
+    '1101111110111111111111111111111111111111111111111'.split('').map(Number), // bipartisan
+    '0000010001001000010000000000000000000000000000000'.split('').map(Number), // general-only
+  ];
+  // Merge 18 of them, add 2 enriched-only records with new IDs to demo unmatched rows
+  for (let i = 0; i < 20; i++) {
+    const row = new Array(header.length).fill('');
+    const pat = patterns[i % patterns.length];
+    const pIdx = i % 4;
+    row[header.indexOf('LastName')] = lasts[i];
+    row[header.indexOf('FirstName')] = firsts[i];
+    row[header.indexOf('PrimaryAddress1')] = (100+i*11) + ' ' + ['ELM','OAK','MAIN','CEDAR','PINE','MAPLE'][i%6] + ' ST';
+    row[header.indexOf('PrimaryCity')] = ['ELGIN','ELGIN','ELGIN','ST CHARLES'][pIdx];
+    row[header.indexOf('PrimaryState')] = 'IL';
+    row[header.indexOf('PrimaryZip')] = '6012'+pIdx;
+    row[header.indexOf('PrimaryPhone')] = '847-555-' + String(1000+i).padStart(4,'0');
+    row[header.indexOf('Mobile')] = '847-777-' + String(2000+i).padStart(4,'0');
+    row[header.indexOf('Gender')] = i%2===0 ? 'F' : 'M';
+    row[header.indexOf('DOB')] = `19${60+i%30}-0${1+(i%9)}-15`;
+    row[header.indexOf('AgeRange')] = '35-44';
+    row[header.indexOf('ObservedParty')] = parties[i%7];
+    row[header.indexOf('OfficialParty')] = parties[i%7];
+    row[header.indexOf('CalculatedParty')] = parties[i%7];
+    row[header.indexOf('OverAllFrequency')] = pat.reduce((s,v)=>s+v,0)*2;
+    row[header.indexOf('GeneralFrequency')] = 60 + i%30;
+    row[header.indexOf('PrimaryFrequency')] = 30 + i%40;
+    row[header.indexOf('CDName')] = 'IL-08';
+    row[header.indexOf('LDName')] = 'LD-43';
+    row[header.indexOf('SDName')] = 'SD-22';
+    row[header.indexOf('PrecinctName')] = precincts[pIdx];
+    row[header.indexOf('PrecinctNumber')] = precincts[pIdx];
+    row[header.indexOf('CountyName')] = 'KANE';
+    // Two of the 20 get NEW ids to simulate unmatched-enriched:
+    row[header.indexOf('StateVoterId')] = (i < 18) ? ('IL'+(100000+i)) : ('IL'+(999000+i));
+    row[header.indexOf('Democrat')] = parties[i%7]==='DEM' ? '1' : '0';
+    row[header.indexOf('Republican')] = parties[i%7]==='REP' ? '1' : '0';
+    // VH columns — fill with 'X' or ''
+    const vhStart = header.indexOf('VH26P');
+    for (let j = 0; j < 49; j++) {
+      if (vhStart+j < header.length) {
+        row[vhStart+j] = pat[j] ? 'X' : '';
+      }
+    }
+    rows.push(row);
+  }
+  dlCSV(aoaCSV([header, ...rows]), 'voter_template_enriched.csv');
+}
+function downloadGeoTemplate() { dlCSV(aoaCSV([['Precinct','Lat','Lng'],['ELG-045',42.0354,-88.2826],['ELG-046',42.0371,-88.285],['ELG-047',42.0392,-88.281],['STC-012',41.9140,-88.3092]]),'geo_template.csv'); }
+function downloadResultsTemplate() { dlCSV(aoaCSV([['Precinct','DemVotes','RepVotes'],['ELG-045',420,280],['ELG-046',380,360]]),'results_template.csv'); }
+
+function showToast(m) { const t=document.getElementById('toast'); t.textContent=m; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'),3000); }
+</script>
+</body>
+</html>

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign Up — Heidi Pacella Campaign Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Barlow', sans-serif;
+      background: linear-gradient(135deg, #0B1929 0%, #122338 40%, #1A3550 100%);
+      color: #EEF2F7;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .card {
+      background: rgba(18, 35, 56, 0.8);
+      border: 1px solid #243D56;
+      border-radius: 16px;
+      padding: 40px 36px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      width: 280px;
+      height: 280px;
+      background: radial-gradient(circle, rgba(245, 166, 35, 0.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .logo-icon {
+      font-size: 48px;
+      display: block;
+      margin-bottom: 12px;
+      filter: drop-shadow(0 2px 8px rgba(245, 166, 35, 0.4));
+    }
+
+    .logo-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: #fff;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .logo-title span {
+      color: #F5A623;
+    }
+
+    .logo-sub {
+      font-size: 12px;
+      color: #8BA3BE;
+      letter-spacing: 0.03em;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #8BA3BE;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: 'Barlow', sans-serif;
+      border: 1px solid #243D56;
+      border-radius: 8px;
+      background: #0B1929;
+      color: #EEF2F7;
+      transition: all 0.15s;
+    }
+
+    .form-group input::placeholder {
+      color: #8BA3BE;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #F5A623;
+      box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.1);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Barlow', sans-serif;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .btn-primary {
+      background: #F5A623;
+      color: #0B1929;
+      margin-bottom: 12px;
+    }
+
+    .btn-primary:hover {
+      background: #FBBF48;
+      box-shadow: 0 4px 16px rgba(245, 166, 35, 0.35);
+    }
+
+    .btn-primary:active {
+      transform: translateY(1px);
+    }
+
+    .footer-text {
+      text-align: center;
+      font-size: 13px;
+      color: #8BA3BE;
+      margin-top: 24px;
+    }
+
+    .footer-text a {
+      color: #F5A623;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.15s;
+    }
+
+    .footer-text a:hover {
+      color: #FBBF48;
+    }
+
+    .error {
+      background: rgba(224, 52, 52, 0.15);
+      color: #FF8080;
+      border: 1px solid rgba(224, 52, 52, 0.3);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 13px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .error.show {
+      display: block;
+    }
+
+    .success {
+      background: rgba(29, 158, 117, 0.15);
+      color: #5DE0B0;
+      border: 1px solid rgba(29, 158, 117, 0.3);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 13px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .success.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="logo">
+        <span class="logo-icon">🗳</span>
+        <div class="logo-title">Heidi Pacella <span>for Mayor</span></div>
+        <div class="logo-sub">Campaign Dashboard</div>
+      </div>
+
+      <div id="error" class="error"></div>
+      <div id="success" class="success"></div>
+
+      <form id="registerForm">
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" name="name" placeholder="Jane Organizer" required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="jane@campaign.com" required>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" placeholder="••••••••" minlength="8" required>
+          <small style="color: #8BA3BE; font-size: 11px; margin-top: 4px; display: block;">Minimum 8 characters</small>
+        </div>
+
+        <div class="form-group">
+          <label for="password2">Confirm Password</label>
+          <input type="password" id="password2" name="password2" placeholder="••••••••" minlength="8" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Create Account</button>
+      </form>
+
+      <div class="footer-text">
+        Already have an account? <a href="/login">Sign in here</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const password2 = document.getElementById('password2').value;
+      const errorEl = document.getElementById('error');
+      const successEl = document.getElementById('success');
+
+      errorEl.classList.remove('show');
+      successEl.classList.remove('show');
+
+      if (!name || !email || !password || !password2) {
+        errorEl.textContent = 'All fields required';
+        errorEl.classList.add('show');
+        return;
+      }
+
+      if (password.length < 8) {
+        errorEl.textContent = 'Password must be at least 8 characters';
+        errorEl.classList.add('show');
+        return;
+      }
+
+      if (password !== password2) {
+        errorEl.textContent = 'Passwords do not match';
+        errorEl.classList.add('show');
+        return;
+      }
+
+      try {
+        const res = await fetch('/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}&password2=${encodeURIComponent(password2)}`
+        });
+
+        if (res.ok) {
+          successEl.textContent = 'Account created! Redirecting to dashboard...';
+          successEl.classList.add('show');
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 1500);
+        } else {
+          const text = await res.text();
+          errorEl.textContent = text || 'Registration failed';
+          errorEl.classList.add('show');
+        }
+      } catch (err) {
+        errorEl.textContent = 'Network error. Please try again.';
+        errorEl.classList.add('show');
+      }
+    });
+  </script>
+</body>
+</html>
