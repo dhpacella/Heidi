@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const SuperPicksCalculator = require('../utils/superPicksCalculator');
 const VoterImporter = require('../utils/voterImporter');
+const WalklistImporter = require('../utils/walklistImporter');
 const { getVotersWithHistory, insertVoterWithHistory } = require('../utils/voterRepo');
 const pool = require('../db/connection');
 
@@ -104,6 +105,53 @@ router.post('/import', async (req, res) => {
     await client.query('ROLLBACK');
     console.error('Super-picks import error:', err);
     res.status(500).json({ error: 'Import failed: ' + err.message });
+  } finally {
+    client.release();
+  }
+});
+
+router.post('/import-walklist', async (req, res) => {
+  const { filePath } = req.body || {};
+  if (!filePath) return res.status(400).json({ error: 'filePath is required' });
+
+  const resolved = path.resolve(filePath);
+  if (!fs.existsSync(resolved)) {
+    return res.status(400).json({ error: `File not found: ${resolved}` });
+  }
+
+  const client = await pool.connect();
+  try {
+    const voters = await WalklistImporter.importFromWalklistCSV(resolved);
+
+    await client.query('BEGIN');
+    let inserted = 0;
+    const errors = [];
+    for (const v of voters) {
+      const validation = VoterImporter.validateVoter(v);
+      if (!validation.isValid) {
+        errors.push({ voter: `${v.firstName} ${v.lastName}`, errors: validation.errors });
+        continue;
+      }
+      try {
+        await insertVoterWithHistory(client, v);
+        inserted++;
+      } catch (err) {
+        errors.push({ voter: `${v.firstName} ${v.lastName}`, errors: [err.message] });
+      }
+    }
+    await client.query('COMMIT');
+
+    res.status(201).json({
+      message: 'Walklist import complete',
+      stats: WalklistImporter.getImportStats(voters),
+      inserted,
+      skipped: errors.length,
+      errors: errors.slice(0, 25)
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Walklist import error:', err);
+    res.status(500).json({ error: 'Walklist import failed: ' + err.message });
   } finally {
     client.release();
   }
