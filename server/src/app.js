@@ -54,6 +54,7 @@ app.use('/api/voters', requireApiAuth, require('./routes/voters'));
 app.use('/api/precincts', requireApiAuth, require('./routes/precincts'));
 app.use('/api/analysis', requireApiAuth, require('./routes/analysis'));
 app.use('/api/canvassing', requireApiAuth, require('./routes/canvassing'));
+app.use('/api/referrals', requireApiAuth, require('./routes/referrals'));
 app.use('/api/super-picks', requireApiAuth, require('./routes/superPicks'));
 
 app.get('/health', (req, res) => {

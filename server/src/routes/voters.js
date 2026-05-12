@@ -3,7 +3,7 @@ const pool = require('../db/connection');
 
 const router = express.Router();
 
-const MAX_LIMIT = 200;
+const MAX_LIMIT = 50000;
 
 function parsePagination(query) {
   const page = Math.max(1, parseInt(query.page, 10) || 1);

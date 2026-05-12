@@ -9,7 +9,7 @@ const router = express.Router();
 
 const BCRYPT_ROUNDS = 12;
 const PUBLIC_DIR = path.join(__dirname, '..', '..', 'public');
-const DASHBOARD_HTML = path.join(__dirname, '..', '..', '..', 'heidi_voter_dashboard_final_15.html');
+const DASHBOARD_HTML = path.join(__dirname, '..', '..', '..', 'heidi_voter_dashboard_final_27.html');
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

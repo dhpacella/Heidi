@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Heidi Pacella — Voter Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      color: #333;
+    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    header {
+      background: #0066cc;
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    h1 { font-size: 28px; margin-bottom: 5px; }
+    .subtitle { opacity: 0.9; font-size: 14px; }
+
+    .controls {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .control-group { margin-bottom: 15px; }
+    label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px; }
+    input, select {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    input { width: 200px; }
+    button {
+      background: #0066cc;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    button:hover { background: #0052a3; }
+
+    .status {
+      padding: 10px 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 13px;
+    }
+    .status.loading { background: #e3f2fd; color: #1976d2; }
+    .status.success { background: #e8f5e9; color: #388e3c; }
+    .status.error { background: #ffebee; color: #c62828; }
+
+    table {
+      width: 100%;
+      background: white;
+      border-collapse: collapse;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    th {
+      background: #f5f5f5;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 13px;
+      border-bottom: 1px solid #ddd;
+    }
+    td { padding: 12px; border-bottom: 1px solid #eee; }
+    tr:hover { background: #fafafa; }
+
+    .score { font-weight: 600; color: #0066cc; }
+    .pagination {
+      margin-top: 20px;
+      display: flex;
+      gap: 5px;
+      justify-content: center;
+    }
+    .pagination button {
+      padding: 6px 10px;
+      font-size: 12px;
+      background: white;
+      color: #0066cc;
+      border: 1px solid #0066cc;
+    }
+    .pagination button.active { background: #0066cc; color: white; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Heidi Pacella — Voter Dashboard</h1>
+      <p class="subtitle">Campaign Outreach & Super Picks Identification</p>
+    </header>
+
+    <div class="controls">
+      <div class="control-group">
+        <label>Show Voters:</label>
+        <select id="viewType">
+          <option value="all">All Voters</option>
+          <option value="super-picks">Super Picks (High Priority)</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label>Min Super Picks Score:</label>
+        <input type="number" id="minScore" value="70" min="0" max="100">
+      </div>
+      <div class="control-group">
+        <label>Precinct Filter:</label>
+        <input type="text" id="precinctFilter" placeholder="e.g., Precinct 001">
+      </div>
+      <button onclick="loadVoters()">Apply Filters</button>
+      <button onclick="exportCSV()" style="background: #666;">Export CSV</button>
+      <button onclick="window.location.href='map.html'" style="background: #28a745; margin-left: 10px;">📍 View Map</button>
+    </div>
+
+    <div id="status"></div>
+
+    <table id="votersTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Phone</th>
+          <th>Address</th>
+          <th>Precinct</th>
+          <th>Party</th>
+          <th class="score">Super Picks Score</th>
+        </tr>
+      </thead>
+      <tbody id="votersBody">
+        <tr><td colspan="6" style="text-align: center;">Loading voters...</td></tr>
+      </tbody>
+    </table>
+
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:5000/api';
+    let allVoters = [];
+    let currentPage = 1;
+    const pageSize = 50;
+
+    async function loadVoters() {
+      showStatus('loading', 'Loading voters...');
+      try {
+        const viewType = document.getElementById('viewType').value;
+        const minScore = parseInt(document.getElementById('minScore').value) || 70;
+        const precinct = document.getElementById('precinctFilter').value.trim() || null;
+
+        console.log('DEBUG: viewType=' + viewType + ', minScore=' + minScore + ', precinct=' + precinct);
+
+        let url;
+        if (viewType === 'super-picks') {
+          url = `${API_BASE}/super-picks?minScore=${minScore}&limit=20000`;
+          if (precinct) url += `&precinct=${precinct}`;
+        } else {
+          url = `${API_BASE}/voters?limit=20000`;
+          if (precinct) url += `&precinct=${precinct}`;
+        }
+
+        console.log('DEBUG: Calling API URL=' + url);
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const data = await response.json();
+        console.log('DEBUG: API response keys:', Object.keys(data));
+        console.log('DEBUG: superPicks count:', data.superPicks ? data.superPicks.length : 'N/A');
+        console.log('DEBUG: voters count:', data.voters ? data.voters.length : 'N/A');
+        allVoters = viewType === 'super-picks' ? data.superPicks : data.voters;
+        console.log('DEBUG: allVoters.length=' + allVoters.length);
+        currentPage = 1;
+        renderPage();
+        showStatus('success', `Loaded ${allVoters.length} voters`);
+      } catch (err) {
+        showStatus('error', `Error loading voters: ${err.message}`);
+        document.getElementById('votersBody').innerHTML = '<tr><td colspan="6">Error loading voters</td></tr>';
+      }
+    }
+
+    function renderPage() {
+      const start = (currentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageVoters = allVoters.slice(start, end);
+
+      document.getElementById('votersBody').innerHTML = pageVoters.map(v => `
+        <tr>
+          <td>${(v.firstName || v.first_name || '')} ${(v.lastName || v.last_name || '')}</td>
+          <td>${v.phone || ''}</td>
+          <td>${v.address || ''}</td>
+          <td>${v.precinct || v.precinct_name || ''}</td>
+          <td>${v.partyAffiliation || v.party_affiliation || ''}</td>
+          <td class="score">${v.superPickScore ? v.superPickScore.toFixed(0) : '—'}</td>
+        </tr>
+      `).join('');
+
+      // Pagination
+      const totalPages = Math.ceil(allVoters.length / pageSize);
+      const pagination = document.getElementById('pagination');
+      pagination.innerHTML = '';
+      for (let i = 1; i <= Math.min(totalPages, 10); i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.className = i === currentPage ? 'active' : '';
+        btn.onclick = () => { currentPage = i; renderPage(); };
+        pagination.appendChild(btn);
+      }
+    }
+
+    function exportCSV() {
+      if (allVoters.length === 0) {
+        alert('No voters to export');
+        return;
+      }
+      const headers = ['First Name', 'Last Name', 'Phone', 'Address', 'Precinct', 'Party', 'Score'];
+      const rows = allVoters.map(v => [
+        v.firstName, v.lastName, v.phone, v.address, v.precinct || v.precinct_name, v.partyAffiliation || v.party_affiliation,
+        v.superPickScore ? v.superPickScore.toFixed(0) : ''
+      ]);
+
+      const csv = [headers, ...rows].map(r => r.map(c => `"${c || ''}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `voters_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+    }
+
+    function showStatus(type, message) {
+      const el = document.getElementById('status');
+      el.className = `status ${type}`;
+      el.textContent = message;
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      let token = localStorage.getItem('token');
+      if (!token) {
+        // Auto-generate test token for development
+        token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc3ODQ3MTg3MywiZXhwIjoxNzc4NTAwNjczfQ.fyEAJ2qTQ5aiFKkKJuniUday3a29-LdDq-CQWdn4w3k';
+        localStorage.setItem('token', token);
+        console.log('DEBUG: Auto-set test token');
+      }
+      console.log('DEBUG: Starting loadVoters()');
+      loadVoters();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Heidi Voter Map — Precinct View</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+    }
+    .container {
+      display: flex;
+      height: 100vh;
+      flex-direction: column;
+    }
+    header {
+      background: #0066cc;
+      color: white;
+      padding: 15px 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      z-index: 100;
+    }
+    h1 { font-size: 24px; margin: 0; }
+    .controls {
+      background: white;
+      padding: 12px 20px;
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      border-bottom: 1px solid #ddd;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      z-index: 50;
+    }
+    .control-group { display: flex; gap: 8px; align-items: center; }
+    label { font-weight: 600; font-size: 13px; }
+    select {
+      padding: 6px 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    button {
+      background: #0066cc;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    button:hover { background: #0052a3; }
+    #map { flex: 1; }
+    .legend {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      max-width: 200px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .legend-color {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1px solid #333;
+    }
+    .status {
+      position: absolute;
+      top: 120px;
+      right: 20px;
+      background: white;
+      padding: 10px 15px;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      font-size: 12px;
+      z-index: 40;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Heidi Voter Map — Precinct View</h1>
+    </header>
+    <div class="controls">
+      <div class="control-group">
+        <label>Precinct:</label>
+        <select id="precinctFilter">
+          <option value="">All Precincts</option>
+        </select>
+      </div>
+      <button onclick="loadMap()">Refresh Map</button>
+      <button onclick="exportGeoJSON()" style="background: #666;">Export GeoJSON</button>
+      <a href="dashboard.html" style="margin-left: auto; text-decoration: none;">
+        <button style="background: #666;">Back to Dashboard</button>
+      </a>
+    </div>
+    <div id="map"></div>
+    <div id="status" class="status" style="display: none;"></div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:5000/api';
+    const PRECINCT_COLORS = {
+      'HOMER PCT 001': '#0066FF', 'HOMER PCT 002': '#00FF00', 'HOMER PCT 003': '#FF6600',
+      'HOMER PCT 004': '#FF0033', 'HOMER PCT 005': '#9933FF', 'HOMER PCT 006': '#00FFCC',
+      'HOMER PCT 007': '#FFFF00', 'HOMER PCT 008': '#FF00FF', 'HOMER PCT 009': '#00CCFF',
+      'HOMER PCT 010': '#33FF00', 'HOMER PCT 011': '#FF3300', 'HOMER PCT 012': '#FF0099',
+      'HOMER PCT 013': '#00FF99', 'HOMER PCT 014': '#CCFF00', 'HOMER PCT 015': '#FF6633',
+      'HOMER PCT 016': '#3300FF', 'HOMER PCT 017': '#FF00CC', 'HOMER PCT 018': '#00FF66'
+    };
+
+    let map, markers = [];
+    const homer_glen_center = [41.599, -88.009];
+
+    function initMap() {
+      map = L.map('map').setView(homer_glen_center, 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19
+      }).addTo(map);
+
+      // Add legend
+      const legend = L.control({ position: 'bottomright' });
+      legend.onAdd = function() {
+        const div = L.DomUtil.create('div', 'legend');
+        div.innerHTML = '<strong>Precincts</strong><br>';
+        for (const [precinct, color] of Object.entries(PRECINCT_COLORS)) {
+          div.innerHTML += `
+            <div class="legend-item">
+              <div class="legend-color" style="background: ${color};"></div>
+              <span>${precinct}</span>
+            </div>
+          `;
+        }
+        return div;
+      };
+      legend.addTo(map);
+    }
+
+    async function loadMap() {
+      showStatus('Loading voters...');
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          alert('Please log in first');
+          window.location.href = 'index.html';
+          return;
+        }
+
+        const response = await fetch(`${API_BASE}/voters?limit=10000`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const data = await response.json();
+        const voters = data.voters || [];
+
+        // Clear existing markers
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
+
+        // Plot voters
+        voters.forEach(v => {
+          try {
+            // Parse address to extract coordinates (we'll use a simple geocoding approach)
+            // For now, we'll distribute points around Homer Glen area
+            const precinct = v.precinct || v.precinct_name || 'HOMER PCT 001';
+            const color = PRECINCT_COLORS[precinct] || '#999';
+
+            // Generate approximate coordinates based on precinct
+            const hash = precinct.charCodeAt(precinct.length - 1);
+            const lat = homer_glen_center[0] + (Math.sin(hash) * 0.08);
+            const lng = homer_glen_center[1] + (Math.cos(hash) * 0.08);
+
+            const marker = L.circleMarker([lat, lng], {
+              radius: 5,
+              color: color,
+              fillColor: color,
+              fillOpacity: 0.7,
+              weight: 1
+            })
+            .bindPopup(`<strong>${v.firstName} ${v.lastName}</strong><br>${v.address}<br>${precinct}`)
+            .addTo(map);
+
+            markers.push(marker);
+          } catch (e) {
+            // Skip if can't plot
+          }
+        });
+
+        showStatus(`Loaded ${voters.length} voters`);
+        setTimeout(() => hideStatus(), 3000);
+
+        // Populate precinct filter
+        const precincts = [...new Set(voters.map(v => v.precinct || v.precinct_name))].sort();
+        const select = document.getElementById('precinctFilter');
+        select.innerHTML = '<option value="">All Precincts</option>';
+        precincts.forEach(p => {
+          select.innerHTML += `<option value="${p}">${p}</option>`;
+        });
+
+      } catch (err) {
+        showStatus(`Error: ${err.message}`);
+      }
+    }
+
+    function filterByPrecinct() {
+      const precinct = document.getElementById('precinctFilter').value;
+      markers.forEach(m => {
+        const popup = m.getPopup().getContent();
+        if (precinct === '' || popup.includes(precinct)) {
+          m.setStyle({ opacity: 1 });
+        } else {
+          m.setStyle({ opacity: 0.1 });
+        }
+      });
+    }
+
+    function exportGeoJSON() {
+      const features = markers.map(m => ({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [m.getLatLng().lng, m.getLatLng().lat]
+        },
+        properties: {
+          popup: m.getPopup().getContent()
+        }
+      }));
+
+      const geojson = {
+        type: 'FeatureCollection',
+        features: features
+      };
+
+      const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `homer-glen-voters-${new Date().toISOString().slice(0, 10)}.geojson`;
+      a.click();
+    }
+
+    function showStatus(msg) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    function hideStatus() {
+      document.getElementById('status').style.display = 'none';
+    }
+
+    document.getElementById('precinctFilter').addEventListener('change', filterByPrecinct);
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Please log in first');
+        window.location.href = 'index.html';
+        return;
+      }
+      initMap();
+      loadMap();
+    });
+  </script>
+</body>
+</html>

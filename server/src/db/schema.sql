@@ -81,8 +81,37 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   expire TIMESTAMP(6) NOT NULL
 );
 
+-- Voter referrals (neighbor referrals from voters)
+CREATE TABLE IF NOT EXISTS voter_referrals (
+  id SERIAL PRIMARY KEY,
+  -- Who referred
+  referrer_name VARCHAR(200),
+  referrer_email VARCHAR(255),
+  referrer_phone VARCHAR(20),
+  referrer_voter_id INTEGER REFERENCES voters(id) ON DELETE SET NULL,
+  -- Referred neighbor
+  referred_first_name VARCHAR(100) NOT NULL,
+  referred_last_name VARCHAR(100) NOT NULL,
+  referred_email VARCHAR(255),
+  referred_phone VARCHAR(20),
+  referred_address VARCHAR(255),
+  referred_voter_id INTEGER REFERENCES voters(id) ON DELETE SET NULL,
+  -- Outreach tracking
+  contact_method VARCHAR(20) DEFAULT 'both',
+  status VARCHAR(50) DEFAULT 'sent',
+  sendy_campaign_id VARCHAR(100),
+  aws_sms_message_id VARCHAR(100),
+  message_sent_at TIMESTAMP,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_voters_name ON voters(last_name, first_name);
+CREATE INDEX IF NOT EXISTS idx_referrals_status ON voter_referrals(status);
+CREATE INDEX IF NOT EXISTS idx_referrals_created ON voter_referrals(created_at);
+CREATE INDEX IF NOT EXISTS idx_referrals_referrer_voter ON voter_referrals(referrer_voter_id);
 CREATE INDEX IF NOT EXISTS idx_voters_email ON voters(email);
 CREATE INDEX IF NOT EXISTS idx_voters_precinct ON voters(precinct_id);
 CREATE INDEX IF NOT EXISTS idx_voters_party ON voters(party_affiliation);
