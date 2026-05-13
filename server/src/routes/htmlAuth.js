@@ -38,21 +38,39 @@ router.get('/login', (req, res) => {
 
 router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body || {};
-  if (!email || !password) return res.status(400).send('Email and password required');
+  console.log('🔐 Login attempt:', { email, hasPassword: !!password });
+
+  if (!email || !password) {
+    console.log('❌ Missing email or password');
+    return res.status(400).send('Email and password required');
+  }
 
   try {
     const { rows } = await pool.query(
       'SELECT id, email, name, password_hash, role FROM users WHERE email = $1',
       [email]
     );
+    console.log('📊 User lookup result:', { found: rows.length > 0, email });
+
     const user = rows[0];
-    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+    if (!user) {
+      console.log('❌ User not found:', email);
       return res.status(401).send('Invalid email or password');
     }
+
+    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    console.log('🔑 Password comparison:', { match: passwordMatch });
+
+    if (!passwordMatch) {
+      console.log('❌ Password mismatch for user:', email);
+      return res.status(401).send('Invalid email or password');
+    }
+
     setSession(req, user);
+    console.log('✅ Login successful:', { email, userId: user.id });
     res.status(200).send('OK');
   } catch (err) {
-    console.error('Login error:', err);
+    console.error('❌ Login error:', err.message);
     res.status(500).send('Login failed');
   }
 });
