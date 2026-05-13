@@ -4928,7 +4928,10 @@ function openSmsCompose() {
 }
 
 function openEmailCompose() {
-  window.location.href = '/email-lists';
+  const summary = buildFilterSummary();
+  sessionStorage.setItem('email_filter_summary', summary);
+  sessionStorage.setItem('email_filtered_count', filtered.length);
+  window.location.href = '/email-compose';
 }
 
 // Check if user is admin and show admin button

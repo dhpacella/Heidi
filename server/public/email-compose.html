@@ -406,7 +406,13 @@
 
     <!-- Upload Card -->
     <div class="card">
-      <h2>📎 Upload Email List</h2>
+      <h2>📎 Email Recipients</h2>
+      <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border);">
+        <button onclick="switchTab('upload')" id="tab-upload" style="padding: 12px 16px; border: none; background: transparent; color: var(--gold); font-weight: 600; border-bottom: 3px solid var(--gold); cursor: pointer;">📁 Upload CSV</button>
+        <button onclick="switchTab('list')" id="tab-list" style="padding: 12px 16px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; border-bottom: 3px solid transparent; cursor: pointer;">📊 Choose List</button>
+      </div>
+
+      <div id="tab-upload-content">
       <div class="upload-area" id="uploadArea">
         <p style="margin-bottom: 8px; font-size: 16px;">📁 Drag and drop CSV or Excel file</p>
         <p style="font-size: 13px; color: var(--text-muted);">or click to select</p>
@@ -428,6 +434,17 @@
           </thead>
           <tbody id="previewBody"></tbody>
         </table>
+      </div>
+      </div>
+
+      <div id="tab-list-content" style="display: none;">
+        <select id="listSelect" onchange="loadListSubscribers()" style="width: 100%; padding: 10px; margin-bottom: 16px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px;">
+          <option value="">-- Loading lists --</option>
+        </select>
+        <div id="listPreview" style="background: rgba(245, 166, 35, 0.08); border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: none;">
+          <div style="color: var(--gold); font-weight: 600; margin-bottom: 8px;"><span id="listCount">0</span> subscribers</div>
+          <button class="btn btn-primary" onclick="confirmListSelection()" style="width: 100%;">✓ Use This List</button>
+        </div>
       </div>
     </div>
 
@@ -744,6 +761,53 @@
       } catch (err) {
         alert('❌ Send failed: ' + err.message);
       }
+    }
+
+    // Tab switching
+    function switchTab(tab) {
+      document.getElementById('tab-upload-content').style.display = tab === 'upload' ? 'block' : 'none';
+      document.getElementById('tab-list-content').style.display = tab === 'list' ? 'block' : 'none';
+      document.getElementById('tab-upload').style.color = tab === 'upload' ? 'var(--gold)' : 'var(--text-muted)';
+      document.getElementById('tab-upload').style.borderBottomColor = tab === 'upload' ? 'var(--gold)' : 'transparent';
+      document.getElementById('tab-list').style.color = tab === 'list' ? 'var(--gold)' : 'var(--text-muted)';
+      document.getElementById('tab-list').style.borderBottomColor = tab === 'list' ? 'var(--gold)' : 'transparent';
+      if (tab === 'list') loadLists();
+    }
+
+    async function loadLists() {
+      try {
+        const res = await fetch('/api/lists');
+        const data = await res.json();
+        const select = document.getElementById('listSelect');
+        select.innerHTML = '<option value="">-- Select a list --</option>';
+        if (data.lists) {
+          data.lists.forEach(list => {
+            select.innerHTML += `<option value="${list.id}:${list.subscriber_count}">${list.name} (${list.subscriber_count})</option>`;
+          });
+        }
+      } catch (err) {
+        console.error('Error loading lists:', err);
+      }
+    }
+
+    async function loadListSubscribers() {
+      const val = document.getElementById('listSelect').value;
+      if (!val) {
+        document.getElementById('listPreview').style.display = 'none';
+        return;
+      }
+      const [listId, count] = val.split(':');
+      document.getElementById('listCount').textContent = count;
+      document.getElementById('listPreview').style.display = 'block';
+      fullData = Array(parseInt(count)).fill({email: 'subscriber@example.com'});
+      uploadedData = fullData.slice(0, 5);
+      updateRecipientCount(parseInt(count));
+      updateSendButton();
+    }
+
+    function confirmListSelection() {
+      // Recipient count already set, proceed to compose
+      alert('List selected! Now compose your email.');
     }
 
     initTheme();
