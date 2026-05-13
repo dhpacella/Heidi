@@ -4,25 +4,33 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>User Management - Heidi Voter Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap">
   <style>
     :root {
-      --primary: #667eea;
-      --primary-dark: #764ba2;
-      --bg-body: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      --bg-card: white;
-      --text: #333;
-      --text-muted: #555;
-      --border: #ddd;
+      --navy: #0B1929;
+      --navy-mid: #122338;
+      --navy-light: #1A3550;
+      --gold: #F5A623;
+      --gold-light: #FBBF48;
+      --text: #EEF2F7;
+      --text-muted: #8BA3BE;
+      --border: #243D56;
+      --surface: #122338;
+      --surface-2: #1A3550;
+      --radius: 10px;
     }
 
     body.light-theme {
-      --primary: #667eea;
-      --primary-dark: #764ba2;
-      --bg-body: linear-gradient(135deg, #f5f5f5 0%, #efefef 100%);
-      --bg-card: white;
-      --text: #333;
-      --text-muted: #555;
-      --border: #ddd;
+      --navy: #F5F5F5;
+      --navy-mid: #FFFFFF;
+      --navy-light: #F0F0F0;
+      --text: #1A1A1A;
+      --text-muted: #666666;
+      --border: #DDDDDD;
+      --surface: #FFFFFF;
+      --surface-2: #F9F9F9;
     }
 
     * {
@@ -31,38 +39,93 @@
       box-sizing: border-box;
     }
 
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: var(--bg-body);
+      font-family: 'Barlow', sans-serif;
+      background: var(--navy);
+      color: var(--text);
       min-height: 100vh;
       padding: 20px;
       transition: background 0.3s ease, color 0.3s ease;
     }
 
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
     .container {
       max-width: 1000px;
       margin: 0 auto;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
       overflow: hidden;
+      position: relative;
+      z-index: 1;
     }
 
     header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, #0B1929 0%, #122338 40%, #1A3550 100%);
       color: white;
-      padding: 30px;
-      text-align: center;
+      padding: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    header::before {
+      content: '';
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      width: 280px;
+      height: 280px;
+      background: radial-gradient(circle, rgba(245, 166, 35, 0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--gold), #F5A62300);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 1;
     }
 
     header h1 {
-      font-size: 28px;
-      margin-bottom: 5px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      margin: 0;
     }
 
     header p {
-      font-size: 14px;
-      opacity: 0.9;
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.03em;
+      margin: 4px 0 0 0;
     }
 
     main {
@@ -74,11 +137,15 @@
     }
 
     .section h2 {
-      font-size: 20px;
-      color: #333;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
       margin-bottom: 20px;
-      border-bottom: 2px solid #667eea;
-      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
     }
 
     .form-group {
@@ -87,25 +154,40 @@
 
     label {
       display: block;
-      margin-bottom: 5px;
-      color: #555;
-      font-weight: 500;
-      font-size: 14px;
+      margin-bottom: 6px;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
     }
 
     input, select {
       width: 100%;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
       font-size: 14px;
-      font-family: inherit;
+      font-family: 'Barlow', sans-serif;
+      background: var(--navy);
+      color: var(--text);
+      transition: all 0.15s;
+    }
+
+    body.light-theme input,
+    body.light-theme select {
+      background: white;
+      color: var(--text);
+    }
+
+    input::placeholder, select::placeholder {
+      color: var(--text-muted);
     }
 
     input:focus, select:focus {
       outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.15);
     }
 
     .form-row {
@@ -123,21 +205,22 @@
     button {
       padding: 10px 20px;
       border: none;
-      border-radius: 4px;
+      border-radius: 8px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.15s;
+      font-family: 'Barlow', sans-serif;
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+      background: var(--gold);
+      color: var(--navy);
     }
 
     .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      background: var(--gold-light);
+      box-shadow: 0 4px 16px rgba(245, 166, 35, 0.35);
     }
 
     .btn-danger {
@@ -152,28 +235,29 @@
     }
 
     .alert {
-      padding: 15px;
-      border-radius: 4px;
+      padding: 12px 14px;
+      border-radius: 8px;
       margin-bottom: 20px;
       font-size: 14px;
+      border: 1px solid;
     }
 
     .alert-success {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
+      background: rgba(29, 184, 122, 0.15);
+      color: #1DB87A;
+      border-color: rgba(29, 184, 122, 0.3);
     }
 
     .alert-error {
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
+      background: rgba(224, 52, 52, 0.15);
+      color: #FF8080;
+      border-color: rgba(224, 52, 52, 0.3);
     }
 
     .alert-info {
-      background: #d1ecf1;
-      color: #0c5460;
-      border: 1px solid #bee5eb;
+      background: rgba(102, 126, 234, 0.15);
+      color: #667eea;
+      border-color: rgba(102, 126, 234, 0.3);
     }
 
     table {
@@ -183,90 +267,111 @@
     }
 
     table th {
-      background: #f8f9fa;
+      background: var(--surface-2);
       padding: 12px;
       text-align: left;
       font-weight: 600;
-      color: #555;
-      border-bottom: 2px solid #ddd;
-      font-size: 13px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
 
     table td {
       padding: 12px;
-      border-bottom: 1px solid #ddd;
+      border-bottom: 1px solid var(--border);
       font-size: 14px;
     }
 
     table tr:hover {
-      background: #f8f9fa;
+      background: var(--surface-2);
     }
 
     .badge {
       display: inline-block;
       padding: 4px 12px;
-      border-radius: 20px;
+      border-radius: 6px;
       font-size: 12px;
       font-weight: 600;
+      text-transform: capitalize;
     }
 
     .badge-admin {
-      background: #ffc107;
-      color: #333;
+      background: var(--gold);
+      color: var(--navy);
     }
 
     .badge-staff {
-      background: #28a745;
-      color: white;
+      background: rgba(29, 184, 122, 0.2);
+      color: #1DB87A;
+    }
+
+    .badge-campaign_manager {
+      background: rgba(102, 126, 234, 0.2);
+      color: #667eea;
     }
 
     .text-muted {
-      color: #6c757d;
+      color: var(--text-muted);
       font-size: 13px;
     }
 
     .no-users {
       text-align: center;
       padding: 40px 20px;
-      color: #6c757d;
+      color: var(--text-muted);
     }
 
     .logout-btn {
       position: absolute;
       top: 20px;
       right: 30px;
-      background: rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.2);
       color: white;
       padding: 8px 15px;
-      border-radius: 4px;
+      border-radius: 6px;
       text-decoration: none;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.15s;
     }
 
     .logout-btn:hover {
-      background: rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.3);
     }
 
     .loading {
       display: none;
       text-align: center;
       padding: 20px;
-      color: #667eea;
+      color: var(--gold);
     }
 
     .loading.active {
       display: block;
     }
+
+    #roleDescription {
+      background: var(--surface-2) !important;
+      border: 1px solid var(--border) !important;
+      color: var(--text-muted) !important;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <header style="position:relative">
-      <button onclick="toggleTheme()" style="position:absolute;top:20px;right:100px;font-size:12px;padding:6px 12px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:4px;color:white;cursor:pointer;font-weight:600;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.3)'" onmouseout="this.style.background='rgba(255,255,255,.2)'" id="themeToggleBtn">🌙 Dark</button>
+    <header>
+      <button onclick="toggleTheme()" style="position:absolute;top:20px;right:100px;font-size:12px;padding:6px 12px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:white;cursor:pointer;font-weight:600;transition:all .15s;font-family:'Barlow',sans-serif" onmouseover="this.style.background='rgba(255,255,255,.3)';this.style.borderColor='rgba(255,255,255,.3)'" onmouseout="this.style.background='rgba(255,255,255,.2)';this.style.borderColor='rgba(255,255,255,.2)'" id="themeToggleBtn">🌙 Dark</button>
       <a href="/logout" class="logout-btn">Logout</a>
-      <h1>User Management</h1>
-      <p>Create and manage dashboard users</p>
+      <div class="header-inner">
+        <div>
+          <h1>User Management</h1>
+          <p>Create and manage dashboard users</p>
+        </div>
+      </div>
     </header>
 
     <main>
@@ -439,13 +544,17 @@
 
       users.forEach(user => {
         const createdDate = new Date(user.created_at).toLocaleDateString();
-        const roleClass = user.role === 'admin' ? 'badge-admin' : 'badge-staff';
+        let roleClass = 'badge-staff';
+        if (user.role === 'admin') roleClass = 'badge-admin';
+        else if (user.role === 'campaign_manager') roleClass = 'badge-campaign_manager';
+
+        const displayRole = user.role === 'campaign_manager' ? 'Campaign Manager' : user.role.charAt(0).toUpperCase() + user.role.slice(1);
 
         html += `
           <tr>
             <td>${escapeHtml(user.email)}</td>
             <td>${escapeHtml(user.name)}</td>
-            <td><span class="badge ${roleClass}">${user.role}</span></td>
+            <td><span class="badge ${roleClass}">${displayRole}</span></td>
             <td><span class="text-muted">${createdDate}</span></td>
             <td>
               <button class="btn-danger" onclick="deleteUser(${user.id}, '${escapeHtml(user.email)}')">Delete</button>
