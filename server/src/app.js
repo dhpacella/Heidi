@@ -59,6 +59,7 @@ app.use('/api/referrals', requireApiAuth, require('./routes/referrals'));
 app.use('/api/super-picks', requireApiAuth, require('./routes/superPicks'));
 app.use('/api/sms', requireApiAuth, require('./routes/sms'));
 app.use('/api/email', requireApiAuth, require('./routes/email'));
+app.use('/api/lists', requireApiAuth, require('./routes/lists'));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });

@@ -145,6 +145,38 @@ CREATE TABLE IF NOT EXISTS email_recipients (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Email Lists (named subscriber lists)
+CREATE TABLE IF NOT EXISTS email_lists (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  subscriber_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Email Subscribers (subscribers per list with custom fields)
+CREATE TABLE IF NOT EXISTS email_subscribers (
+  id SERIAL PRIMARY KEY,
+  list_id INTEGER NOT NULL REFERENCES email_lists(id) ON DELETE CASCADE,
+  email VARCHAR(255) NOT NULL,
+  first_name VARCHAR(100),
+  last_name VARCHAR(100),
+  custom_fields JSONB,
+  status VARCHAR(50) DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(list_id, email)
+);
+
+-- Email Segments (saved filter conditions on a list)
+CREATE TABLE IF NOT EXISTS email_segments (
+  id SERIAL PRIMARY KEY,
+  list_id INTEGER NOT NULL REFERENCES email_lists(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  conditions JSONB NOT NULL,
+  created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_sms_blasts_sender ON sms_blasts(sender_id);
 CREATE INDEX IF NOT EXISTS idx_sms_blasts_created ON sms_blasts(created_at);
@@ -164,3 +196,7 @@ CREATE INDEX IF NOT EXISTS idx_canvassing_voter ON canvassing_activities(voter_i
 CREATE INDEX IF NOT EXISTS idx_canvassing_created ON canvassing_activities(created_at);
 CREATE INDEX IF NOT EXISTS idx_turnout_precinct_year ON turnout_history(precinct_id, election_year);
 CREATE INDEX IF NOT EXISTS idx_user_sessions_expire ON user_sessions(expire);
+CREATE INDEX IF NOT EXISTS idx_email_subscribers_list ON email_subscribers(list_id);
+CREATE INDEX IF NOT EXISTS idx_email_subscribers_email ON email_subscribers(email);
+CREATE INDEX IF NOT EXISTS idx_email_subscribers_status ON email_subscribers(status);
+CREATE INDEX IF NOT EXISTS idx_email_segments_list ON email_segments(list_id);

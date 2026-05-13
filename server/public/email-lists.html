@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Lists</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root { --navy: #0B1929; --gold: #F5A623; --text: #EEF2F7; --surface: #122338; --border: rgba(245, 166, 35, 0.2); }
+    body.light-mode { --navy: #F5F5F5; --text: #1A1A1A; --surface: #FFFFFF; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { font-family: 'Barlow', sans-serif; background: var(--navy); color: var(--text); }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    header { background: var(--surface); border-bottom: 3px solid var(--gold); padding: 20px 32px; margin: -20px -20px 30px -20px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-family: 'Barlow Condensed', sans-serif; font-size: 32px; color: var(--gold); }
+    .btn { padding: 10px 18px; border: 1px solid var(--gold); border-radius: 6px; background: transparent; color: var(--gold); cursor: pointer; font-weight: 600; font-size: 13px; }
+    .btn:hover { background: rgba(245, 166, 35, 0.1); }
+    .btn-primary { background: var(--gold); color: var(--navy); }
+    .btn-primary:hover { background: #FBBF48; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; background: var(--surface); }
+    th { background: rgba(245, 166, 35, 0.1); padding: 12px; text-align: left; font-weight: 600; color: var(--gold); }
+    td { padding: 12px; border-bottom: 1px solid var(--border); }
+    .loading { padding: 40px; text-align: center; }
+    .error { background: rgba(255, 77, 109, 0.1); color: #FF4D6D; padding: 16px; border-radius: 8px; margin: 16px 0; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); align-items: center; justify-content: center; z-index: 1000; }
+    .modal.show { display: flex; }
+    .modal-content { background: var(--surface); border-radius: 12px; padding: 32px; max-width: 500px; width: 90%; }
+    input, select { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid var(--border); border-radius: 6px; background: rgba(245, 166, 35, 0.05); color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a href="/dashboard" class="btn">← Dashboard</a>
+      <h1>📧 Lists & Segments</h1>
+      <button class="btn" onclick="logout()">Logout</button>
+    </header>
+
+    <div style="margin-bottom: 20px;">
+      <button class="btn btn-primary" onclick="openCreateModal()">+ New List</button>
+    </div>
+
+    <div id="content">
+      <div class="loading">Loading lists...</div>
+    </div>
+  </div>
+
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <h2>Create New List</h2>
+      <input type="text" id="listName" placeholder="List name">
+      <input type="file" id="listFile" accept=".csv,.xlsx">
+      <div id="error" class="error" style="display: none;"></div>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="createList()">Create</button>
+    </div>
+  </div>
+
+  <script>
+    function logout() { fetch('/logout', { method: 'POST' }).then(() => window.location.href = '/login'); }
+    function openCreateModal() { document.getElementById('modal').classList.add('show'); }
+    function closeModal() { document.getElementById('modal').classList.remove('show'); }
+
+    async function loadLists() {
+      const content = document.getElementById('content');
+      try {
+        const res = await fetch('/api/lists');
+        const data = await res.json();
+        if (!data.lists || data.lists.length === 0) {
+          content.innerHTML = '<p>No lists yet. Create one to start.</p>';
+          return;
+        }
+        let html = '<table><thead><tr><th>Name</th><th>Subscribers</th><th>Created</th></tr></thead><tbody>';
+        data.lists.forEach(list => {
+          const date = new Date(list.created_at).toLocaleDateString();
+          html += `<tr><td>${list.name}</td><td>${list.subscriber_count}</td><td>${date}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        content.innerHTML = html;
+      } catch (err) {
+        content.innerHTML = `<div class="error">Error: ${err.message}</div>`;
+      }
+    }
+
+    async function createList() {
+      const name = document.getElementById('listName').value;
+      const file = document.getElementById('listFile').files[0];
+      const errorDiv = document.getElementById('error');
+
+      if (!name || !file) {
+        errorDiv.textContent = 'Name and file required';
+        errorDiv.style.display = 'block';
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('file', file);
+
+      try {
+        const res = await fetch('/api/lists', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.success) {
+          closeModal();
+          loadLists();
+        } else {
+          errorDiv.textContent = data.error;
+          errorDiv.style.display = 'block';
+        }
+      } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.style.display = 'block';
+      }
+    }
+
+    loadLists();
+  </script>
+</body>
+</html>
