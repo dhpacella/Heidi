@@ -87,7 +87,7 @@ app.post('/api/setup', async (req, res) => {
 
     const fs = require('fs');
     const path = require('path');
-    const bcrypt = require('bcrypt');
+    const bcrypt = require('bcryptjs');
 
     const client = await pool.connect();
     try {
