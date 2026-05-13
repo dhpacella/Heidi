@@ -27,7 +27,7 @@ router.post('/create-user', requireApiAuth, requireRole('admin'), async (req, re
       return res.status(400).json({ error: 'Password must be at least 8 characters' });
     }
 
-    const userRole = role && ['admin', 'staff'].includes(role) ? role : 'staff';
+    const userRole = role && ['admin', 'campaign_manager', 'staff'].includes(role) ? role : 'staff';
 
     const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
     if (existing.rows.length > 0) {

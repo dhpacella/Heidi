@@ -272,10 +272,12 @@
             </div>
             <div class="form-group">
               <label for="role">User Role *</label>
-              <select id="role" name="role">
-                <option value="staff">Staff Member</option>
-                <option value="admin">Administrator</option>
+              <select id="role" name="role" onchange="updateRoleDescription()">
+                <option value="staff">Staff Member - View voters, log activities</option>
+                <option value="campaign_manager">Campaign Manager - Create campaigns, assign staff, walk lists</option>
+                <option value="admin">Administrator - Full system access, user management</option>
               </select>
+              <div id="roleDescription" style="font-size: 12px; color: #666; margin-top: 8px; padding: 10px; background: #f5f5f5; border-radius: 4px; display: none;"></div>
             </div>
           </div>
 
@@ -466,6 +468,19 @@
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    }
+
+    function updateRoleDescription() {
+      const role = document.getElementById('role').value;
+      const descDiv = document.getElementById('roleDescription');
+      const descriptions = {
+        staff: 'View and search voters, log activities, referral tracking. No access to campaign or user management.',
+        campaign_manager: 'Create and manage campaigns, assign staff members, generate walk lists by precinct, export voter data. Access limited to assigned campaigns.',
+        admin: 'Full system access including user management, system settings, all campaigns, and all administrative functions.'
+      };
+
+      descDiv.textContent = descriptions[role] || '';
+      descDiv.style.display = descriptions[role] ? 'block' : 'none';
     }
 
     // Initialize
