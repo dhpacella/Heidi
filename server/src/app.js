@@ -62,6 +62,16 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// DEBUG: Check database and users for testing
+app.get('/api/debug/check-users', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT id, email, name, role FROM users');
+    res.json({ success: true, users: rows, count: rows.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // One-time setup endpoint - initializes database and creates admin user
 app.post('/api/setup', async (req, res) => {
   try {
