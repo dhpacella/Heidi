@@ -557,6 +557,114 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 500px;
+      width: 90%;
+    }
+
+    .modal-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--gold);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+
+    .modal-content {
+      margin-bottom: 24px;
+    }
+
+    .modal-stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    .modal-stat:last-child {
+      border-bottom: none;
+    }
+
+    .modal-stat-label {
+      color: var(--text-muted);
+    }
+
+    .modal-stat-value {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .modal-preview {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--text);
+      max-height: 100px;
+      overflow-y: auto;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .modal-btn {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Barlow', sans-serif;
+      transition: all 0.15s;
+    }
+
+    .modal-btn-cancel {
+      background: var(--surface-2);
+      color: var(--text);
+    }
+
+    .modal-btn-cancel:hover {
+      background: var(--navy-light);
+    }
+
+    .modal-btn-confirm {
+      background: var(--gold);
+      color: var(--navy);
+      border-color: var(--gold);
+      font-weight: 700;
+    }
+
+    .modal-btn-confirm:hover {
+      background: var(--gold-light);
+      border-color: var(--gold-light);
+    }
+
     /* ── Mobile ── */
     @media (max-width: 600px) {
       body { padding: 10px; }
@@ -564,6 +672,7 @@
       .card { padding: 16px; }
       .header-title h1 { font-size: 20px; }
       .stat-num { font-size: 24px; }
+      .modal { max-width: 95%; }
     }
   </style>
 </head>
@@ -706,6 +815,32 @@
       <button class="btn-secondary" onclick="resetForm()">Send Another Message</button>
     </div>
 
+  </div>
+
+  <!-- Send Confirmation Modal -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal">
+      <div class="modal-title">Confirm Send</div>
+      <div class="modal-content">
+        <div class="modal-stat">
+          <span class="modal-stat-label">Recipients:</span>
+          <span class="modal-stat-value" id="confirmCount">0</span>
+        </div>
+        <div class="modal-stat">
+          <span class="modal-stat-label">Message parts:</span>
+          <span class="modal-stat-value" id="confirmParts">1</span>
+        </div>
+        <div class="modal-stat">
+          <span class="modal-stat-label">Estimated cost:</span>
+          <span class="modal-stat-value" id="confirmCost">$0.00</span>
+        </div>
+        <div class="modal-preview" id="confirmPreview"></div>
+      </div>
+      <div class="modal-buttons">
+        <button class="modal-btn modal-btn-cancel" onclick="closeConfirmModal()">Cancel</button>
+        <button class="modal-btn modal-btn-confirm" onclick="confirmSend()">Send Now</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -898,12 +1033,35 @@
     }
 
     // ── Send ─────────────────────────────────────────────────────────────────
-    async function sendSMS() {
+    function sendSMS() {
       const message = document.getElementById('msgText').value.trim();
       const withPhone = targets.filter(t => t.phone);
       const phones = withPhone.map(t => t.phone);
 
       if (!message || !phones.length) return;
+
+      // Show confirmation modal
+      const parts = message.length <= 160 ? 1 : Math.ceil(message.length / 153);
+      const cost = (phones.length * parts * 0.007).toFixed(2);
+
+      document.getElementById('confirmCount').textContent = phones.length.toLocaleString();
+      document.getElementById('confirmParts').textContent = parts;
+      document.getElementById('confirmCost').textContent = '$' + cost;
+      document.getElementById('confirmPreview').textContent = '"' + message.substring(0, 100) + (message.length > 100 ? '..."' : '"');
+
+      document.getElementById('confirmModal').classList.add('active');
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirmModal').classList.remove('active');
+    }
+
+    async function confirmSend() {
+      const message = document.getElementById('msgText').value.trim();
+      const withPhone = targets.filter(t => t.phone);
+      const phones = withPhone.map(t => t.phone);
+
+      closeConfirmModal();
 
       // Show sending state
       document.getElementById('composeCard').style.display = 'none';
