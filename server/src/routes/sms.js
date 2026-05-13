@@ -4,6 +4,32 @@ const { requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Health check — test database connection and sms_blasts table
+router.get('/health', async (req, res) => {
+  try {
+    const result = await pool.query("SELECT 1 as ok");
+    const tableCheck = await pool.query(
+      `SELECT EXISTS (
+        SELECT FROM information_schema.tables
+        WHERE table_name = 'sms_blasts'
+      )`
+    );
+    const tableExists = tableCheck.rows[0].exists;
+
+    if (!tableExists) {
+      return res.status(503).json({
+        ok: false,
+        error: 'sms_blasts table does not exist in database',
+        suggestion: 'Run database migration'
+      });
+    }
+
+    res.json({ ok: true, message: 'Database and sms_blasts table OK' });
+  } catch (err) {
+    res.status(503).json({ ok: false, error: err.message });
+  }
+});
+
 // POST /api/sms/send
 // Stub — AWS SNS integration to be added later
 // Body: { message: string, phones: string[], targets?: [{name, phone}] }
