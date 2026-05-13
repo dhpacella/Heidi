@@ -107,7 +107,22 @@ CREATE TABLE IF NOT EXISTS voter_referrals (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- SMS Blasts (outbound SMS campaigns)
+CREATE TABLE IF NOT EXISTS sms_blasts (
+  id SERIAL PRIMARY KEY,
+  sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  message TEXT NOT NULL,
+  recipient_count INTEGER NOT NULL,
+  parts_per_message INTEGER DEFAULT 1,
+  total_cost DECIMAL(10, 4),
+  status VARCHAR(50) DEFAULT 'sent',
+  results JSONB,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes
+CREATE INDEX IF NOT EXISTS idx_sms_blasts_sender ON sms_blasts(sender_id);
+CREATE INDEX IF NOT EXISTS idx_sms_blasts_created ON sms_blasts(created_at);
 CREATE INDEX IF NOT EXISTS idx_voters_name ON voters(last_name, first_name);
 CREATE INDEX IF NOT EXISTS idx_referrals_status ON voter_referrals(status);
 CREATE INDEX IF NOT EXISTS idx_referrals_created ON voter_referrals(created_at);
