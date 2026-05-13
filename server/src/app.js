@@ -62,8 +62,8 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// TEMPORARY: Reset admin password (remove after use)
-app.post('/api/admin/reset-password', async (req, res) => {
+// TEMPORARY: Reset user password (remove after use)
+app.post('/reset-password', async (req, res) => {
   try {
     const bcrypt = require('bcryptjs');
     const { email, newPassword } = req.body || {};
