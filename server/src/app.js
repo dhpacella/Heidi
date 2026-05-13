@@ -1,4 +1,5 @@
 require('dotenv').config();
+console.log('🚀 Starting app, DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
 
 const express = require('express');
 const cors = require('cors');
