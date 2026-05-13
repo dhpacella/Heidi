@@ -415,6 +415,8 @@
       <div id="fileInfo" style="display: none;">
         <div class="file-info">
           <strong>✅ File uploaded:</strong> <span id="fileName"></span> — <span id="rowCount"></span> rows
+          <button class="btn" id="dedupeBtn" onclick="removeDuplicates()" style="margin-left: 12px; padding: 6px 14px; font-size: 12px;">🧹 Remove Duplicates</button>
+          <span id="dedupeInfo" style="margin-left: 12px; color: var(--gold); display: none;"></span>
         </div>
         <table class="preview-table">
           <thead>
@@ -529,6 +531,8 @@
     }
 
     let uploadedData = null;
+    let fullData = null;
+    let deduped = false;
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('fileInput');
 
@@ -565,7 +569,11 @@
               data.push(obj);
             }
           }
+          fullData = data;
           uploadedData = data.slice(0, 5);
+          deduped = false;
+          document.getElementById('dedupeInfo').style.display = 'none';
+          document.getElementById('dedupeBtn').style.display = 'inline-block';
           showFileInfo(file.name, data.length);
           updateRecipientCount(data.length);
           updateSendButton();
@@ -593,6 +601,51 @@
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    function removeDuplicates() {
+      if (!fullData || fullData.length === 0) return;
+
+      const emailColumn = findEmailColumn(Object.keys(fullData[0]));
+      if (!emailColumn) {
+        alert('Could not find email column');
+        return;
+      }
+
+      const seenEmails = new Set();
+      const deduped = [];
+      let dupCount = 0;
+
+      fullData.forEach(row => {
+        const email = (row[emailColumn] || '').toLowerCase().trim();
+        if (email && !seenEmails.has(email)) {
+          seenEmails.add(email);
+          deduped.push(row);
+        } else if (email) {
+          dupCount++;
+        }
+      });
+
+      fullData = deduped;
+      uploadedData = deduped.slice(0, 5);
+      deduped = true;
+
+      const info = document.getElementById('dedupeInfo');
+      info.textContent = `✅ Removed ${dupCount} duplicate${dupCount !== 1 ? 's' : ''}`;
+      info.style.display = 'inline';
+      document.getElementById('dedupeBtn').style.display = 'none';
+
+      showFileInfo(document.getElementById('fileName').textContent, fullData.length);
+      updateRecipientCount(fullData.length);
+      updateSendButton();
+    }
+
+    function findEmailColumn(headers) {
+      for (let h of headers) {
+        const lc = h.toLowerCase();
+        if (lc === 'email' || lc === 'e-mail' || lc === 'email_address') return h;
+      }
+      return null;
     }
 
     function updateRecipientCount(count) {
