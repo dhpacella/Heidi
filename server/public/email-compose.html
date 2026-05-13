@@ -50,10 +50,11 @@
     }
 
     header {
-      background: linear-gradient(90deg, var(--gold), rgba(245, 166, 35, 0));
-      padding: 24px 32px;
-      border-radius: 12px;
-      margin-bottom: 30px;
+      background: var(--navy-mid);
+      border-bottom: 3px solid var(--gold);
+      padding: 20px 32px;
+      border-radius: 0;
+      margin: -20px -20px 30px -20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -209,7 +210,20 @@
       background: rgba(245, 166, 35, 0.05);
     }
 
-    textarea, input[type="text"] {
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 13px;
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 16px;
+      height: 40px;
+    }
+
+    textarea {
       width: 100%;
       padding: 12px;
       font-family: 'Barlow', sans-serif;
