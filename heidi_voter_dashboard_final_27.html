@@ -4931,7 +4931,19 @@ function openEmailCompose() {
   const summary = buildFilterSummary();
   sessionStorage.setItem('email_filter_summary', summary);
   sessionStorage.setItem('email_filtered_count', filtered.length);
-  window.location.href = '/email-compose';
+  document.getElementById('emailModal').style.display = 'flex';
+}
+
+function closeEmailModal() {
+  document.getElementById('emailModal').style.display = 'none';
+}
+
+function emailChooseUpload() {
+  window.location.href = '/email-compose?mode=upload';
+}
+
+function emailChooseList() {
+  window.location.href = '/email-compose?mode=list';
 }
 
 // Check if user is admin and show admin button
@@ -4983,4 +4995,16 @@ function initTheme() {
 
 initTheme();
 </script>
+
+<!-- Email Modal -->
+<div id="emailModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;z-index:10000;">
+  <div style="background:#0B1929;border-radius:12px;padding:40px;max-width:500px;width:90%;border:1px solid rgba(245,166,35,0.2);">
+    <h2 style="font-size:24px;color:#F5A623;margin-bottom:20px;font-weight:700;">📧 Send Email</h2>
+    <p style="color:#8BA3BE;margin-bottom:20px;">Choose how to select recipients:</p>
+    <button onclick="emailChooseUpload()" style="width:100%;padding:12px;background:rgba(30,100,200,0.2);color:#1E64C8;border:1px solid #1E64C8;border-radius:6px;cursor:pointer;font-weight:600;margin-bottom:12px;">📁 Upload CSV/Excel</button>
+    <button onclick="emailChooseList()" style="width:100%;padding:12px;background:rgba(245,166,35,0.1);color:#F5A623;border:1px solid #F5A623;border-radius:6px;cursor:pointer;font-weight:600;margin-bottom:20px;">📊 Choose from List</button>
+    <button onclick="closeEmailModal()" style="width:100%;padding:10px;background:transparent;color:#F5A623;border:1px solid #F5A623;border-radius:6px;cursor:pointer;">Cancel</button>
+  </div>
+</div>
+
 </body></html>
