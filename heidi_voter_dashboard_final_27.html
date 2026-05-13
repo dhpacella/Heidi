@@ -766,6 +766,7 @@ tr:hover td{background:var(--surface);}
     <button class="btn" onclick="sw('map')">View on map ↗</button>
     <button class="btn btn-p" onclick="sw('export')">Export this list ↗</button>
     <button class="btn" id="sms-btn" onclick="openSmsCompose()" style="display:none;background:rgba(29,184,122,.15);color:#1DB87A">💬 Send SMS ↗</button>
+    <button class="btn" id="email-btn" onclick="openEmailCompose()" style="display:none;background:rgba(30,100,200,.15);color:#1E64C8">📧 Send Email ↗</button>
   </div>
 </div>
 <div class="table-wrap">
@@ -4926,6 +4927,20 @@ function openSmsCompose() {
   window.location.href = '/sms-compose';
 }
 
+function openEmailCompose() {
+  const withEmail = filtered.filter(i => VE[i]);
+  if (withEmail.length === 0) {
+    alert('No voters with email addresses match the current filters.');
+    return;
+  }
+  if (withEmail.length > 500 && !confirm(`You are about to email ${withEmail.length.toLocaleString()} voters. Continue?`)) return;
+  const targets = withEmail.map(i => ({ name: VN[i], email: VE[i] }));
+  const summary = buildFilterSummary();
+  sessionStorage.setItem('email_targets', JSON.stringify(targets));
+  sessionStorage.setItem('email_filter_summary', summary);
+  window.location.href = '/email-compose';
+}
+
 // Check if user is admin and show admin button
 async function checkAdminAccess() {
   try {
@@ -4938,6 +4953,7 @@ async function checkAdminAccess() {
     }
     if (role === 'admin' || role === 'campaign_manager') {
       document.getElementById('sms-btn').style.display = 'inline-block';
+      document.getElementById('email-btn').style.display = 'inline-block';
     }
   } catch (err) {
     console.error('Role check error:', err);
