@@ -27,6 +27,18 @@
   --radius:10px;
 }
 
+/* Light theme */
+body.light-theme {
+  --navy:#F5F5F5;
+  --navy-mid:#FFFFFF;
+  --navy-light:#F0F0F0;
+  --text:#1A1A1A;
+  --text-muted:#666666;
+  --border:#DDDDDD;
+  --surface:#FFFFFF;
+  --surface-2:#F9F9F9;
+}
+
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{
@@ -586,8 +598,11 @@ tr:hover td{background:var(--surface);}
     <div class="banner-right">
       <div class="days" id="days">—</div>
       <div class="dayslbl">days to election</div>
-      <div id="adminButtonContainer" style="display:none;margin-top:12px">
-        <a href="/admin/users" style="font-size:11px;padding:6px 12px;background:rgba(245,166,35,.2);border:1px solid rgba(245,166,35,.5);border-radius:6px;color:#F5A623;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s;display:inline-block;text-decoration:none" onmouseover="this.style.background='rgba(245,166,35,.3)';this.style.borderColor='rgba(245,166,35,.7)'" onmouseout="this.style.background='rgba(245,166,35,.2)';this.style.borderColor='rgba(245,166,35,.5)'">⚙ Admin</a>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button onclick="toggleTheme()" style="font-size:11px;padding:6px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#8BA3BE;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.15)';this.style.color='#EEF2F7'" onmouseout="this.style.background='rgba(255,255,255,.1)';this.style.color='#8BA3BE'" id="themeToggleBtn">🌙 Dark</button>
+        <div id="adminButtonContainer" style="display:none">
+          <a href="/admin/users" style="font-size:11px;padding:6px 12px;background:rgba(245,166,35,.2);border:1px solid rgba(245,166,35,.5);border-radius:6px;color:#F5A623;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s;display:inline-block;text-decoration:none" onmouseover="this.style.background='rgba(245,166,35,.3)';this.style.borderColor='rgba(245,166,35,.7)'" onmouseout="this.style.background='rgba(245,166,35,.2)';this.style.borderColor='rgba(245,166,35,.5)'">⚙ Admin</a>
+        </div>
       </div>
       <form method="POST" action="/logout" style="margin-top:12px">
         <button type="submit" style="font-size:11px;padding:6px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#8BA3BE;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.15)';this.style.color='#EEF2F7'" onmouseout="this.style.background='rgba(255,255,255,.1)';this.style.color='#8BA3BE'">Sign out</button>
@@ -4877,5 +4892,32 @@ async function checkAdminAccess() {
 
 // Run admin check on page load
 checkAdminAccess();
+
+// Theme toggle
+function toggleTheme() {
+  const isDark = document.body.classList.contains('light-theme');
+  if (isDark) {
+    document.body.classList.remove('light-theme');
+    localStorage.setItem('theme', 'dark');
+    document.getElementById('themeToggleBtn').textContent = '🌙 Dark';
+  } else {
+    document.body.classList.add('light-theme');
+    localStorage.setItem('theme', 'light');
+    document.getElementById('themeToggleBtn').textContent = '☀️ Light';
+  }
+}
+
+// Load saved theme on page load
+function initTheme() {
+  const savedTheme = localStorage.getItem('theme') || 'dark';
+  if (savedTheme === 'light') {
+    document.body.classList.add('light-theme');
+    document.getElementById('themeToggleBtn').textContent = '☀️ Light';
+  } else {
+    document.getElementById('themeToggleBtn').textContent = '🌙 Dark';
+  }
+}
+
+initTheme();
 </script>
 </body></html>
