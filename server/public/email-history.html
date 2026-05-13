@@ -405,6 +405,8 @@
                 <th>Date Sent</th>
                 <th>Subject</th>
                 <th>Recipients</th>
+                <th>Opens</th>
+                <th>Clicks</th>
                 <th>Cost</th>
                 <th>Sender</th>
               </tr>
@@ -422,12 +424,16 @@
           });
           const preview = (blast.subject || '').substring(0, 60) + (blast.subject.length > 60 ? '...' : '');
           const cost = `$${parseFloat(blast.total_cost || 0).toFixed(4)}`;
+          const opens = `${blast.opened_count || 0} / ${blast.recipient_count}`;
+          const clicks = `${blast.clicked_count || 0} / ${blast.recipient_count}`;
 
           html += `
             <tr onclick="showRecipients(${blast.id})" style="cursor: pointer;">
               <td>${date}</td>
               <td class="subject-preview" title="${blast.subject}">${preview}</td>
               <td>${blast.recipient_count.toLocaleString()}</td>
+              <td>${opens}</td>
+              <td>${clicks}</td>
               <td class="cost">${cost}</td>
               <td>${blast.sender_name || 'Unknown'}</td>
             </tr>

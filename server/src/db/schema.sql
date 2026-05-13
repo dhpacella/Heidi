@@ -200,3 +200,14 @@ CREATE INDEX IF NOT EXISTS idx_email_subscribers_list ON email_subscribers(list_
 CREATE INDEX IF NOT EXISTS idx_email_subscribers_email ON email_subscribers(email);
 CREATE INDEX IF NOT EXISTS idx_email_subscribers_status ON email_subscribers(status);
 CREATE INDEX IF NOT EXISTS idx_email_segments_list ON email_segments(list_id);
+
+-- Email Tracking (open/click/bounce)
+ALTER TABLE email_recipients
+  ADD COLUMN IF NOT EXISTS ses_message_id VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS opened_at TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS clicked_at TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS bounced_at TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS bounce_type VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS complained_at TIMESTAMP;
+
+CREATE INDEX IF NOT EXISTS idx_email_recipients_ses_message_id ON email_recipients(ses_message_id);

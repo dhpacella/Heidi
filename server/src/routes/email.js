@@ -12,6 +12,19 @@ const BATCH_SIZE = 10;
 const BATCH_DELAY_MS = 100;
 const SES_COST_PER_EMAIL = 0.0001;
 
+// Tracking helpers
+function injectOpenPixel(html, recipientId, baseUrl) {
+  const pixel = `<img src="${baseUrl}/api/email/track/open/${recipientId}" width="1" height="1" style="display:none" alt="" />`;
+  return html.includes('</body>') ? html.replace('</body>', pixel + '</body>') : html + pixel;
+}
+
+function injectClickTracking(html, recipientId, baseUrl) {
+  return html.replace(/href="(https?:\/\/[^"]+)"/gi, (_, url) => {
+    const encoded = Buffer.from(url).toString('base64url');
+    return `href="${baseUrl}/api/email/track/click/${recipientId}?url=${encoded}"`;
+  });
+}
+
 // Health check — test database connection and email_blasts table
 router.get('/health', async (req, res) => {
   try {
@@ -108,8 +121,7 @@ function findPersonalizationColumns(headers) {
   return result;
 }
 
-// POST /api/email/send
-// Send HTML emails via AWS SES with file upload
+// POST /api/email/send - Send HTML emails via AWS SES with file upload
 router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('file'), async (req, res) => {
   const { subject, htmlBody, textBody } = req.body || {};
 
@@ -124,6 +136,7 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
   }
 
   const fromAddress = process.env.SES_FROM_EMAIL || 'noreply@example.com';
+  const baseUrl = process.env.BASE_URL || `https://${req.hostname}`;
 
   console.log(`📧 Processing email send request: ${req.file.originalname}`);
 
@@ -189,100 +202,116 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
       return res.status(400).json({ error: 'Cannot send to more than 500 recipients per batch' });
     }
 
-    // Send via SES in batches
-    let results = [];
+    // Step 1: Create blast record
+    const blastResult = await pool.query(
+      `INSERT INTO email_blasts (sender_id, subject, html_body, from_address, recipient_count, status)
+       VALUES ($1, $2, $3, $4, $5, 'sending')
+       RETURNING id`,
+      [req.user.id, subject, htmlBody, fromAddress, validRecords.length]
+    );
+    const blastId = blastResult.rows[0].id;
+    console.log(`✅ Created blast record (ID: ${blastId})`);
+
+    // Step 2: Insert all recipients and get their IDs back
+    const recipientValues = validRecords.map((_, i) =>
+      `($1, $${i*4+2}, $${i*4+3}, $${i*4+4}, 'pending')`
+    ).join(',');
+
+    const params = [blastId];
+    validRecords.forEach(record => {
+      params.push(record.email, record.firstName || null, record.lastName || null);
+    });
+
+    const recipientsResult = await pool.query(
+      `INSERT INTO email_recipients (blast_id, email, first_name, last_name, status)
+       VALUES ${recipientValues}
+       RETURNING id, email`,
+      params
+    );
+
+    // Build map of email → recipientId for tracking
+    const emailToRecipientId = {};
+    recipientsResult.rows.forEach(row => {
+      emailToRecipientId[row.email] = row.id;
+    });
+    console.log(`✅ Inserted ${recipientsResult.rows.length} recipient records`);
+
+    // Step 3: Send emails in batches with tracking injected
+    let sendResults = [];
     console.log(`📤 Sending ${validRecords.length} emails in batches of ${BATCH_SIZE}...`);
 
     for (let i = 0; i < validRecords.length; i += BATCH_SIZE) {
       const batch = validRecords.slice(i, i + BATCH_SIZE);
 
-      // Personalize each email in batch
+      // Personalize and inject tracking for each email
       const personalizedBatch = batch.map(record => {
+        const recipientId = emailToRecipientId[record.email];
         let personalized = htmlBody
           .replace(/{first_name}/g, record.firstName || '')
           .replace(/{last_name}/g, record.lastName || '');
+
+        // Inject open pixel
+        personalized = injectOpenPixel(personalized, recipientId, baseUrl);
+        // Rewrite click links
+        personalized = injectClickTracking(personalized, recipientId, baseUrl);
 
         let textPersonalized = textBody || ''
           .replace(/{first_name}/g, record.firstName || '')
           .replace(/{last_name}/g, record.lastName || '');
 
-        return { email: record.email, htmlBody: personalized, textBody: textPersonalized };
+        return { email: record.email, recipientId, htmlBody: personalized, textBody: textPersonalized };
       });
 
       // Send batch in parallel
       const batchResults = await Promise.all(
         personalizedBatch.map(item => sendEmail(item.email, subject, item.htmlBody, item.textBody, fromAddress))
       );
-      results.push(...batchResults);
 
-      // Delay between batches (except for the last one)
+      // Update recipients with ses_message_id and status
+      for (let j = 0; j < batchResults.length; j++) {
+        const result = batchResults[j];
+        const item = personalizedBatch[j];
+        if (result.success) {
+          await pool.query(
+            `UPDATE email_recipients SET ses_message_id = $1, status = 'sent' WHERE id = $2`,
+            [result.messageId, item.recipientId]
+          );
+        } else {
+          await pool.query(
+            `UPDATE email_recipients SET status = 'failed' WHERE id = $1`,
+            [item.recipientId]
+          );
+        }
+      }
+
+      sendResults.push(...batchResults);
+
+      // Delay between batches
       if (i + BATCH_SIZE < validRecords.length) {
         await new Promise(r => setTimeout(r, BATCH_DELAY_MS));
       }
     }
 
-    // Calculate send stats
-    const sentCount = results.filter(r => r.success).length;
-    const failedCount = results.filter(r => !r.success).length;
+    // Step 4: Calculate stats and update blast
+    const sentCount = sendResults.filter(r => r.success).length;
+    const failedCount = sendResults.filter(r => !r.success).length;
     const totalCost = (sentCount * SES_COST_PER_EMAIL).toFixed(6);
+    const finalStatus = sentCount === validRecords.length ? 'sent' : (sentCount > 0 ? 'partial' : 'failed');
 
-    console.log(`\n📊 Send complete: ${sentCount} sent, ${failedCount} failed, ${invalidCount} invalid`);
-
-    // Determine blast status
-    let status = 'sent';
-    if (sentCount > 0 && failedCount > 0) status = 'partial';
-    if (sentCount === 0) status = 'failed';
-
-    // Store detailed results in JSONB
     const resultsJson = {
       total: validRecords.length,
       sent: sentCount,
       failed: failedCount,
       invalid: invalidCount,
-      details: results
+      details: sendResults
     };
 
-    // Log blast to database
-    try {
-      const insertResult = await pool.query(
-        `INSERT INTO email_blasts (sender_id, subject, html_body, from_address, recipient_count, total_cost, status, results)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING id`,
-        [
-          req.user.id,
-          subject,
-          htmlBody,
-          fromAddress,
-          sentCount,
-          totalCost,
-          status,
-          JSON.stringify(resultsJson)
-        ]
-      );
-      const blastId = insertResult.rows[0].id;
-      console.log(`✅ Blast logged to database (ID: ${blastId})`);
+    await pool.query(
+      `UPDATE email_blasts SET recipient_count = $1, total_cost = $2, status = $3, results = $4 WHERE id = $5`,
+      [sentCount, totalCost, finalStatus, JSON.stringify(resultsJson), blastId]
+    );
 
-      // Save individual recipients
-      if (validRecords.length > 0) {
-        const recipientValues = validRecords.map((_, i) =>
-          `($1, $${i*4+2}, $${i*4+3}, $${i*4+4}, $${i*4+5})`
-        ).join(',');
-
-        const params = [blastId];
-        validRecords.forEach((record, idx) => {
-          params.push(record.email, record.firstName || null, record.lastName || null, results[idx]?.success ? 'sent' : 'failed');
-        });
-
-        await pool.query(
-          `INSERT INTO email_recipients (blast_id, email, first_name, last_name, status) VALUES ${recipientValues}`,
-          params
-        );
-        console.log(`✅ Saved ${validRecords.length} recipients`);
-      }
-    } catch (err) {
-      console.error('❌ Email blast logging error:', err.message);
-      // Don't fail the response if logging fails — send was successful
-    }
+    console.log(`\n📊 Send complete: ${sentCount} sent, ${failedCount} failed, ${invalidCount} invalid`);
 
     res.json({
       success: true,
@@ -297,7 +326,37 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
   }
 });
 
-// GET /api/email/blasts - list all email blasts with pagination
+// GET /api/email/track/open/:recipientId - record open event
+router.get('/track/open/:recipientId', async (req, res) => {
+  const gif = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+  res.set({ 'Content-Type': 'image/gif', 'Cache-Control': 'no-cache, no-store' }).send(gif);
+
+  // Update asynchronously
+  pool.query(
+    `UPDATE email_recipients SET opened_at = NOW(),
+     status = CASE WHEN status = 'sent' THEN 'opened' ELSE status END
+     WHERE id = $1 AND opened_at IS NULL`,
+    [req.params.recipientId]
+  ).catch(err => console.error('Error recording open:', err));
+});
+
+// GET /api/email/track/click/:recipientId - record click and redirect
+router.get('/track/click/:recipientId', async (req, res) => {
+  const url = Buffer.from(req.query.url || '', 'base64url').toString();
+  if (!url.startsWith('http')) {
+    return res.status(400).send('Invalid URL');
+  }
+
+  res.redirect(url);
+
+  // Update asynchronously
+  pool.query(
+    'UPDATE email_recipients SET clicked_at = NOW() WHERE id = $1 AND clicked_at IS NULL',
+    [req.params.recipientId]
+  ).catch(err => console.error('Error recording click:', err));
+});
+
+// GET /api/email/blasts - list all email blasts with pagination and tracking counts
 router.get('/blasts', requireRole('admin', 'campaign_manager'), async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -307,9 +366,13 @@ router.get('/blasts', requireRole('admin', 'campaign_manager'), async (req, res)
     console.log(`📊 Fetching email blasts: page ${page}, limit ${limit}, offset ${offset}`);
 
     const { rows: blasts } = await pool.query(
-      `SELECT b.*, u.name as sender_name
+      `SELECT b.*, u.name as sender_name,
+              COUNT(CASE WHEN er.opened_at IS NOT NULL THEN 1 END) as opened_count,
+              COUNT(CASE WHEN er.clicked_at IS NOT NULL THEN 1 END) as clicked_count
        FROM email_blasts b
        LEFT JOIN users u ON b.sender_id = u.id
+       LEFT JOIN email_recipients er ON er.blast_id = b.id
+       GROUP BY b.id, u.id
        ORDER BY b.created_at DESC
        LIMIT $1 OFFSET $2`,
       [limit, offset]
