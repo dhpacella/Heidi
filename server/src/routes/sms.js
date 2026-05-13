@@ -20,19 +20,9 @@ router.post('/send', requireRole('admin', 'campaign_manager'), async (req, res) 
     return res.status(400).json({ error: 'Cannot send more than 500 messages per batch' });
   }
 
-  // Fetch opted-out numbers
-  let optedOutSet = new Set();
-  try {
-    const { rows: optouts } = await pool.query('SELECT phone FROM sms_optouts');
-    optedOutSet = new Set(optouts.map(o => o.phone));
-  } catch (err) {
-    console.error('Error fetching optouts:', err);
-    // Continue without optouts if query fails
-  }
-
-  // Filter out opted-out numbers
-  const filteredPhones = phones.filter(phone => !optedOutSet.has(phone));
-  const optedOutCount = phones.length - filteredPhones.length;
+  // Opted-out filtering removed (sms_optouts table not yet in schema)
+  const filteredPhones = phones;
+  const optedOutCount = 0;
 
   if (filteredPhones.length === 0) {
     return res.status(400).json({ error: 'All recipients have opted out' });
@@ -103,7 +93,7 @@ router.post('/send', requireRole('admin', 'campaign_manager'), async (req, res) 
 });
 
 // GET /api/sms/blasts - list all SMS blasts with pagination
-router.get('/blasts', async (req, res) => {
+router.get('/blasts', requireRole('admin', 'campaign_manager'), async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = 20;
@@ -135,7 +125,7 @@ router.get('/blasts', async (req, res) => {
 });
 
 // GET /api/sms/blasts/:id - get details of a specific blast
-router.get('/blasts/:id', async (req, res) => {
+router.get('/blasts/:id', requireRole('admin', 'campaign_manager'), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT b.*, u.name as sender_name
@@ -153,41 +143,6 @@ router.get('/blasts/:id', async (req, res) => {
   } catch (err) {
     console.error('Fetch blast error:', err);
     res.status(500).json({ error: 'Failed to fetch blast details' });
-  }
-});
-
-// POST /api/sms/optout - add a phone number to optout list
-router.post('/optout', async (req, res) => {
-  const { phone, reason } = req.body || {};
-
-  if (!phone || typeof phone !== 'string' || !phone.trim()) {
-    return res.status(400).json({ error: 'phone is required' });
-  }
-
-  try {
-    await pool.query(
-      'INSERT INTO sms_optouts (phone, reason) VALUES ($1, $2) ON CONFLICT (phone) DO NOTHING',
-      [phone.trim(), reason || null]
-    );
-
-    res.json({ success: true, message: `Phone ${phone} opted out` });
-  } catch (err) {
-    console.error('Optout error:', err);
-    res.status(500).json({ error: 'Failed to record optout' });
-  }
-});
-
-// GET /api/sms/optouts - list all opted-out numbers (admin only)
-router.get('/optouts', requireRole('admin'), async (req, res) => {
-  try {
-    const { rows } = await pool.query(
-      'SELECT phone, opted_out_at, reason FROM sms_optouts ORDER BY opted_out_at DESC'
-    );
-
-    res.json({ optouts: rows });
-  } catch (err) {
-    console.error('Fetch optouts error:', err);
-    res.status(500).json({ error: 'Failed to fetch optouts' });
   }
 });
 
