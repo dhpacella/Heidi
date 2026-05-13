@@ -99,6 +99,8 @@ router.get('/blasts', requireRole('admin', 'campaign_manager'), async (req, res)
     const limit = 20;
     const offset = (page - 1) * limit;
 
+    console.log(`📊 Fetching SMS blasts: page ${page}, limit ${limit}, offset ${offset}`);
+
     const { rows: blasts } = await pool.query(
       `SELECT b.*, u.name as sender_name
        FROM sms_blasts b
@@ -108,8 +110,12 @@ router.get('/blasts', requireRole('admin', 'campaign_manager'), async (req, res)
       [limit, offset]
     );
 
+    console.log(`✅ Retrieved ${blasts.length} blasts`);
+
     const { rows: countResult } = await pool.query('SELECT COUNT(*) as total FROM sms_blasts');
     const total = parseInt(countResult[0].total);
+
+    console.log(`📈 Total blasts in database: ${total}`);
 
     res.json({
       blasts,
@@ -119,8 +125,9 @@ router.get('/blasts', requireRole('admin', 'campaign_manager'), async (req, res)
       pages: Math.ceil(total / limit)
     });
   } catch (err) {
-    console.error('Fetch blasts error:', err);
-    res.status(500).json({ error: 'Failed to fetch SMS blasts' });
+    console.error('❌ Fetch blasts error:', err.message);
+    console.error('Stack:', err.stack);
+    res.status(500).json({ error: `Database error: ${err.message}` });
   }
 });
 
