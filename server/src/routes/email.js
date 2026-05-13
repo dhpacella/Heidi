@@ -244,9 +244,10 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
 
     // Log blast to database
     try {
-      await pool.query(
+      const insertResult = await pool.query(
         `INSERT INTO email_blasts (sender_id, subject, html_body, from_address, recipient_count, total_cost, status, results)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING id`,
         [
           req.user.id,
           subject,
@@ -258,7 +259,26 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
           JSON.stringify(resultsJson)
         ]
       );
-      console.log(`✅ Blast logged to database`);
+      const blastId = insertResult.rows[0].id;
+      console.log(`✅ Blast logged to database (ID: ${blastId})`);
+
+      // Save individual recipients
+      if (validRecords.length > 0) {
+        const recipientValues = validRecords.map((_, i) =>
+          `($1, $${i*4+2}, $${i*4+3}, $${i*4+4}, $${i*4+5})`
+        ).join(',');
+
+        const params = [blastId];
+        validRecords.forEach((record, idx) => {
+          params.push(record.email, record.firstName || null, record.lastName || null, results[idx]?.success ? 'sent' : 'failed');
+        });
+
+        await pool.query(
+          `INSERT INTO email_recipients (blast_id, email, first_name, last_name, status) VALUES ${recipientValues}`,
+          params
+        );
+        console.log(`✅ Saved ${validRecords.length} recipients`);
+      }
     } catch (err) {
       console.error('❌ Email blast logging error:', err.message);
       // Don't fail the response if logging fails — send was successful
@@ -334,6 +354,25 @@ router.get('/blasts/:id', requireRole('admin', 'campaign_manager'), async (req, 
   } catch (err) {
     console.error('Fetch blast error:', err);
     res.status(500).json({ error: 'Failed to fetch blast details' });
+  }
+});
+
+// GET /api/email/blasts/:id/recipients - get recipients for a blast
+router.get('/blasts/:id/recipients', requireRole('admin', 'campaign_manager'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT email, first_name, last_name, status, created_at
+       FROM email_recipients
+       WHERE blast_id = $1
+       ORDER BY id
+       LIMIT 100`,
+      [req.params.id]
+    );
+
+    res.json({ recipients: rows, total: rows.length });
+  } catch (err) {
+    console.error('Fetch recipients error:', err);
+    res.status(500).json({ error: 'Failed to fetch recipients' });
   }
 });
 

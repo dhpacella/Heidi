@@ -134,11 +134,24 @@ CREATE TABLE IF NOT EXISTS email_blasts (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Email Recipients (individual recipients per blast)
+CREATE TABLE IF NOT EXISTS email_recipients (
+  id SERIAL PRIMARY KEY,
+  blast_id INTEGER NOT NULL REFERENCES email_blasts(id) ON DELETE CASCADE,
+  email VARCHAR(255) NOT NULL,
+  first_name VARCHAR(100),
+  last_name VARCHAR(100),
+  status VARCHAR(50) DEFAULT 'sent',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_sms_blasts_sender ON sms_blasts(sender_id);
 CREATE INDEX IF NOT EXISTS idx_sms_blasts_created ON sms_blasts(created_at);
 CREATE INDEX IF NOT EXISTS idx_email_blasts_sender ON email_blasts(sender_id);
 CREATE INDEX IF NOT EXISTS idx_email_blasts_created ON email_blasts(created_at);
+CREATE INDEX IF NOT EXISTS idx_email_recipients_blast ON email_recipients(blast_id);
+CREATE INDEX IF NOT EXISTS idx_email_recipients_email ON email_recipients(email);
 CREATE INDEX IF NOT EXISTS idx_voters_name ON voters(last_name, first_name);
 CREATE INDEX IF NOT EXISTS idx_referrals_status ON voter_referrals(status);
 CREATE INDEX IF NOT EXISTS idx_referrals_created ON voter_referrals(created_at);
