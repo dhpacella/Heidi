@@ -459,11 +459,20 @@
       <button class="btn" onclick="previewEmail()" style="margin-top: 12px;">👁️ Preview</button>
     </div>
 
-    <!-- Recipients Card -->
+    <!-- Recipients & Cost Card -->
     <div class="card">
-      <h2>👥 Recipients</h2>
+      <h2>👥 Recipients & Cost</h2>
       <div id="recipientInfo" class="recipients-preview">
         <p style="color: var(--text-muted);">Upload a CSV or Excel file to see recipient count</p>
+      </div>
+      <div style="background: rgba(93, 224, 176, 0.08); border: 1px solid rgba(93, 224, 176, 0.3); border-left: 3px solid #5DE0B0; border-radius: 8px; padding: 16px; margin-top: 16px;">
+        <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px;">💰 Estimated Cost</div>
+        <div style="font-family: 'Barlow Condensed', sans-serif; font-size: 32px; font-weight: 700; color: #5DE0B0; line-height: 1;">
+          $<span id="costDisplay">0.00</span>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
+          <span id="costBreakdown">0 recipients × $0.0001 per email</span>
+        </div>
       </div>
     </div>
 
@@ -588,6 +597,9 @@
 
     function updateRecipientCount(count) {
       document.getElementById('recipientInfo').innerHTML = `<p style="color: var(--text);"><strong>✅ Recipients:</strong> ${count.toLocaleString()} valid email addresses</p>`;
+      const cost = (count * 0.0001).toFixed(2);
+      document.getElementById('costDisplay').textContent = cost;
+      document.getElementById('costBreakdown').textContent = `${count.toLocaleString()} recipients × $0.0001 per email`;
     }
 
     function updateSendButton() {
