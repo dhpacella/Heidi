@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Compose</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #0a1428;
+      --orange: #ff9900;
+      --light-bg: #f5f5f5;
+      --dark-bg: #0a1428;
+      --text-light: #333;
+      --text-dark: #ffffff;
+      --border-light: #ddd;
+      --border-dark: #1a3a52;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      font-family: 'Barlow', sans-serif;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    body.light-mode {
+      background-color: var(--light-bg);
+      color: var(--text-light);
+    }
+
+    body.dark-mode {
+      background-color: var(--dark-bg);
+      color: var(--text-dark);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background-color: var(--navy);
+      color: var(--orange);
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    header h1 {
+      font-size: 28px;
+      text-align: center;
+      flex: 1;
+      min-width: 200px;
+      letter-spacing: 2px;
+    }
+
+    .header-left, .header-right {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 600;
+    }
+
+    .btn-secondary {
+      background-color: var(--navy);
+      color: var(--orange);
+      border: 2px solid var(--orange);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--orange);
+      color: var(--navy);
+    }
+
+    .btn-primary {
+      background-color: var(--orange);
+      color: var(--navy);
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background-color: #ff8800;
+    }
+
+    .btn-primary:disabled {
+      background-color: #ccc;
+      color: #999;
+      cursor: not-allowed;
+    }
+
+    .btn-dark-toggle {
+      background-color: transparent;
+      color: var(--orange);
+      border: 2px solid var(--orange);
+      cursor: pointer;
+      padding: 8px 12px;
+    }
+
+    .btn-dark-toggle:hover {
+      background-color: var(--orange);
+      color: var(--navy);
+    }
+
+    .btn-logout {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+    }
+
+    .btn-logout:hover {
+      background-color: #c82333;
+    }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    body.dark-mode .card {
+      background: #1a1a1a;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .card h2 {
+      font-size: 18px;
+      margin-bottom: 15px;
+      color: var(--navy);
+    }
+
+    body.dark-mode .card h2 {
+      color: var(--orange);
+    }
+
+    .upload-area {
+      border: 2px dashed var(--border-light);
+      border-radius: 8px;
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    body.dark-mode .upload-area {
+      border-color: var(--border-dark);
+    }
+
+    .upload-area:hover {
+      background-color: rgba(255, 153, 0, 0.1);
+      border-color: var(--orange);
+    }
+
+    .upload-area.drag-over {
+      background-color: rgba(255, 153, 0, 0.2);
+      border-color: var(--orange);
+    }
+
+    .upload-input {
+      display: none;
+    }
+
+    .file-info {
+      background-color: #e8f4f8;
+      border-left: 4px solid var(--navy);
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 4px;
+    }
+
+    body.dark-mode .file-info {
+      background-color: #1a3a52;
+      color: #fff;
+    }
+
+    .preview-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 14px;
+    }
+
+    .preview-table th {
+      background-color: var(--navy);
+      color: var(--orange);
+      padding: 10px;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .preview-table td {
+      border: 1px solid var(--border-light);
+      padding: 10px;
+    }
+
+    body.dark-mode .preview-table td {
+      border-color: var(--border-dark);
+    }
+
+    .preview-table tbody tr:hover {
+      background-color: rgba(255, 153, 0, 0.1);
+    }
+
+    textarea {
+      width: 100%;
+      padding: 12px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      resize: vertical;
+      min-height: 200px;
+    }
+
+    body.dark-mode textarea {
+      background-color: #1a1a1a;
+      color: var(--text-dark);
+      border-color: var(--border-dark);
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    body.dark-mode input[type="text"] {
+      background-color: #1a1a1a;
+      color: var(--text-dark);
+      border-color: var(--border-dark);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-btn {
+      padding: 8px 12px;
+      background-color: var(--navy);
+      color: var(--orange);
+      border: 1px solid var(--orange);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .toolbar-btn:hover {
+      background-color: var(--orange);
+      color: var(--navy);
+    }
+
+    .template-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .template-btn {
+      padding: 10px;
+      background-color: var(--navy);
+      color: var(--orange);
+      border: 1px solid var(--orange);
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+      font-size: 12px;
+    }
+
+    .template-btn:hover {
+      background-color: var(--orange);
+      color: var(--navy);
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 8px;
+      padding: 30px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+
+    body.dark-mode .modal-content {
+      background: #1a1a1a;
+      color: var(--text-dark);
+    }
+
+    .modal h2 {
+      margin-bottom: 15px;
+      color: var(--navy);
+    }
+
+    body.dark-mode .modal h2 {
+      color: var(--orange);
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-light);
+    }
+
+    body.dark-mode .empty-state {
+      color: var(--text-dark);
+    }
+
+    .recipients-preview {
+      background-color: #f9f9f9;
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      padding: 15px;
+      margin: 15px 0;
+    }
+
+    body.dark-mode .recipients-preview {
+      background-color: #1a1a1a;
+      border-color: var(--border-dark);
+    }
+
+    @media (max-width: 768px) {
+      header {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      header h1 {
+        font-size: 20px;
+      }
+
+      .upload-area {
+        padding: 20px;
+      }
+
+      .card {
+        padding: 15px;
+      }
+
+      .modal-content {
+        width: 95%;
+      }
+
+      .template-buttons {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body class="light-mode">
+  <div class="container">
+    <header>
+      <div class="header-left">
+        <button class="btn btn-secondary" onclick="goToDashboard()">← Dashboard</button>
+        <button class="btn btn-secondary" onclick="goToHistory()">📜 History</button>
+      </div>
+      <h1>EMAIL OUTREACH</h1>
+      <div class="header-right">
+        <button class="btn btn-dark-toggle" onclick="toggleTheme()">🌙 Dark</button>
+        <button class="btn btn-logout" onclick="logout()">Logout</button>
+      </div>
+    </header>
+
+    <!-- Upload Card -->
+    <div class="card">
+      <h2>📎 Upload Email List</h2>
+      <div class="upload-area" id="uploadArea">
+        <p style="font-size: 16px; margin-bottom: 10px;">📁 Drag and drop CSV or Excel file here</p>
+        <p style="font-size: 14px; color: #666;">or click to select</p>
+        <input type="file" id="fileInput" class="upload-input" accept=".csv,.xlsx">
+      </div>
+      <div id="fileInfo" style="display: none;">
+        <div class="file-info">
+          <strong>✅ File uploaded:</strong> <span id="fileName"></span> (<span id="rowCount"></span> rows)
+        </div>
+        <table class="preview-table">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+            </tr>
+          </thead>
+          <tbody id="previewBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Compose Card -->
+    <div class="card">
+      <h2>✏️ Compose Email</h2>
+
+      <label for="subject" style="display: block; font-weight: 600; margin-bottom: 8px;">Subject</label>
+      <input type="text" id="subject" placeholder="Email subject line">
+
+      <label for="htmlBody" style="display: block; font-weight: 600; margin: 15px 0 8px 0;">Message (HTML)</label>
+
+      <div class="toolbar">
+        <button class="toolbar-btn" onclick="insertTag('{first_name}')">👤 {first_name}</button>
+        <button class="toolbar-btn" onclick="insertTag('{last_name}')">👤 {last_name}</button>
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <label style="font-weight: 600; display: block; margin-bottom: 8px;">Message Templates</label>
+        <div class="template-buttons">
+          <button class="template-btn" onclick="applyTemplate('election')">🗳️ Election Day</button>
+          <button class="template-btn" onclick="applyTemplate('volunteer')">🤝 Volunteer</button>
+          <button class="template-btn" onclick="applyTemplate('event')">📅 Event</button>
+          <button class="template-btn" onclick="applyTemplate('gotv')">📢 GOTV</button>
+          <button class="template-btn" onclick="applyTemplate('donate')">💰 Donate</button>
+        </div>
+      </div>
+
+      <textarea id="htmlBody" placeholder="<p>Your email message here...</p><p>Hello {first_name}!</p>"></textarea>
+
+      <button class="btn btn-primary" onclick="previewEmail()" style="margin-top: 15px;">👁️ Preview</button>
+    </div>
+
+    <!-- Recipients Card -->
+    <div class="card">
+      <h2>👥 Recipients</h2>
+      <div id="recipientInfo" class="recipients-preview">
+        <p style="color: #999;">Upload a CSV or Excel file to see recipient count</p>
+      </div>
+    </div>
+
+    <!-- Send Button -->
+    <div class="card" style="text-align: center;">
+      <button class="btn btn-primary" id="sendBtn" onclick="confirmSend()" style="padding: 15px 40px; font-size: 16px;" disabled>
+        📧 Send Email
+      </button>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirmModal" class="modal">
+    <div class="modal-content">
+      <h2>Confirm Send</h2>
+      <p><strong>Recipients:</strong> <span id="modalRecipients">0</span></p>
+      <p><strong>Subject:</strong> <span id="modalSubject"></span></p>
+      <p><strong>Estimated Cost:</strong> <span id="modalCost">$0.00</span></p>
+      <p style="font-size: 12px; color: #666; margin-top: 15px;">This will send email to all recipients in the uploaded file.</p>
+      <div class="modal-buttons">
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="sendNow()">Send Now</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preview Modal -->
+  <div id="previewModal" class="modal">
+    <div class="modal-content">
+      <h2>Email Preview</h2>
+      <div id="previewContent" style="background-color: #f5f5f5; padding: 20px; border-radius: 4px; margin: 15px 0; max-height: 400px; overflow-y: auto;"></div>
+      <div class="modal-buttons">
+        <button class="btn btn-secondary" onclick="closePreviewModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Theme toggle
+    function toggleTheme() {
+      const isDark = document.body.classList.toggle('dark-mode');
+      document.body.classList.toggle('light-mode');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      updateThemeButton();
+    }
+
+    function updateThemeButton() {
+      const btn = document.querySelector('.btn-dark-toggle');
+      const isDark = document.body.classList.contains('dark-mode');
+      btn.textContent = isDark ? '☀️ Light' : '🌙 Dark';
+    }
+
+    function initTheme() {
+      const saved = localStorage.getItem('theme') || 'light';
+      document.body.classList.remove('light-mode', 'dark-mode');
+      document.body.classList.add(saved === 'dark' ? 'dark-mode' : 'light-mode');
+      updateThemeButton();
+    }
+
+    // Navigation
+    function goToDashboard() {
+      window.location.href = '/dashboard';
+    }
+
+    function goToHistory() {
+      window.location.href = '/email-history';
+    }
+
+    function logout() {
+      fetch('/logout', { method: 'POST' })
+        .then(() => window.location.href = '/login')
+        .catch(err => console.error('Logout error:', err));
+    }
+
+    // File upload
+    let uploadedData = null;
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+
+    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('drag-over');
+    });
+    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('drag-over');
+      if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        handleFileUpload();
+      }
+    });
+
+    fileInput.addEventListener('change', handleFileUpload);
+
+    async function handleFileUpload() {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          let data = [];
+          if (file.name.endsWith('.csv')) {
+            const text = e.target.result;
+            const lines = text.split('\n').filter(l => l.trim());
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+
+            for (let i = 1; i < lines.length; i++) {
+              const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+              const obj = {};
+              headers.forEach((h, idx) => obj[h] = values[idx] || '');
+              data.push(obj);
+            }
+          } else if (file.name.endsWith('.xlsx')) {
+            // For Excel, we'll need SheetJS which is already installed
+            // For now, show message
+            alert('Excel files will be processed server-side. Click Send to upload.');
+            return;
+          }
+
+          uploadedData = data.slice(0, 5);
+          showFileInfo(file.name, data.length);
+          updateRecipientCount(data.length);
+          updateSendButton();
+        } catch (err) {
+          alert('Error parsing file: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function showFileInfo(filename, rowCount) {
+      const info = document.getElementById('fileInfo');
+      info.style.display = 'block';
+      document.getElementById('fileName').textContent = filename;
+      document.getElementById('rowCount').textContent = rowCount;
+
+      const tbody = document.getElementById('previewBody');
+      tbody.innerHTML = '';
+      uploadedData.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${row.email || row.Email || ''}</td>
+          <td>${row.first_name || row.firstName || row.First_Name || ''}</td>
+          <td>${row.last_name || row.lastName || row.Last_Name || ''}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateRecipientCount(count) {
+      const info = document.getElementById('recipientInfo');
+      info.innerHTML = `<p><strong>✅ Recipients:</strong> ${count} valid email addresses</p>`;
+    }
+
+    function updateSendButton() {
+      const sendBtn = document.getElementById('sendBtn');
+      const subject = document.getElementById('subject').value.trim();
+      const htmlBody = document.getElementById('htmlBody').value.trim();
+      const hasFile = fileInput.files.length > 0;
+      sendBtn.disabled = !hasFile || !subject || !htmlBody;
+    }
+
+    document.getElementById('subject').addEventListener('input', updateSendButton);
+    document.getElementById('htmlBody').addEventListener('input', updateSendButton);
+
+    // Template insertion
+    function applyTemplate(templateType) {
+      const templates = {
+        election: `<p>Hello {first_name},</p>
+<p>Election Day is coming! Make sure to vote on [DATE]. Your polling location is [LOCATION].</p>
+<p>For questions, contact us at [PHONE].</p>`,
+        volunteer: `<p>Hello {first_name},</p>
+<p>We're looking for volunteers! Interested in helping with our campaign?</p>
+<p><a href="[SIGNUP_LINK]">Sign up to volunteer</a></p>`,
+        event: `<p>Hello {first_name},</p>
+<p>You're invited to our upcoming event!</p>
+<p><strong>Date:</strong> [DATE]<br><strong>Time:</strong> [TIME]<br><strong>Location:</strong> [LOCATION]</p>
+<p><a href="[RSVP_LINK]">RSVP here</a></p>`,
+        gotv: `<p>Hello {first_name},</p>
+<p>Have you voted yet? Every vote matters! Find your polling location and voting times here: [LOCATION_LINK]</p>`,
+        donate: `<p>Hello {first_name},</p>
+<p>Support our campaign with a donation. Every dollar helps!</p>
+<p><a href="[DONATE_LINK]">Donate now</a></p>`
+      };
+      document.getElementById('htmlBody').value = templates[templateType] || '';
+      updateSendButton();
+    }
+
+    function insertTag(tag) {
+      const textarea = document.getElementById('htmlBody');
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const before = textarea.value.substring(0, start);
+      const after = textarea.value.substring(end);
+      textarea.value = before + tag + after;
+      updateSendButton();
+    }
+
+    // Preview
+    function previewEmail() {
+      const htmlBody = document.getElementById('htmlBody').value;
+      const previewContent = document.getElementById('previewContent');
+      previewContent.innerHTML = htmlBody;
+      document.getElementById('previewModal').classList.add('show');
+    }
+
+    function closePreviewModal() {
+      document.getElementById('previewModal').classList.remove('show');
+    }
+
+    // Confirmation modal
+    function confirmSend() {
+      const subject = document.getElementById('subject').value;
+      const recipientCount = uploadedData ? uploadedData.length : 0;
+      const cost = (recipientCount * 0.0001).toFixed(4);
+
+      document.getElementById('modalSubject').textContent = subject;
+      document.getElementById('modalRecipients').textContent = recipientCount;
+      document.getElementById('modalCost').textContent = '$' + cost;
+      document.getElementById('confirmModal').classList.add('show');
+    }
+
+    function closeModal() {
+      document.getElementById('confirmModal').classList.remove('show');
+    }
+
+    async function sendNow() {
+      closeModal();
+      const file = fileInput.files[0];
+      const subject = document.getElementById('subject').value;
+      const htmlBody = document.getElementById('htmlBody').value;
+      const textBody = ''; // Optional plain text fallback
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('subject', subject);
+      formData.append('htmlBody', htmlBody);
+      formData.append('textBody', textBody);
+
+      try {
+        const response = await fetch('/api/email/send', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          alert(`✅ Email sent to ${result.sent} recipients`);
+          fileInput.value = '';
+          document.getElementById('subject').value = '';
+          document.getElementById('htmlBody').value = '';
+          document.getElementById('fileInfo').style.display = 'none';
+          updateSendButton();
+        } else {
+          alert('❌ Error: ' + (result.error || result.message));
+        }
+      } catch (err) {
+        alert('❌ Send failed: ' + err.message);
+      }
+    }
+
+    // Init
+    initTheme();
+  </script>
+</body>
+</html>
