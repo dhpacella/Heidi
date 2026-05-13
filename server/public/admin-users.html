@@ -5,6 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>User Management - Heidi Voter Dashboard</title>
   <style>
+    :root {
+      --primary: #667eea;
+      --primary-dark: #764ba2;
+      --bg-body: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --bg-card: white;
+      --text: #333;
+      --text-muted: #555;
+      --border: #ddd;
+    }
+
+    body.light-theme {
+      --primary: #667eea;
+      --primary-dark: #764ba2;
+      --bg-body: linear-gradient(135deg, #f5f5f5 0%, #efefef 100%);
+      --bg-card: white;
+      --text: #333;
+      --text-muted: #555;
+      --border: #ddd;
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -13,9 +33,10 @@
 
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: var(--bg-body);
       min-height: 100vh;
       padding: 20px;
+      transition: background 0.3s ease, color 0.3s ease;
     }
 
     .container {
@@ -241,7 +262,8 @@
 </head>
 <body>
   <div class="container">
-    <header>
+    <header style="position:relative">
+      <button onclick="toggleTheme()" style="position:absolute;top:20px;right:100px;font-size:12px;padding:6px 12px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:4px;color:white;cursor:pointer;font-weight:600;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.3)'" onmouseout="this.style.background='rgba(255,255,255,.2)'" id="themeToggleBtn">🌙 Dark</button>
       <a href="/logout" class="logout-btn">Logout</a>
       <h1>User Management</h1>
       <p>Create and manage dashboard users</p>
@@ -486,6 +508,33 @@
     // Initialize
     checkAuth();
     loadUsers();
+
+    // Theme toggle
+    function toggleTheme() {
+      const isDark = document.body.classList.contains('light-theme');
+      if (isDark) {
+        document.body.classList.remove('light-theme');
+        localStorage.setItem('theme', 'dark');
+        document.getElementById('themeToggleBtn').textContent = '🌙 Dark';
+      } else {
+        document.body.classList.add('light-theme');
+        localStorage.setItem('theme', 'light');
+        document.getElementById('themeToggleBtn').textContent = '☀️ Light';
+      }
+    }
+
+    // Load saved theme on page load
+    function initTheme() {
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+        document.getElementById('themeToggleBtn').textContent = '☀️ Light';
+      } else {
+        document.getElementById('themeToggleBtn').textContent = '🌙 Dark';
+      }
+    }
+
+    initTheme();
   </script>
 </body>
 </html>
