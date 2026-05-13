@@ -586,6 +586,9 @@ tr:hover td{background:var(--surface);}
     <div class="banner-right">
       <div class="days" id="days">—</div>
       <div class="dayslbl">days to election</div>
+      <div id="adminButtonContainer" style="display:none;margin-top:12px">
+        <a href="/admin/users" style="font-size:11px;padding:6px 12px;background:rgba(245,166,35,.2);border:1px solid rgba(245,166,35,.5);border-radius:6px;color:#F5A623;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s;display:inline-block;text-decoration:none" onmouseover="this.style.background='rgba(245,166,35,.3)';this.style.borderColor='rgba(245,166,35,.7)'" onmouseout="this.style.background='rgba(245,166,35,.2)';this.style.borderColor='rgba(245,166,35,.5)'">⚙ Admin</a>
+      </div>
       <form method="POST" action="/logout" style="margin-top:12px">
         <button type="submit" style="font-size:11px;padding:6px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#8BA3BE;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.15)';this.style.color='#EEF2F7'" onmouseout="this.style.background='rgba(255,255,255,.1)';this.style.color='#8BA3BE'">Sign out</button>
       </form>
@@ -4857,5 +4860,22 @@ async function loadStats() {
     console.error('Stats load error:', err);
   }
 }
+
+// Check if user is admin and show admin button
+async function checkAdminAccess() {
+  try {
+    const res = await fetch('/api/auth/me', { credentials: 'include' });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.user && data.user.role === 'admin') {
+      document.getElementById('adminButtonContainer').style.display = 'block';
+    }
+  } catch (err) {
+    console.error('Admin check error:', err);
+  }
+}
+
+// Run admin check on page load
+checkAdminAccess();
 </script>
 </body></html>
