@@ -225,6 +225,30 @@
       font-style: italic;
     }
 
+    .filter-summary {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .filter-summary-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--gold);
+      margin-bottom: 6px;
+    }
+
+    .filter-summary-text {
+      color: var(--text);
+      word-break: break-word;
+    }
+
     /* ── Empty state ── */
     .empty-state {
       text-align: center;
@@ -319,6 +343,119 @@
       font-size: 12px;
       color: var(--gold);
       line-height: 1.4;
+    }
+
+    .cost-estimate {
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .cost-estimate .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 4px;
+      color: var(--text-muted);
+    }
+
+    .cost-estimate .amount {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    .preview-toggle {
+      margin-top: 14px;
+      text-align: center;
+    }
+
+    .preview-toggle button {
+      padding: 8px 16px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      font-family: 'Barlow', sans-serif;
+    }
+
+    .preview-toggle button:hover { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+
+    .phone-mockup {
+      display: none;
+      margin-top: 16px;
+      padding: 16px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .phone-mockup.open { display: block; }
+
+    .phone-frame {
+      max-width: 320px;
+      margin: 0 auto;
+      background: #000;
+      border: 8px solid #333;
+      border-radius: 40px;
+      padding: 12px;
+      box-shadow: 0 0 30px rgba(0,0,0,.5);
+      position: relative;
+    }
+
+    .phone-frame::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 150px;
+      height: 20px;
+      background: #000;
+      border-radius: 0 0 20px 20px;
+      z-index: 10;
+    }
+
+    .phone-screen {
+      background: var(--navy);
+      border-radius: 32px;
+      padding: 20px 16px;
+      min-height: 400px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+
+    .sms-bubble {
+      background: var(--gold);
+      color: var(--navy);
+      border-radius: 18px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      max-width: 90%;
+      margin-left: auto;
+      word-break: break-word;
+      font-size: 13px;
+      line-height: 1.5;
+      text-align: left;
+    }
+
+    .sms-part-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 8px;
+      margin-bottom: 0;
     }
 
     /* ── Buttons ── */
@@ -438,6 +575,7 @@
       <div class="header-nav">
         <a href="/dashboard" class="header-btn">← Dashboard</a>
         <div class="header-buttons">
+          <a href="/sms-history" class="header-btn">📜 History</a>
           <button onclick="toggleTheme()" class="header-btn" id="themeToggleBtn">🌙 Dark</button>
           <a href="/logout" class="header-btn">Logout</a>
         </div>
@@ -450,6 +588,13 @@
 
     <!-- Recipients card -->
     <div class="card" id="recipientsCard" style="display:none">
+      <div id="filterSummary" style="display:none">
+        <div class="filter-summary">
+          <div class="filter-summary-label">Applied filters</div>
+          <div class="filter-summary-text" id="filterSummaryText"></div>
+        </div>
+      </div>
+
       <div class="card-title">Recipients</div>
       <div class="stats-row">
         <div class="stat">
@@ -491,7 +636,13 @@
         </div>
       </div>
 
-      <label for="msgText">Your message</label>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <label for="msgText" style="margin-bottom:0">Your message</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+          <button type="button" class="template-btn" onclick="insertTag('first_name')" style="padding:4px 10px;font-size:11px">+ {first_name}</button>
+          <button type="button" class="template-btn" onclick="insertTag('last_name')" style="padding:4px 10px;font-size:11px">+ {last_name}</button>
+        </div>
+      </div>
       <textarea id="msgText" placeholder="Hi, this is Heidi Pacella running for Mayor of Homer Glen. I'd love your support on election day, April 6th…" maxlength="1600"></textarea>
 
       <div class="char-counter">
@@ -499,6 +650,22 @@
       </div>
       <div class="char-warning" id="charWarning">
         Messages over 160 characters are split into multiple parts. Each part is billed separately and may arrive as separate texts on some phones.
+      </div>
+
+      <div class="cost-estimate" id="costEstimate" style="display:none">
+        <div class="label">Estimated cost</div>
+        <div class="amount" id="costAmount">~$0.00</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px" id="costBreakdown"></div>
+      </div>
+
+      <div class="preview-toggle">
+        <button onclick="togglePreview()">👁️ Preview on phone</button>
+      </div>
+
+      <div class="phone-mockup" id="phoneMockup">
+        <div class="phone-frame">
+          <div class="phone-screen" id="phoneScreen"></div>
+        </div>
       </div>
 
       <button class="btn-send" id="sendBtn" onclick="sendSMS()" disabled>
@@ -531,6 +698,10 @@
           <div class="num" id="resInvalid">0</div>
           <div class="lbl">Invalid numbers</div>
         </div>
+        <div class="result-stat neutral">
+          <div class="num" id="resOptOut">0</div>
+          <div class="lbl">Opted Out</div>
+        </div>
       </div>
       <button class="btn-secondary" onclick="resetForm()">Send Another Message</button>
     </div>
@@ -560,6 +731,23 @@
       }
     }
 
+    function insertTag(tagName) {
+      const textarea = document.getElementById('msgText');
+      const tag = `{${tagName}}`;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const before = textarea.value.substring(0, start);
+      const after = textarea.value.substring(end);
+
+      textarea.value = before + tag + after;
+      textarea.selectionStart = textarea.selectionEnd = start + tag.length;
+      textarea.focus();
+
+      // Trigger character counter update
+      const event = new Event('input', { bubbles: true });
+      textarea.dispatchEvent(event);
+    }
+
     // ── Load recipients from sessionStorage ──────────────────────────────────
     function loadRecipients() {
       const raw = sessionStorage.getItem('sms_targets');
@@ -582,6 +770,13 @@
       document.getElementById('sendCount').textContent = withPhone.length.toLocaleString();
       document.getElementById('headerSub').textContent = `${withPhone.length.toLocaleString()} voters with phone numbers`;
 
+      // Load and display filter summary
+      const filterSummary = sessionStorage.getItem('sms_filter_summary');
+      if (filterSummary) {
+        document.getElementById('filterSummaryText').textContent = filterSummary;
+        document.getElementById('filterSummary').style.display = 'block';
+      }
+
       // Build preview list (first 12 + overflow note)
       const list = document.getElementById('previewList');
       const preview = withPhone.slice(0, 12);
@@ -597,6 +792,7 @@
       }
 
       document.getElementById('recipientsCard').style.display = 'block';
+      updateCostEstimate();
       updateSendBtn();
     }
 
@@ -612,6 +808,57 @@
       const d = document.createElement('div');
       d.textContent = str || '';
       return d.innerHTML;
+    }
+
+    // ── Cost calculation ────────────────────────────────────────────────────
+    const SMS_COST_PER_MESSAGE = 0.007; // ~$0.007 per SMS (US rate)
+
+    function updateCostEstimate() {
+      const withPhone = targets.filter(t => t.phone).length;
+      if (withPhone === 0) {
+        document.getElementById('costEstimate').style.display = 'none';
+        return;
+      }
+
+      const len = document.getElementById('msgText').value.length;
+      const parts = len === 0 ? 1 : (len <= 160 ? 1 : Math.ceil(len / 153));
+      const totalMessages = withPhone * parts;
+      const totalCost = (totalMessages * SMS_COST_PER_MESSAGE).toFixed(2);
+
+      document.getElementById('costAmount').textContent = `~$${totalCost}`;
+      document.getElementById('costBreakdown').textContent = `${withPhone.toLocaleString()} voters × ${parts} part${parts > 1 ? 's' : ''}`;
+      document.getElementById('costEstimate').style.display = 'block';
+    }
+
+    function togglePreview() {
+      const mockup = document.getElementById('phoneMockup');
+      mockup.classList.toggle('open');
+      if (mockup.classList.contains('open')) {
+        generatePreview();
+      }
+    }
+
+    function generatePreview() {
+      const message = document.getElementById('msgText').value || '(empty message)';
+      const len = message.length;
+      const parts = len === 0 ? 1 : (len <= 160 ? 1 : Math.ceil(len / 153));
+
+      let html = '';
+
+      // Split message into parts (160 chars first part, 153 after)
+      if (parts === 1) {
+        html += `<div class="sms-bubble">${escapeHtml(message)}</div>`;
+      } else {
+        for (let i = 0; i < parts; i++) {
+          const start = i === 0 ? 0 : 160 + (i - 1) * 153;
+          const end = i === 0 ? 160 : start + 153;
+          const part = message.substring(start, end);
+          html += `<div class="sms-bubble">${escapeHtml(part)}</div>`;
+        }
+        html += `<div class="sms-part-label">Part 1 of ${parts}</div>`;
+      }
+
+      document.getElementById('phoneScreen').innerHTML = html;
     }
 
     // ── Character counter ────────────────────────────────────────────────────
@@ -636,6 +883,10 @@
       countEl.className = `count ${cls}`;
       warnEl.style.display = len > 160 ? 'block' : 'none';
       textarea.classList.toggle('over-limit', len > 1600);
+      updateCostEstimate();
+      if (document.getElementById('phoneMockup').classList.contains('open')) {
+        generatePreview();
+      }
       updateSendBtn();
     });
 
@@ -649,7 +900,8 @@
     // ── Send ─────────────────────────────────────────────────────────────────
     async function sendSMS() {
       const message = document.getElementById('msgText').value.trim();
-      const phones = targets.filter(t => t.phone).map(t => t.phone);
+      const withPhone = targets.filter(t => t.phone);
+      const phones = withPhone.map(t => t.phone);
 
       if (!message || !phones.length) return;
 
@@ -663,7 +915,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ message, phones })
+          body: JSON.stringify({ message, phones, targets: withPhone })
         });
 
         const data = await res.json();
@@ -672,6 +924,7 @@
         document.getElementById('resSent').textContent = (data.sent || 0).toLocaleString();
         document.getElementById('resFailed').textContent = (data.failed || 0).toLocaleString();
         document.getElementById('resInvalid').textContent = (data.invalid || 0).toLocaleString();
+        document.getElementById('resOptOut').textContent = (data.optedOut || 0).toLocaleString();
 
         if (data.stub) {
           document.getElementById('stubNotice').style.display = 'block';
