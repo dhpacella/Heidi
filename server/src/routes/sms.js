@@ -20,13 +20,49 @@ router.get('/health', async (req, res) => {
       return res.status(503).json({
         ok: false,
         error: 'sms_blasts table does not exist in database',
-        suggestion: 'Run database migration'
+        suggestion: 'POST to /api/sms/migrate-db to create it'
       });
     }
 
     res.json({ ok: true, message: 'Database and sms_blasts table OK' });
   } catch (err) {
     res.status(503).json({ ok: false, error: err.message });
+  }
+});
+
+// Migrate database (admin only) — creates sms_blasts table if it doesn't exist
+router.post('/migrate-db', requireRole('admin'), async (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+
+  try {
+    console.log('🔄 Running database migration...');
+    const schemaPath = path.join(__dirname, '..', 'db', 'schema.sql');
+    const sql = fs.readFileSync(schemaPath, 'utf8');
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(sql);
+      await client.query('COMMIT');
+      console.log('✅ Migration complete');
+
+      res.json({
+        success: true,
+        message: 'Database migrated successfully. sms_blasts table is ready.'
+      });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('❌ Migration failed:', err.message);
+    res.status(500).json({
+      error: 'Migration failed',
+      details: err.message
+    });
   }
 });
 
