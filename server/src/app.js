@@ -62,6 +62,31 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// TEMPORARY: Reset admin password (remove after use)
+app.post('/api/admin/reset-password', async (req, res) => {
+  try {
+    const bcrypt = require('bcryptjs');
+    const { email, newPassword } = req.body || {};
+    if (!email || !newPassword || newPassword.length < 8) {
+      return res.status(400).json({ error: 'email and newPassword (min 8 chars) required' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const result = await pool.query(
+      'UPDATE users SET password_hash = $1 WHERE email = $2 RETURNING id, email, name, role',
+      [hashedPassword, email]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ success: true, message: 'Password reset', user: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // One-time setup endpoint - initializes database and creates admin user
 app.post('/api/setup', async (req, res) => {
