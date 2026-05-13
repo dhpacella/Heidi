@@ -77,6 +77,50 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// One-time setup endpoint - initializes database and creates admin user
+app.post('/api/setup', async (req, res) => {
+  try {
+    const { adminPassword } = req.body;
+    if (!adminPassword) {
+      return res.status(400).json({ error: 'adminPassword required' });
+    }
+
+    const fs = require('fs');
+    const path = require('path');
+    const bcrypt = require('bcrypt');
+
+    const client = await pool.connect();
+    try {
+      // Run migrations
+      const schemaPath = path.join(__dirname, 'db', 'schema.sql');
+      const schema = fs.readFileSync(schemaPath, 'utf8');
+      await client.query(schema);
+
+      // Create admin user
+      const adminEmail = 'admin@heidi.local';
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
+      await client.query(
+        `INSERT INTO users (email, name, password_hash, role)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (email) DO NOTHING`,
+        [adminEmail, 'Admin', hashedPassword, 'admin']
+      );
+
+      res.json({
+        success: true,
+        message: 'Database initialized',
+        email: adminEmail,
+        password: adminPassword
+      });
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('Setup error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Internal server error' });
