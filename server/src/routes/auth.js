@@ -38,43 +38,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-router.post('/register', async (req, res) => {
-  try {
-    const { email, name, password } = req.body || {};
-    if (!email || !name || !password) {
-      return res.status(400).json({ error: 'Email, name, and password required' });
-    }
-    if (!isValidEmail(email)) {
-      return res.status(400).json({ error: 'Invalid email' });
-    }
-    if (password.length < 8) {
-      return res.status(400).json({ error: 'Password must be at least 8 characters' });
-    }
-
-    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
-    if (existing.rows.length > 0) {
-      return res.status(409).json({ error: 'Email already registered' });
-    }
-
-    const countRes = await pool.query('SELECT COUNT(*)::int AS cnt FROM users');
-    const role = countRes.rows[0].cnt === 0 ? 'admin' : 'staff';
-    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-
-    const insertRes = await pool.query(
-      `INSERT INTO users (email, name, password_hash, role)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, email, name, role`,
-      [email, name, passwordHash, role]
-    );
-    const user = insertRes.rows[0];
-    const token = signToken(user);
-
-    res.status(201).json({ token, user });
-  } catch (err) {
-    console.error('API register error:', err);
-    res.status(500).json({ error: 'Registration failed' });
-  }
-});
+// Registration is disabled - only admins can create users via POST /api/admin/create-user
 
 router.get('/me', requireApiAuth, async (req, res) => {
   try {

@@ -43,8 +43,12 @@ app.use(session({
 // HTML auth + dashboard routes (sessions)
 app.use('/', require('./routes/htmlAuth'));
 
-// /api/auth — public endpoints (login, register) + protected (me, token)
+// /api/auth — public endpoints (login) + protected (me, token)
+// Note: registration is disabled; only admins can create users via /api/admin/create-user
 app.use('/api/auth', require('./routes/auth'));
+
+// /api/admin — admin-only endpoints (user management, etc.)
+app.use('/api/admin', requireApiAuth, require('./routes/admin'));
 
 // All remaining /api/* routes require auth (session OR JWT bearer)
 app.use('/api/voters', requireApiAuth, require('./routes/voters'));

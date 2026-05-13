@@ -75,38 +75,7 @@ router.post('/login', loginLimiter, async (req, res) => {
   }
 });
 
-router.get('/register', (req, res) => {
-  if (req.session && req.session.userId) return res.redirect('/dashboard');
-  res.sendFile(path.join(PUBLIC_DIR, 'register.html'));
-});
-
-router.post('/register', async (req, res) => {
-  const { email, name, password, password2 } = req.body || {};
-  if (!email || !name || !password) return res.status(400).send('All fields required');
-  if (password !== password2) return res.status(400).send('Passwords do not match');
-  if (password.length < 8) return res.status(400).send('Password must be at least 8 characters');
-
-  try {
-    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
-    if (existing.rows.length > 0) return res.status(409).send('Email already registered');
-
-    const countRes = await pool.query('SELECT COUNT(*)::int AS cnt FROM users');
-    const role = countRes.rows[0].cnt === 0 ? 'admin' : 'staff';
-    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-
-    const insertRes = await pool.query(
-      `INSERT INTO users (email, name, password_hash, role)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, email, name, role`,
-      [email, name, passwordHash, role]
-    );
-    setSession(req, insertRes.rows[0]);
-    res.status(200).send('OK');
-  } catch (err) {
-    console.error('Register error:', err);
-    res.status(500).send('Registration failed');
-  }
-});
+// Registration is disabled - only admins can create users via /api/admin/create-user
 
 router.post('/logout', (req, res) => {
   if (!req.session) return res.redirect('/login');
@@ -119,6 +88,13 @@ router.post('/logout', (req, res) => {
 
 router.get('/dashboard', requireSession, (req, res) => {
   res.sendFile(DASHBOARD_HTML);
+});
+
+router.get('/admin/users', requireSession, (req, res) => {
+  if (req.session.role !== 'admin') {
+    return res.status(403).send('Access denied. Admin privileges required.');
+  }
+  res.sendFile(path.join(PUBLIC_DIR, 'admin-users.html'));
 });
 
 module.exports = router;
