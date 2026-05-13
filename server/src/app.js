@@ -57,6 +57,7 @@ app.use('/api/analysis', requireApiAuth, require('./routes/analysis'));
 app.use('/api/canvassing', requireApiAuth, require('./routes/canvassing'));
 app.use('/api/referrals', requireApiAuth, require('./routes/referrals'));
 app.use('/api/super-picks', requireApiAuth, require('./routes/superPicks'));
+app.use('/api/sms', requireApiAuth, require('./routes/sms'));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });

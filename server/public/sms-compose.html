@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMS Outreach - Heidi Voter Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap">
+  <style>
+    :root {
+      --navy: #0B1929;
+      --navy-mid: #122338;
+      --navy-light: #1A3550;
+      --gold: #F5A623;
+      --gold-light: #FBBF48;
+      --green: #1DB87A;
+      --red: #E03434;
+      --text: #EEF2F7;
+      --text-muted: #8BA3BE;
+      --border: #243D56;
+      --surface: #122338;
+      --surface-2: #1A3550;
+    }
+
+    body.light-theme {
+      --navy: #F5F5F5;
+      --navy-mid: #FFFFFF;
+      --navy-light: #F0F0F0;
+      --text: #1A1A1A;
+      --text-muted: #666666;
+      --border: #DDDDDD;
+      --surface: #FFFFFF;
+      --surface-2: #F9F9F9;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Barlow', sans-serif;
+      background: var(--navy);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Header ── */
+    .page-header {
+      background: linear-gradient(135deg, #0B1929 0%, #122338 40%, #1A3550 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .page-header::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 280px; height: 280px;
+      background: radial-gradient(circle, rgba(245,166,35,.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .page-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--gold), #F5A62300);
+    }
+
+    .header-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .header-buttons { display: flex; gap: 8px; align-items: center; }
+
+    .header-btn {
+      background: rgba(255,255,255,.2);
+      color: white;
+      padding: 7px 12px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid rgba(255,255,255,.2);
+      transition: all .15s;
+      cursor: pointer;
+      font-family: 'Barlow', sans-serif;
+      white-space: nowrap;
+    }
+
+    .header-btn:hover { background: rgba(255,255,255,.3); border-color: rgba(255,255,255,.3); }
+
+    .header-title {
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .header-title h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin: 0;
+    }
+
+    .header-title p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin: 4px 0 0;
+      letter-spacing: .03em;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Recipient summary ── */
+    .stats-row {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .stat-num {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    .stat-lbl {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .preview-list {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .preview-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      gap: 12px;
+    }
+
+    .preview-item:last-child { border-bottom: none; }
+
+    .preview-name { color: var(--text); font-weight: 500; }
+
+    .preview-phone { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+
+    .preview-more {
+      text-align: center;
+      padding: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-state h3 { color: var(--text); font-size: 18px; margin-bottom: 8px; }
+    .empty-state p { font-size: 14px; line-height: 1.5; margin-bottom: 20px; }
+
+    /* ── Templates ── */
+    .templates-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .template-btn {
+      padding: 10px 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      font-family: 'Barlow', sans-serif;
+    }
+
+    .template-btn:hover { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+
+    /* ── Compose ── */
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 8px;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--navy);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      resize: vertical;
+      min-height: 120px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+
+    body.light-theme textarea { background: white; }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(245,166,35,.15);
+    }
+
+    textarea.over-limit { border-color: var(--red); }
+
+    .char-counter {
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .char-counter .count { font-weight: 600; }
+    .char-counter .count.ok { color: var(--green); }
+    .char-counter .count.warn { color: var(--gold); }
+    .char-counter .count.over { color: var(--red); }
+
+    .char-warning {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: rgba(245,166,35,.1);
+      border: 1px solid rgba(245,166,35,.3);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--gold);
+      line-height: 1.4;
+    }
+
+    /* ── Buttons ── */
+    .btn-send {
+      width: 100%;
+      padding: 14px;
+      background: var(--gold);
+      color: var(--navy);
+      border: none;
+      border-radius: 8px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .15s;
+      margin-top: 20px;
+      letter-spacing: .02em;
+    }
+
+    .btn-send:hover:not(:disabled) {
+      background: var(--gold-light);
+      box-shadow: 0 4px 16px rgba(245,166,35,.35);
+    }
+
+    .btn-send:disabled { opacity: .5; cursor: not-allowed; }
+
+    .btn-secondary {
+      padding: 10px 20px;
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-secondary:hover { background: var(--border); }
+
+    /* ── Results ── */
+    .results-card { display: none; }
+
+    .result-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .result-stat {
+      flex: 1;
+      min-width: 100px;
+      padding: 16px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .result-stat.success { background: rgba(29,184,122,.15); border: 1px solid rgba(29,184,122,.3); }
+    .result-stat.failure { background: rgba(224,52,52,.15); border: 1px solid rgba(224,52,52,.3); }
+    .result-stat.neutral { background: var(--surface-2); border: 1px solid var(--border); }
+
+    .result-stat .num {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .result-stat.success .num { color: var(--green); }
+    .result-stat.failure .num { color: var(--red); }
+    .result-stat.neutral .num { color: var(--text-muted); }
+
+    .result-stat .lbl { font-size: 12px; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .05em; }
+
+    .stub-notice {
+      padding: 12px 14px;
+      background: rgba(245,166,35,.1);
+      border: 1px solid rgba(245,166,35,.3);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+
+    /* ── Spinner ── */
+    .sending-state { display: none; text-align: center; padding: 20px; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      margin: 0 auto 12px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      body { padding: 10px; }
+      .page-header { padding: 16px; }
+      .card { padding: 16px; }
+      .header-title h1 { font-size: 20px; }
+      .stat-num { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-nav">
+        <a href="/dashboard" class="header-btn">← Dashboard</a>
+        <div class="header-buttons">
+          <button onclick="toggleTheme()" class="header-btn" id="themeToggleBtn">🌙 Dark</button>
+          <a href="/logout" class="header-btn">Logout</a>
+        </div>
+      </div>
+      <div class="header-title">
+        <h1>SMS Outreach</h1>
+        <p id="headerSub">Loading recipients…</p>
+      </div>
+    </div>
+
+    <!-- Recipients card -->
+    <div class="card" id="recipientsCard" style="display:none">
+      <div class="card-title">Recipients</div>
+      <div class="stats-row">
+        <div class="stat">
+          <div class="stat-num" id="totalCount">0</div>
+          <div class="stat-lbl">Voters targeted</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num" id="phoneCount">0</div>
+          <div class="stat-lbl">With phone numbers</div>
+        </div>
+      </div>
+      <div class="preview-list" id="previewList"></div>
+    </div>
+
+    <!-- No recipients notice (non-blocking) -->
+    <div class="card" id="noRecipientsNotice" style="display:none">
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <span style="font-size:28px">📋</span>
+        <div>
+          <div style="font-weight:600;color:var(--text);margin-bottom:4px">No voters loaded yet</div>
+          <div style="font-size:13px;color:var(--text-muted)">Go to the dashboard, apply filters, then click <strong style="color:var(--text)">Send SMS</strong> to load recipients here.</div>
+        </div>
+        <a href="/dashboard" class="btn-secondary" style="margin-left:auto">← Load Recipients</a>
+      </div>
+    </div>
+
+    <!-- Compose card — always visible -->
+    <div class="card" id="composeCard">
+      <div class="card-title">Compose Message</div>
+
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;font-weight:600">Quick templates</div>
+        <div class="templates-grid">
+          <button class="template-btn" onclick="loadTemplate('election')">📅 Election Day Reminder</button>
+          <button class="template-btn" onclick="loadTemplate('volunteer')">🤝 Volunteer Ask</button>
+          <button class="template-btn" onclick="loadTemplate('event')">🎉 Event Invite</button>
+          <button class="template-btn" onclick="loadTemplate('gotv')">🗳️ GOTV Push</button>
+          <button class="template-btn" onclick="loadTemplate('donate')">💰 Donation Ask</button>
+        </div>
+      </div>
+
+      <label for="msgText">Your message</label>
+      <textarea id="msgText" placeholder="Hi, this is Heidi Pacella running for Mayor of Homer Glen. I'd love your support on election day, April 6th…" maxlength="1600"></textarea>
+
+      <div class="char-counter">
+        <span class="count ok" id="charCount">0 / 160 · 1 message</span>
+      </div>
+      <div class="char-warning" id="charWarning">
+        Messages over 160 characters are split into multiple parts. Each part is billed separately and may arrive as separate texts on some phones.
+      </div>
+
+      <button class="btn-send" id="sendBtn" onclick="sendSMS()" disabled>
+        Send to <span id="sendCount">0</span> voters
+      </button>
+    </div>
+
+    <!-- Sending state -->
+    <div class="card sending-state" id="sendingState">
+      <div class="spinner"></div>
+      <p style="color:var(--text-muted);font-size:14px">Sending messages…</p>
+    </div>
+
+    <!-- Results card -->
+    <div class="card results-card" id="resultsCard">
+      <div class="card-title">Send Results</div>
+      <div class="stub-notice" id="stubNotice" style="display:none">
+        ⚠️ SMS is not yet connected to AWS SNS — this is a preview of the send flow. Messages were logged to the server but not delivered.
+      </div>
+      <div class="result-row">
+        <div class="result-stat success">
+          <div class="num" id="resSent">0</div>
+          <div class="lbl">Sent</div>
+        </div>
+        <div class="result-stat failure">
+          <div class="num" id="resFailed">0</div>
+          <div class="lbl">Failed</div>
+        </div>
+        <div class="result-stat neutral">
+          <div class="num" id="resInvalid">0</div>
+          <div class="lbl">Invalid numbers</div>
+        </div>
+      </div>
+      <button class="btn-secondary" onclick="resetForm()">Send Another Message</button>
+    </div>
+
+  </div>
+
+  <script>
+    let targets = [];
+
+    // ── Template library ─────────────────────────────────────────────────────
+    const templates = {
+      election: "Reminder: Election day is April 6th! Make sure to vote for Heidi Pacella for Mayor. Your vote matters!",
+      volunteer: "We need your help! Can you volunteer a few hours on election day, April 6th? Text us back or visit heidi2027.com",
+      event: "You're invited to Heidi's campaign event! Join us as we discuss the future of Homer Glen. RSVP at heidi2027.com",
+      gotv: "Election day is tomorrow! Don't forget to vote for Heidi Pacella for Mayor. Polls open at 6am. Thanks!",
+      donate: "Help Heidi's campaign for Mayor. Every dollar counts! Donate at heidi2027.com or reply to this message."
+    };
+
+    function loadTemplate(key) {
+      const text = templates[key];
+      if (text) {
+        document.getElementById('msgText').value = text;
+        document.getElementById('msgText').focus();
+        // Trigger character counter update
+        const event = new Event('input', { bubbles: true });
+        document.getElementById('msgText').dispatchEvent(event);
+      }
+    }
+
+    // ── Load recipients from sessionStorage ──────────────────────────────────
+    function loadRecipients() {
+      const raw = sessionStorage.getItem('sms_targets');
+      let parsed = [];
+
+      try { parsed = raw ? JSON.parse(raw) : []; } catch { parsed = []; }
+
+      targets = parsed;
+
+      if (!targets.length) {
+        document.getElementById('noRecipientsNotice').style.display = 'block';
+        document.getElementById('headerSub').textContent = 'No recipients loaded — compose and load from dashboard';
+        updateSendBtn();
+        return;
+      }
+
+      const withPhone = targets.filter(t => t.phone);
+      document.getElementById('totalCount').textContent = targets.length.toLocaleString();
+      document.getElementById('phoneCount').textContent = withPhone.length.toLocaleString();
+      document.getElementById('sendCount').textContent = withPhone.length.toLocaleString();
+      document.getElementById('headerSub').textContent = `${withPhone.length.toLocaleString()} voters with phone numbers`;
+
+      // Build preview list (first 12 + overflow note)
+      const list = document.getElementById('previewList');
+      const preview = withPhone.slice(0, 12);
+      list.innerHTML = preview.map(t => `
+        <div class="preview-item">
+          <span class="preview-name">${escapeHtml(formatName(t.name))}</span>
+          <span class="preview-phone">${escapeHtml(t.phone)}</span>
+        </div>
+      `).join('');
+
+      if (withPhone.length > 12) {
+        list.innerHTML += `<div class="preview-more">…and ${(withPhone.length - 12).toLocaleString()} more</div>`;
+      }
+
+      document.getElementById('recipientsCard').style.display = 'block';
+      updateSendBtn();
+    }
+
+    // Format "LAST, FIRST" → "First Last"
+    function formatName(raw) {
+      if (!raw) return '';
+      const parts = raw.split(',');
+      if (parts.length < 2) return raw;
+      return parts[1].trim() + ' ' + parts[0].trim();
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str || '';
+      return d.innerHTML;
+    }
+
+    // ── Character counter ────────────────────────────────────────────────────
+    document.getElementById('msgText').addEventListener('input', () => {
+      const len = document.getElementById('msgText').value.length;
+      const countEl = document.getElementById('charCount');
+      const warnEl = document.getElementById('charWarning');
+      const textarea = document.getElementById('msgText');
+
+      let parts, display, cls;
+      if (len === 0) {
+        parts = 1; display = `0 / 160 · 1 message`; cls = 'ok';
+      } else if (len <= 160) {
+        parts = 1; display = `${len} / 160 · 1 message`; cls = 'ok';
+      } else {
+        parts = Math.ceil(len / 153);
+        display = `${len} chars · ${parts} parts`;
+        cls = len > 480 ? 'over' : 'warn';
+      }
+
+      countEl.textContent = display;
+      countEl.className = `count ${cls}`;
+      warnEl.style.display = len > 160 ? 'block' : 'none';
+      textarea.classList.toggle('over-limit', len > 1600);
+      updateSendBtn();
+    });
+
+    function updateSendBtn() {
+      const msg = document.getElementById('msgText').value.trim();
+      const withPhone = targets.filter(t => t.phone);
+      const btn = document.getElementById('sendBtn');
+      btn.disabled = !msg || withPhone.length === 0 || msg.length > 1600;
+    }
+
+    // ── Send ─────────────────────────────────────────────────────────────────
+    async function sendSMS() {
+      const message = document.getElementById('msgText').value.trim();
+      const phones = targets.filter(t => t.phone).map(t => t.phone);
+
+      if (!message || !phones.length) return;
+
+      // Show sending state
+      document.getElementById('composeCard').style.display = 'none';
+      document.getElementById('recipientsCard').style.display = 'none';
+      document.getElementById('sendingState').style.display = 'block';
+
+      try {
+        const res = await fetch('/api/sms/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ message, phones })
+        });
+
+        const data = await res.json();
+
+        document.getElementById('sendingState').style.display = 'none';
+        document.getElementById('resSent').textContent = (data.sent || 0).toLocaleString();
+        document.getElementById('resFailed').textContent = (data.failed || 0).toLocaleString();
+        document.getElementById('resInvalid').textContent = (data.invalid || 0).toLocaleString();
+
+        if (data.stub) {
+          document.getElementById('stubNotice').style.display = 'block';
+        }
+
+        document.getElementById('resultsCard').style.display = 'block';
+
+      } catch (err) {
+        document.getElementById('sendingState').style.display = 'none';
+        document.getElementById('composeCard').style.display = 'block';
+        document.getElementById('recipientsCard').style.display = 'block';
+        alert('Error sending messages. Please try again.');
+      }
+    }
+
+    function resetForm() {
+      document.getElementById('msgText').value = '';
+      document.getElementById('charCount').textContent = '0 / 160 · 1 message';
+      document.getElementById('charCount').className = 'count ok';
+      document.getElementById('charWarning').style.display = 'none';
+      document.getElementById('resultsCard').style.display = 'none';
+      document.getElementById('stubNotice').style.display = 'none';
+      document.getElementById('recipientsCard').style.display = 'block';
+      document.getElementById('composeCard').style.display = 'block';
+      updateSendBtn();
+    }
+
+    // ── Theme ────────────────────────────────────────────────────────────────
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle('light-theme');
+      localStorage.setItem('theme', isLight ? 'light' : 'dark');
+      document.getElementById('themeToggleBtn').textContent = isLight ? '☀️ Light' : '🌙 Dark';
+    }
+
+    function initTheme() {
+      const saved = localStorage.getItem('theme') || 'dark';
+      if (saved === 'light') {
+        document.body.classList.add('light-theme');
+        document.getElementById('themeToggleBtn').textContent = '☀️ Light';
+      } else {
+        document.getElementById('themeToggleBtn').textContent = '🌙 Dark';
+      }
+    }
+
+    initTheme();
+    loadRecipients();
+  </script>
+</body>
+</html>
