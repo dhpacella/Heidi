@@ -1,8 +1,11 @@
 const express = require('express');
 const pool = require('../db/connection');
 const { requireRole } = require('../middleware/auth');
+const { normalizePhone, sendSms } = require('../lib/snsClient');
 
 const router = express.Router();
+const BATCH_SIZE = 10;
+const BATCH_DELAY_MS = 100;
 
 // Health check — test database connection and sms_blasts table
 router.get('/health', async (req, res) => {
@@ -67,7 +70,7 @@ router.post('/migrate-db', requireRole('admin'), async (req, res) => {
 });
 
 // POST /api/sms/send
-// Stub — AWS SNS integration to be added later
+// Send SMS via AWS SNS with batched delivery
 // Body: { message: string, phones: string[], targets?: [{name, phone}] }
 router.post('/send', requireRole('admin', 'campaign_manager'), async (req, res) => {
   const { message, phones, targets } = req.body || {};
@@ -82,48 +85,99 @@ router.post('/send', requireRole('admin', 'campaign_manager'), async (req, res) 
     return res.status(400).json({ error: 'Cannot send more than 500 messages per batch' });
   }
 
-  // Opted-out filtering removed (sms_optouts table not yet in schema)
-  const filteredPhones = phones;
-  const optedOutCount = 0;
+  console.log(`📱 Processing SMS send request: ${phones.length} recipients`);
 
-  if (filteredPhones.length === 0) {
-    return res.status(400).json({ error: 'All recipients have opted out' });
+  // Normalize all phones, collect invalid ones
+  let normalizedPhones = [];
+  let invalidPhones = [];
+
+  phones.forEach(phone => {
+    const normalized = normalizePhone(phone);
+    if (normalized) {
+      normalizedPhones.push({ raw: phone, normalized });
+    } else {
+      invalidPhones.push(phone);
+    }
+  });
+
+  const invalidCount = invalidPhones.length;
+  console.log(`  ✅ Valid: ${normalizedPhones.length} | ❌ Invalid: ${invalidCount}`);
+
+  if (normalizedPhones.length === 0) {
+    return res.status(400).json({
+      error: 'All phone numbers are invalid (must be 10 or 11-digit US numbers)'
+    });
   }
 
-  // Personalization: if targets provided, replace tags per recipient
-  const messages = [];
+  // Build personalization lookup if targets provided
+  let personalizationMap = {};
   if (targets && targets.length > 0) {
-    // Build lookup: phone → {name, first, last}
-    const lookup = {};
     targets.forEach(t => {
       if (t.phone) {
         const parts = (t.name || '').split(',');
         const last = (parts[0] || '').trim();
         const first = (parts[1] || '').trim();
-        lookup[t.phone] = { first, last };
+        personalizationMap[t.phone] = { first, last };
       }
     });
-
-    filteredPhones.forEach(phone => {
-      let msg = message;
-      const person = lookup[phone];
-      if (person) {
-        msg = msg.replace(/{first_name}/g, person.first || '').replace(/{last_name}/g, person.last || '');
-      }
-      messages.push({ phone, msg });
-    });
-  } else {
-    messages = filteredPhones.map(phone => ({ phone, msg: message }));
   }
 
-  // Stub response — logs first 3 personalized messages
-  const samples = messages.slice(0, 3).map(m => `${m.phone}: "${m.msg.substring(0, 50)}..."`).join(' | ');
-  console.log(`[SMS STUB] Would send to ${filteredPhones.length} numbers (${optedOutCount} opted out). Samples: ${samples}`);
+  // Send via SNS in batches
+  let results = [];
+  console.log(`📤 Sending ${normalizedPhones.length} messages in batches of ${BATCH_SIZE}...`);
+
+  for (let i = 0; i < normalizedPhones.length; i += BATCH_SIZE) {
+    const batch = normalizedPhones.slice(i, i + BATCH_SIZE);
+
+    // Personalize each message in batch
+    const personalizedBatch = batch.map(item => {
+      let msg = message;
+      const person = personalizationMap[item.raw];
+      if (person) {
+        msg = msg.replace(/{first_name}/g, person.first || '')
+               .replace(/{last_name}/g, person.last || '');
+      }
+      return { phone: item.normalized, message: msg };
+    });
+
+    // Send batch in parallel
+    const batchResults = await Promise.all(
+      personalizedBatch.map(item => sendSms(item.phone, item.message))
+    );
+    results.push(...batchResults);
+
+    // Delay between batches (except for the last one)
+    if (i + BATCH_SIZE < normalizedPhones.length) {
+      await new Promise(r => setTimeout(r, BATCH_DELAY_MS));
+    }
+  }
+
+  // Calculate send stats
+  const sentCount = results.filter(r => r.success).length;
+  const failedCount = results.filter(r => !r.success).length;
+
+  console.log(`\n📊 Send complete: ${sentCount} sent, ${failedCount} failed, ${invalidCount} invalid`);
+
+  // Calculate SMS parts and cost (based on actual message sent, not normalized)
+  const parts = message.length <= 160 ? 1 : Math.ceil(message.length / 153);
+  const totalCost = (sentCount * parts * 0.007).toFixed(4);
+
+  // Determine blast status
+  let status = 'sent';
+  if (sentCount > 0 && failedCount > 0) status = 'partial';
+  if (sentCount === 0) status = 'failed';
+
+  // Store detailed results in JSONB
+  const resultsJson = {
+    total: normalizedPhones.length,
+    sent: sentCount,
+    failed: failedCount,
+    invalid: invalidCount,
+    optedOut: 0,
+    details: results
+  };
 
   // Log blast to database
-  const parts = message.length <= 160 ? 1 : Math.ceil(message.length / 153);
-  const totalCost = (filteredPhones.length * parts * 0.007).toFixed(4);
-
   try {
     await pool.query(
       `INSERT INTO sms_blasts (sender_id, message, recipient_count, parts_per_message, total_cost, status, results)
@@ -131,26 +185,26 @@ router.post('/send', requireRole('admin', 'campaign_manager'), async (req, res) 
       [
         req.user.id,
         message,
-        filteredPhones.length,
+        sentCount,
         parts,
         totalCost,
-        'sent',
-        JSON.stringify({ total: filteredPhones.length, sent: filteredPhones.length, failed: 0, invalid: 0, optedOut: optedOutCount })
+        status,
+        JSON.stringify(resultsJson)
       ]
     );
+    console.log(`✅ Blast logged to database`);
   } catch (err) {
-    console.error('SMS blast logging error:', err);
-    // Don't fail the response if logging fails
+    console.error('❌ SMS blast logging error:', err.message);
+    // Don't fail the response if logging fails — send was successful
   }
 
   res.json({
     success: true,
-    stub: true,
-    sent: filteredPhones.length,
-    optedOut: optedOutCount,
-    failed: 0,
-    invalid: 0,
-    message: `SMS stub — AWS SNS not yet connected. Blast logged to database (${optedOutCount} opted out).`
+    sent: sentCount,
+    failed: failedCount,
+    invalid: invalidCount,
+    optedOut: 0,
+    message: `SMS sent to ${sentCount} recipients (${failedCount} failed, ${invalidCount} invalid)`
   });
 });
 
