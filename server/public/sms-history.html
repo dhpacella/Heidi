@@ -7,14 +7,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --navy: #001f3f;
-      --gold: #d4af37;
+      --navy: #0a1428;
+      --orange: #ff9900;
       --light-bg: #f5f5f5;
-      --dark-bg: #1a1a1a;
+      --dark-bg: #0a1428;
       --text-light: #333;
-      --text-dark: #e0e0e0;
+      --text-dark: #ffffff;
       --border-light: #ddd;
-      --border-dark: #444;
+      --border-dark: #1a3a52;
     }
 
     * {
@@ -46,7 +46,7 @@
 
     header {
       background-color: var(--navy);
-      color: var(--gold);
+      color: var(--orange);
       padding: 20px;
       border-radius: 8px;
       margin-bottom: 30px;
@@ -84,25 +84,25 @@
 
     .btn-secondary {
       background-color: var(--navy);
-      color: var(--gold);
-      border: 2px solid var(--gold);
+      color: var(--orange);
+      border: 2px solid var(--orange);
     }
 
     .btn-secondary:hover {
-      background-color: var(--gold);
+      background-color: var(--orange);
       color: var(--navy);
     }
 
     .btn-dark-toggle {
       background-color: transparent;
-      color: var(--gold);
-      border: 2px solid var(--gold);
+      color: var(--orange);
+      border: 2px solid var(--orange);
       cursor: pointer;
       padding: 8px 12px;
     }
 
     .btn-dark-toggle:hover {
-      background-color: var(--gold);
+      background-color: var(--orange);
       color: var(--navy);
     }
 
@@ -121,38 +121,29 @@
       border-collapse: collapse;
       margin-top: 20px;
       background-color: var(--navy);
-      color: var(--gold);
+      color: #ffffff;
       border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-
-    body.dark-mode table {
-      background-color: #0a0a0a;
-      border: 1px solid var(--border-dark);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
 
     th {
       background-color: var(--navy);
-      color: var(--gold);
+      color: var(--orange);
       padding: 15px;
       text-align: left;
       font-weight: 600;
-      border-bottom: 2px solid var(--gold);
-    }
-
-    body.dark-mode th {
-      background-color: #0a0a0a;
-      border-bottom-color: var(--gold);
+      border-bottom: 2px solid var(--orange);
     }
 
     td {
       padding: 12px 15px;
-      border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+      border-bottom: 1px solid rgba(255, 153, 0, 0.2);
+      color: #ffffff;
     }
 
     tr:hover {
-      background-color: rgba(212, 175, 55, 0.1);
+      background-color: rgba(255, 153, 0, 0.1);
       cursor: pointer;
     }
 
@@ -168,7 +159,7 @@
     }
 
     .cost {
-      color: #ffeb3b;
+      color: var(--orange);
       font-weight: 600;
     }
 
@@ -212,17 +203,19 @@
     }
 
     .pagination button {
-      padding: 8px 12px;
-      border: 1px solid var(--gold);
-      background-color: var(--navy);
-      color: var(--gold);
+      padding: 8px 16px;
+      border: 1px solid var(--orange);
+      background-color: transparent;
+      color: var(--orange);
       border-radius: 4px;
       cursor: pointer;
       font-weight: 600;
+      font-family: 'Barlow', sans-serif;
+      transition: all 0.3s;
     }
 
     .pagination button:hover {
-      background-color: var(--gold);
+      background-color: var(--orange);
       color: var(--navy);
     }
 
