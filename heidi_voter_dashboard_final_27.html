@@ -109,6 +109,16 @@ body::before{
 }
 .dayslbl{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
 .banner-divider{width:1px;background:var(--border);height:50px;flex-shrink:0;}
+.banner-btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:flex-end;}
+.banner-btn{
+  font-size:11px;padding:6px 12px;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;
+  color:#8BA3BE;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;
+  transition:all .15s;text-decoration:none;display:inline-block;white-space:nowrap;
+}
+.banner-btn:hover{background:rgba(255,255,255,.18);color:#EEF2F7;}
+.banner-btn-admin{background:rgba(245,166,35,.2);border-color:rgba(245,166,35,.5);color:#F5A623;}
+.banner-btn-admin:hover{background:rgba(245,166,35,.3);border-color:rgba(245,166,35,.7);color:#F5A623;}
 
 /* ── TABS ── */
 .tabs{
@@ -598,15 +608,15 @@ tr:hover td{background:var(--surface);}
     <div class="banner-right">
       <div class="days" id="days">—</div>
       <div class="dayslbl">days to election</div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button onclick="toggleTheme()" style="font-size:11px;padding:6px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#8BA3BE;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.15)';this.style.color='#EEF2F7'" onmouseout="this.style.background='rgba(255,255,255,.1)';this.style.color='#8BA3BE'" id="themeToggleBtn">🌙 Dark</button>
+      <div class="banner-btns">
+        <button onclick="toggleTheme()" class="banner-btn" id="themeToggleBtn">🌙 Dark</button>
         <div id="adminButtonContainer" style="display:none">
-          <a href="/admin/users" style="font-size:11px;padding:6px 12px;background:rgba(245,166,35,.2);border:1px solid rgba(245,166,35,.5);border-radius:6px;color:#F5A623;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s;display:inline-block;text-decoration:none" onmouseover="this.style.background='rgba(245,166,35,.3)';this.style.borderColor='rgba(245,166,35,.7)'" onmouseout="this.style.background='rgba(245,166,35,.2)';this.style.borderColor='rgba(245,166,35,.5)'">⚙ Admin</a>
+          <a href="/admin/users" class="banner-btn banner-btn-admin">⚙ Admin</a>
         </div>
+        <form method="POST" action="/logout" style="margin:0">
+          <button type="submit" class="banner-btn">Sign out</button>
+        </form>
       </div>
-      <form method="POST" action="/logout" style="margin-top:12px">
-        <button type="submit" style="font-size:11px;padding:6px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#8BA3BE;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.15)';this.style.color='#EEF2F7'" onmouseout="this.style.background='rgba(255,255,255,.1)';this.style.color='#8BA3BE'">Sign out</button>
-      </form>
     </div>
   </div>
 </div>
