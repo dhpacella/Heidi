@@ -4928,16 +4928,9 @@ function openSmsCompose() {
 }
 
 function openEmailCompose() {
-  const withEmail = filtered.filter(i => VE[i]);
-  if (withEmail.length === 0) {
-    alert('No voters with email addresses match the current filters.');
-    return;
-  }
-  if (withEmail.length > 500 && !confirm(`You are about to email ${withEmail.length.toLocaleString()} voters. Continue?`)) return;
-  const targets = withEmail.map(i => ({ name: VN[i], email: VE[i] }));
   const summary = buildFilterSummary();
-  sessionStorage.setItem('email_targets', JSON.stringify(targets));
   sessionStorage.setItem('email_filter_summary', summary);
+  sessionStorage.setItem('email_filtered_count', filtered.length);
   window.location.href = '/email-compose';
 }
 
