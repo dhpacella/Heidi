@@ -765,6 +765,7 @@ tr:hover td{background:var(--surface);}
   <div class="btn-row">
     <button class="btn" onclick="sw('map')">View on map ↗</button>
     <button class="btn btn-p" onclick="sw('export')">Export this list ↗</button>
+    <button class="btn" id="sms-btn" onclick="openSmsCompose()" style="display:none;background:rgba(29,184,122,.15);color:#1DB87A">💬 Send SMS ↗</button>
   </div>
 </div>
 <div class="table-wrap">
@@ -4886,17 +4887,60 @@ async function loadStats() {
   }
 }
 
+function buildFilterSummary() {
+  const parts = [];
+  if (fPrec) parts.push(fPrec);
+  const partyLabels = ['Hard Rep', 'Weak Rep', 'Swing', 'Weak Dem', 'Hard Dem'];
+  if (fParty.size > 0) {
+    const labels = Array.from(fParty).map(i => partyLabels[i]).join(' + ');
+    parts.push(labels);
+  }
+  const ageLabels = ['18-25', '26-35', '36-45', '46-55', '56-61', '62+'];
+  if (fAge.size > 0) {
+    const labels = Array.from(fAge).map(i => ageLabels[i]).join(' + ');
+    parts.push('Age: ' + labels);
+  }
+  if (fGender.size > 0) {
+    const labels = Array.from(fGender).map(i => i === 0 ? 'Female' : 'Male').join(' + ');
+    parts.push(labels);
+  }
+  if (fContact.size > 0) {
+    const labels = Array.from(fContact).map(c => c === 'mob' ? 'Has mobile' : 'Has landline').join(' + ');
+    parts.push(labels);
+  }
+  if (fName) parts.push(`Name: ${fName}`);
+  return parts.length > 0 ? parts.join(' · ') : 'All voters';
+}
+
+function openSmsCompose() {
+  const withPhone = filtered.filter(i => VP[i]);
+  if (withPhone.length === 0) {
+    alert('No voters with phone numbers match the current filters.');
+    return;
+  }
+  if (withPhone.length > 500 && !confirm(`You are about to send SMS to ${withPhone.length.toLocaleString()} voters. Continue?`)) return;
+  const targets = withPhone.map(i => ({ name: VN[i], phone: VP[i] }));
+  const summary = buildFilterSummary();
+  sessionStorage.setItem('sms_targets', JSON.stringify(targets));
+  sessionStorage.setItem('sms_filter_summary', summary);
+  window.location.href = '/sms-compose';
+}
+
 // Check if user is admin and show admin button
 async function checkAdminAccess() {
   try {
     const res = await fetch('/api/auth/me', { credentials: 'include' });
     if (!res.ok) return;
     const data = await res.json();
-    if (data.user && data.user.role === 'admin') {
+    const role = data.user && data.user.role;
+    if (role === 'admin') {
       document.getElementById('adminButtonContainer').style.display = 'block';
     }
+    if (role === 'admin' || role === 'campaign_manager') {
+      document.getElementById('sms-btn').style.display = 'inline-block';
+    }
   } catch (err) {
-    console.error('Admin check error:', err);
+    console.error('Role check error:', err);
   }
 }
 

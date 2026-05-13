@@ -97,4 +97,11 @@ router.get('/admin/users', requireSession, (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'admin-users.html'));
 });
 
+router.get('/sms-compose', requireSession, (req, res) => {
+  if (req.session.role !== 'admin' && req.session.role !== 'campaign_manager') {
+    return res.status(403).send('Access denied. Admin or Campaign Manager required.');
+  }
+  res.sendFile(path.join(PUBLIC_DIR, 'sms-compose.html'));
+});
+
 module.exports = router;
