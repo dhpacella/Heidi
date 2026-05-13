@@ -1,1 +1,1 @@
-web: cd /var/app/current/server && node src/app-simple.js
+web: cd server && npm start
