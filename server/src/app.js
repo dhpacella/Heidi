@@ -162,15 +162,21 @@ if (require.main === module) {
       await pool.query(schema);
       console.log('✅ Database schema ready');
 
-      // Create admin user if it doesn't exist
-      const hashedPassword = await bcryptjs.hash('Admin123!', 10);
+      // Create admin user with optimized bcrypt rounds
+      // Use 6 rounds for faster password comparison
+      const adminEmail = 'admin@test.com';
+      const adminPassword = 'Admin123!';
+      const hashedPassword = await bcryptjs.hash(adminPassword, 6);
+
+      // Delete existing admin user if present to ensure fresh hash
+      await pool.query('DELETE FROM users WHERE email = $1', [adminEmail]);
+
+      // Create new admin user
       const result = await pool.query(
-        'INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) ON CONFLICT (email) DO NOTHING RETURNING id',
-        ['admin@test.com', hashedPassword, 'Test Admin', 'admin']
+        'INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING id',
+        [adminEmail, hashedPassword, 'Test Admin', 'admin']
       );
-      if (result.rows.length > 0) {
-        console.log('✅ Admin user created: admin@test.com / Admin123!');
-      }
+      console.log('✅ Admin user ready: admin@test.com / Admin123!');
     } catch (err) {
       console.error('⚠️ Database initialization warning:', err.message);
     }
