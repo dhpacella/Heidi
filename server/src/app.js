@@ -299,7 +299,7 @@ if (require.main === module) {
 
     // Register Lighthouse performance audit scheduler
     try {
-      const { scheduleLighthouseAudits } = require('./scheduler/lighthouse-scheduler');
+      const { scheduleLighthouseAudits } = require('../scheduler/lighthouse-scheduler');
       scheduleLighthouseAudits();
     } catch (err) {
       console.error('⚠️ Failed to start Lighthouse scheduler:', err.message);
