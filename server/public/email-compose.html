@@ -438,12 +438,21 @@
       </div>
 
       <div id="tab-list-content" style="display: none;">
-        <select id="listSelect" onchange="loadListSubscribers()" style="width: 100%; padding: 10px; margin-bottom: 16px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px;">
+        <label style="display: block; margin-bottom: 12px; font-weight: 600;">Select a List</label>
+        <select id="listSelect" onchange="loadListSegments()" style="width: 100%; padding: 10px; margin-bottom: 16px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px;">
           <option value="">-- Loading lists --</option>
         </select>
+
+        <div id="segmentContainer" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 12px; font-weight: 600;">Select a Segment (Optional)</label>
+          <select id="segmentSelect" onchange="loadSegmentCount()" style="width: 100%; padding: 10px; margin-bottom: 16px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px;">
+            <option value="">-- All subscribers --</option>
+          </select>
+        </div>
+
         <div id="listPreview" style="background: rgba(245, 166, 35, 0.08); border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: none;">
           <div style="color: var(--gold); font-weight: 600; margin-bottom: 8px;"><span id="listCount">0</span> subscribers</div>
-          <button class="btn btn-primary" onclick="confirmListSelection()" style="width: 100%;">✓ Use This List</button>
+          <button class="btn btn-primary" onclick="confirmListSelection()" style="width: 100%;">✓ Use This Selection</button>
         </div>
       </div>
     </div>
@@ -730,16 +739,31 @@
 
     async function sendNow() {
       closeModal();
-      const file = fileInput.files[0];
       const subject = document.getElementById('subject').value;
       const htmlBody = document.getElementById('htmlBody').value;
       const textBody = '';
 
+      const isListTab = document.getElementById('tab-list-content').style.display === 'block' &&
+                        document.getElementById('tab-upload-content').style.display === 'none';
+
       const formData = new FormData();
-      formData.append('file', file);
       formData.append('subject', subject);
       formData.append('htmlBody', htmlBody);
       formData.append('textBody', textBody);
+
+      if (isListTab && selectedListId) {
+        formData.append('list_id', selectedListId);
+        if (selectedSegmentId) {
+          formData.append('segment_id', selectedSegmentId);
+        }
+      } else {
+        const file = fileInput.files[0];
+        if (!file) {
+          alert('❌ No file selected');
+          return;
+        }
+        formData.append('file', file);
+      }
 
       try {
         const response = await fetch('/api/email/send', {
@@ -750,10 +774,12 @@
         const result = await response.json();
         if (result.success) {
           alert(`✅ Email sent to ${result.sent} recipients`);
-          fileInput.value = '';
+          if (!isListTab) {
+            fileInput.value = '';
+            document.getElementById('fileInfo').style.display = 'none';
+          }
           document.getElementById('subject').value = '';
           document.getElementById('htmlBody').value = '';
-          document.getElementById('fileInfo').style.display = 'none';
           updateSendButton();
         } else {
           alert('❌ Error: ' + (result.error || result.message));
@@ -790,24 +816,77 @@
       }
     }
 
-    async function loadListSubscribers() {
+    let selectedListId = null;
+    let selectedSegmentId = null;
+
+    async function loadListSegments() {
       const val = document.getElementById('listSelect').value;
       if (!val) {
+        document.getElementById('segmentContainer').style.display = 'none';
         document.getElementById('listPreview').style.display = 'none';
         return;
       }
+
       const [listId, count] = val.split(':');
+      selectedListId = listId;
+      selectedSegmentId = null;
+
+      document.getElementById('segmentContainer').style.display = 'block';
       document.getElementById('listCount').textContent = count;
       document.getElementById('listPreview').style.display = 'block';
+      document.getElementById('listPreview').style.backgroundColor = 'rgba(245, 166, 35, 0.08)';
+
+      try {
+        const res = await fetch(`/api/lists/${listId}/segments`);
+        const data = await res.json();
+        const segmentSelect = document.getElementById('segmentSelect');
+        segmentSelect.innerHTML = '<option value="">-- All subscribers --</option>';
+        if (data.segments && data.segments.length > 0) {
+          data.segments.forEach(seg => {
+            segmentSelect.innerHTML += `<option value="${seg.id}">${seg.name}</option>`;
+          });
+        }
+      } catch (err) {
+        console.error('Error loading segments:', err);
+      }
+
       fullData = Array(parseInt(count)).fill({email: 'subscriber@example.com'});
       uploadedData = fullData.slice(0, 5);
       updateRecipientCount(parseInt(count));
       updateSendButton();
     }
 
+    async function loadSegmentCount() {
+      const segmentId = document.getElementById('segmentSelect').value;
+      selectedSegmentId = segmentId || null;
+
+      if (!segmentId) {
+        const [, count] = document.getElementById('listSelect').value.split(':');
+        document.getElementById('listCount').textContent = count;
+        fullData = Array(parseInt(count)).fill({email: 'subscriber@example.com'});
+        uploadedData = fullData.slice(0, 5);
+        updateRecipientCount(parseInt(count));
+        updateSendButton();
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/lists/${selectedListId}/segments/${segmentId}/subscribers`);
+        const data = await res.json();
+        const count = data.count || 0;
+        document.getElementById('listCount').textContent = count;
+        fullData = (data.subscribers || []).map(s => ({email: s.email, first_name: s.first_name, last_name: s.last_name}));
+        uploadedData = fullData.slice(0, 5);
+        updateRecipientCount(count);
+        updateSendButton();
+      } catch (err) {
+        console.error('Error loading segment:', err);
+      }
+    }
+
     function confirmListSelection() {
       // Recipient count already set, proceed to compose
-      alert('List selected! Now compose your email.');
+      alert('Selection confirmed! Now compose your email.');
     }
 
     initTheme();

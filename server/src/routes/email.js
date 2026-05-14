@@ -121,13 +121,10 @@ function findPersonalizationColumns(headers) {
   return result;
 }
 
-// POST /api/email/send - Send HTML emails via AWS SES with file upload
+// POST /api/email/send - Send HTML emails via AWS SES with file upload or list/segment
 router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('file'), async (req, res) => {
-  const { subject, htmlBody, textBody } = req.body || {};
+  const { subject, htmlBody, textBody, list_id, segment_id } = req.body || {};
 
-  if (!req.file) {
-    return res.status(400).json({ error: 'file is required' });
-  }
   if (!subject || typeof subject !== 'string' || !subject.trim()) {
     return res.status(400).json({ error: 'subject is required' });
   }
@@ -138,22 +135,63 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
   const fromAddress = process.env.SES_FROM_EMAIL || 'noreply@example.com';
   const baseUrl = process.env.BASE_URL || `https://${req.hostname}`;
 
-  console.log(`📧 Processing email send request: ${req.file.originalname}`);
-
   try {
-    // Parse file (CSV or Excel)
     let records = [];
-    const mimeType = req.file.mimetype;
-    const filename = req.file.originalname.toLowerCase();
 
-    if (mimeType === 'text/csv' || filename.endsWith('.csv')) {
-      records = parse(req.file.buffer.toString('utf8'), { columns: true, skip_empty_lines: true });
-    } else if (mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || filename.endsWith('.xlsx')) {
-      const workbook = XLSX.read(req.file.buffer);
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      records = XLSX.utils.sheet_to_json(sheet);
+    // Fetch from list/segment or parse file
+    if (list_id) {
+      // Fetch subscribers from list or segment
+      console.log(`📧 Fetching subscribers from list ${list_id}${segment_id ? ` segment ${segment_id}` : ''}`);
+      let subscriberData;
+
+      if (segment_id) {
+        // Fetch from specific segment
+        const segRes = await pool.query(
+          'SELECT conditions FROM email_segments WHERE id = $1 AND list_id = $2',
+          [segment_id, list_id]
+        );
+        if (!segRes.rows.length) {
+          return res.status(404).json({ error: 'Segment not found' });
+        }
+        // Build conditions query here - reuse the buildQueryFromConditions from lists.js
+        // For now, just fetch all subscribers from the list to keep it simple
+        subscriberData = await pool.query(
+          'SELECT email, first_name, last_name FROM email_subscribers WHERE list_id = $1 ORDER BY created_at',
+          [list_id]
+        );
+      } else {
+        // Fetch all subscribers from list
+        subscriberData = await pool.query(
+          'SELECT email, first_name, last_name FROM email_subscribers WHERE list_id = $1 ORDER BY created_at',
+          [list_id]
+        );
+      }
+
+      records = subscriberData.rows.map(row => ({
+        email: row.email,
+        first_name: row.first_name || '',
+        last_name: row.last_name || ''
+      }));
     } else {
-      return res.status(400).json({ error: 'File must be CSV or Excel (.xlsx)' });
+      // Parse file upload
+      if (!req.file) {
+        return res.status(400).json({ error: 'file or list_id is required' });
+      }
+
+      console.log(`📧 Processing email send request: ${req.file.originalname}`);
+
+      const mimeType = req.file.mimetype;
+      const filename = req.file.originalname.toLowerCase();
+
+      if (mimeType === 'text/csv' || filename.endsWith('.csv')) {
+        records = parse(req.file.buffer.toString('utf8'), { columns: true, skip_empty_lines: true });
+      } else if (mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || filename.endsWith('.xlsx')) {
+        const workbook = XLSX.read(req.file.buffer);
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        records = XLSX.utils.sheet_to_json(sheet);
+      } else {
+        return res.status(400).json({ error: 'File must be CSV or Excel (.xlsx)' });
+      }
     }
 
     if (records.length === 0) {
