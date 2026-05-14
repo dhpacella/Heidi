@@ -1,11 +1,23 @@
 require('dotenv').config();
 const pool = require('./src/db/connection');
 const bcryptjs = require('bcryptjs');
+const fs = require('fs');
+const path = require('path');
 
 async function createAdmin() {
   try {
     const email = 'admin@test.com';
     const password = 'Admin123!';
+
+    // First, ensure schema exists
+    console.log('📦 Ensuring database schema exists...');
+    const schemaPath = path.join(__dirname, 'src/db/schema.sql');
+    const schema = fs.readFileSync(schemaPath, 'utf8');
+    await pool.query(schema);
+    console.log('✅ Schema ready');
+
+    // Then create admin user
+    console.log('👤 Creating admin user...');
     const hashedPassword = await bcryptjs.hash(password, 10);
 
     const result = await pool.query(
