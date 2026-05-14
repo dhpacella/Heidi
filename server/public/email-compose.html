@@ -834,6 +834,8 @@
       const htmlBody = document.getElementById('htmlBody').value;
       const textBody = '';
 
+      console.log('📝 Form values:', { subject: subject.substring(0, 50), htmlBody: htmlBody.substring(0, 50) });
+
       const isListTab = document.getElementById('tab-list-content').style.display === 'block' &&
                         document.getElementById('tab-upload-content').style.display === 'none';
 
