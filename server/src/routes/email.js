@@ -123,7 +123,7 @@ function findPersonalizationColumns(headers) {
 
 // POST /api/email/send - Send HTML emails via AWS SES with file upload or list/segment
 router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('file'), async (req, res) => {
-  const { subject, htmlBody, textBody, list_id, segment_id, scheduled_at } = req.body || {};
+  const { subject, htmlBody, textBody, list_id, segment_id, scheduled_at, variant_b_subject, variant_b_html_body } = req.body || {};
 
   if (!subject || typeof subject !== 'string' || !subject.trim()) {
     return res.status(400).json({ error: 'subject is required' });
@@ -252,6 +252,16 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
       return res.status(400).json({ error: 'Cannot send to more than 500 recipients per batch' });
     }
 
+    // Check if this is an A/B test (out of scope for scheduled sends)
+    const isAbTest = !!(variant_b_subject && variant_b_html_body);
+    if (isAbTest && scheduled_at) {
+      return res.status(400).json({ error: 'A/B testing is not supported for scheduled sends' });
+    }
+
+    if (isAbTest) {
+      return handleAbTest(req, res, pool, subject, htmlBody, variant_b_subject, variant_b_html_body, textBody, validRecords, fromAddress, baseUrl, invalidCount);
+    }
+
     // Determine if this is a scheduled or immediate send
     const isScheduled = scheduled_at !== undefined && scheduled_at !== null && scheduled_at !== '';
     const blastStatus = isScheduled ? 'scheduled' : 'sending';
@@ -283,28 +293,8 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
     console.log(`✅ Created blast record (ID: ${blastId}, status: ${blastStatus})`);
 
     // Step 2: Insert all recipients and get their IDs back
-    const recipientValues = validRecords.map((_, i) =>
-      `($1, $${i*4+2}, $${i*4+3}, $${i*4+4}, 'pending')`
-    ).join(',');
-
-    const params = [blastId];
-    validRecords.forEach(record => {
-      params.push(record.email, record.firstName || null, record.lastName || null);
-    });
-
-    const recipientsResult = await pool.query(
-      `INSERT INTO email_recipients (blast_id, email, first_name, last_name, status)
-       VALUES ${recipientValues}
-       RETURNING id, email`,
-      params
-    );
-
-    // Build map of email → recipientId for tracking
-    const emailToRecipientId = {};
-    recipientsResult.rows.forEach(row => {
-      emailToRecipientId[row.email] = row.id;
-    });
-    console.log(`✅ Inserted ${recipientsResult.rows.length} recipient records`);
+    const { emailToRecipientId } = await insertRecipients(pool, blastId, validRecords);
+    console.log(`✅ Inserted ${validRecords.length} recipient records`);
 
     // Step 3: Handle scheduled vs immediate send
     if (isScheduled) {
@@ -561,6 +551,45 @@ router.get('/blasts/:id/recipients', requireRole('admin', 'campaign_manager'), a
   }
 });
 
+// GET /api/email/ab-tests - list all A/B tests with both variant stats
+router.get('/ab-tests', requireRole('admin', 'campaign_manager'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT b.ab_test_id as test_id,
+              b.id as blast_id,
+              b.ab_variant,
+              b.subject,
+              b.recipient_count,
+              b.status,
+              b.created_at,
+              COUNT(CASE WHEN er.opened_at IS NOT NULL THEN 1 END) as opened_count,
+              COUNT(CASE WHEN er.clicked_at IS NOT NULL THEN 1 END) as clicked_count
+       FROM email_blasts b
+       LEFT JOIN email_recipients er ON er.blast_id = b.id
+       WHERE b.ab_test_id IS NOT NULL AND b.sender_id = $1
+       GROUP BY b.id
+       ORDER BY b.ab_test_id DESC, b.ab_variant`,
+      [req.user.id]
+    );
+
+    // Group rows by test_id to pair A and B variants
+    const tests = {};
+    rows.forEach(row => {
+      if (!tests[row.test_id]) {
+        tests[row.test_id] = { testId: row.test_id, created_at: row.created_at, variantA: null, variantB: null };
+      }
+      if (row.ab_variant === 'A') tests[row.test_id].variantA = row;
+      if (row.ab_variant === 'B') tests[row.test_id].variantB = row;
+    });
+
+    const testList = Object.values(tests);
+    res.json({ tests: testList, total: testList.length });
+  } catch (err) {
+    console.error('❌ Fetch A/B tests error:', err.message);
+    res.status(500).json({ error: `Database error: ${err.message}` });
+  }
+});
+
 // GET /api/email/templates - list user's email templates
 router.get('/templates', requireRole('admin', 'campaign_manager'), async (req, res) => {
   try {
@@ -626,6 +655,105 @@ router.delete('/templates/:id', requireRole('admin', 'campaign_manager'), async 
     res.status(500).json({ error: `Delete failed: ${err.message}` });
   }
 });
+
+// Helper: Handle A/B test sending
+async function handleAbTest(req, res, pool, subject, htmlBody, variantBSubject, variantBHtmlBody, textBody, validRecords, fromAddress, baseUrl, invalidCount) {
+  try {
+    console.log(`📊 A/B Test mode: ${validRecords.length} recipients, splitting 50/50`);
+
+    // Shuffle and split 50/50
+    const shuffled = validRecords.sort(() => Math.random() - 0.5);
+    const half = Math.floor(shuffled.length / 2);
+    const groupA = shuffled.slice(0, half);
+    const groupB = shuffled.slice(half);
+
+    console.log(`  Variant A: ${groupA.length} recipients`);
+    console.log(`  Variant B: ${groupB.length} recipients`);
+
+    // Insert blast A (variant='A', will set ab_test_id = its own id)
+    const blastAResult = await pool.query(
+      `INSERT INTO email_blasts (sender_id, subject, html_body, from_address, recipient_count, status, ab_variant)
+       VALUES ($1, $2, $3, $4, $5, 'sending', 'A') RETURNING id`,
+      [req.user.id, subject, htmlBody, fromAddress, groupA.length]
+    );
+    const blastAId = blastAResult.rows[0].id;
+    console.log(`✅ Created blast A (ID: ${blastAId})`);
+
+    // Self-reference: ab_test_id = blastAId
+    await pool.query(
+      `UPDATE email_blasts SET ab_test_id = $1 WHERE id = $1`,
+      [blastAId]
+    );
+
+    // Insert blast B (variant='B', ab_test_id = blastAId)
+    const blastBResult = await pool.query(
+      `INSERT INTO email_blasts (sender_id, subject, html_body, from_address, recipient_count, status, ab_test_id, ab_variant)
+       VALUES ($1, $2, $3, $4, $5, 'sending', $6, 'B') RETURNING id`,
+      [req.user.id, variantBSubject, variantBHtmlBody, fromAddress, groupB.length, blastAId]
+    );
+    const blastBId = blastBResult.rows[0].id;
+    console.log(`✅ Created blast B (ID: ${blastBId})`);
+
+    // Insert recipients for both variants
+    const [recipA, recipB] = await Promise.all([
+      insertRecipients(pool, blastAId, groupA, 'A'),
+      insertRecipients(pool, blastBId, groupB, 'B')
+    ]);
+    console.log(`✅ Inserted ${groupA.length + groupB.length} recipient records`);
+
+    // Send both variants concurrently
+    const [resultA, resultB] = await Promise.all([
+      dispatchBlast(pool, blastAId, groupA, recipA.emailToRecipientId, subject, htmlBody, textBody, fromAddress, baseUrl),
+      dispatchBlast(pool, blastBId, groupB, recipB.emailToRecipientId, variantBSubject, variantBHtmlBody, textBody, fromAddress, baseUrl)
+    ]);
+
+    console.log(`\n✅ A/B test complete: A sent ${resultA.sentCount}, B sent ${resultB.sentCount}`);
+
+    res.json({
+      success: true,
+      abTest: true,
+      testId: blastAId,
+      invalid: invalidCount,
+      variantA: { blastId: blastAId, sent: resultA.sentCount, failed: resultA.failedCount },
+      variantB: { blastId: blastBId, sent: resultB.sentCount, failed: resultB.failedCount },
+      message: `A/B test sent! Variant A: ${resultA.sentCount} sent | Variant B: ${resultB.sentCount} sent`
+    });
+  } catch (err) {
+    console.error('❌ A/B test error:', err.message);
+    res.status(500).json({ error: `A/B test failed: ${err.message}` });
+  }
+}
+
+// Helper: Insert recipients and return email→id map
+async function insertRecipients(pool, blastId, validRecords, abVariant = null) {
+  const recipientValues = validRecords.map((_, i) =>
+    abVariant
+      ? `($1, $${i*4+2}, $${i*4+3}, $${i*4+4}, 'pending', $${i*4+5})`
+      : `($1, $${i*4+2}, $${i*4+3}, $${i*4+4}, 'pending')`
+  ).join(',');
+
+  const params = [blastId];
+  validRecords.forEach(record => {
+    params.push(record.email, record.firstName || null, record.lastName || null);
+    if (abVariant) params.push(abVariant);
+  });
+
+  const columns = abVariant
+    ? '(blast_id, email, first_name, last_name, status, ab_variant)'
+    : '(blast_id, email, first_name, last_name, status)';
+
+  const recipientsResult = await pool.query(
+    `INSERT INTO email_recipients ${columns} VALUES ${recipientValues} RETURNING id, email`,
+    params
+  );
+
+  const emailToRecipientId = {};
+  recipientsResult.rows.forEach(row => {
+    emailToRecipientId[row.email] = row.id;
+  });
+
+  return { emailToRecipientId };
+}
 
 // Helper: Dispatch a scheduled or queued blast
 async function dispatchBlast(pool, blastId, validRecords, emailToRecipientId, subject, htmlBody, textBody, fromAddress, baseUrl) {

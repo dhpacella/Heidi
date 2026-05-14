@@ -528,6 +528,23 @@
       </div>
     </div>
 
+    <!-- A/B Test Section -->
+    <div id="abSection" style="margin-bottom: 24px; padding: 16px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--border);">
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 12px;">
+        <input type="checkbox" id="abToggle" onchange="toggleAbTest()" />
+        <span style="font-weight: 600;">📊 A/B Test (two variants)</span>
+      </label>
+      <div id="abInputs" style="display: none;">
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+          Recipients will be split 50/50. The fields above are <strong>Variant A</strong>. Enter <strong>Variant B</strong> below:
+        </p>
+        <input type="text" id="variantBSubject" placeholder="Variant B — Subject line"
+               style="width: 100%; padding: 10px; margin-bottom: 12px; background: var(--surface-1); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-family: 'Barlow', sans-serif; font-size: 13px;" />
+        <textarea id="variantBHtmlBody" placeholder="Variant B — HTML body" rows="8"
+                  style="width: 100%; padding: 10px; background: var(--surface-1); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-family: monospace; font-size: 12px; resize: vertical;"></textarea>
+      </div>
+    </div>
+
     <!-- Send Button -->
     <div style="text-align: center; margin-bottom: 24px;">
       <button class="btn btn-primary" id="sendBtn" onclick="confirmSend()" style="padding: 12px 48px; font-size: 14px; font-weight: 700;" disabled>
@@ -802,6 +819,19 @@
         formData.append('scheduled_at', scheduledAt);
       }
 
+      // Add A/B test params if enabled
+      const isAbTest = document.getElementById('abToggle')?.checked;
+      if (isAbTest) {
+        const variantBSubject = document.getElementById('variantBSubject')?.value || '';
+        const variantBHtmlBody = document.getElementById('variantBHtmlBody')?.value || '';
+        if (!variantBSubject.trim() || !variantBHtmlBody.trim()) {
+          alert('❌ Variant B subject and body are required for A/B testing');
+          return;
+        }
+        formData.append('variant_b_subject', variantBSubject);
+        formData.append('variant_b_html_body', variantBHtmlBody);
+      }
+
       if (isListTab && selectedListId) {
         formData.append('list_id', selectedListId);
         if (selectedSegmentId) {
@@ -824,7 +854,10 @@
 
         const result = await response.json();
         if (result.success) {
-          if (response.status === 202) {
+          if (result.abTest) {
+            // A/B test send
+            alert(`✅ A/B test sent!\n\nVariant A: ${result.variantA.sent} sent\nVariant B: ${result.variantB.sent} sent\n\nView results at /email-ab-tests`);
+          } else if (response.status === 202) {
             // Scheduled send
             const scheduledTime = new Date(scheduledAt).toLocaleString();
             alert(`✅ Email scheduled for ${scheduledTime}`);
@@ -843,6 +876,10 @@
           document.getElementById('scheduleToggle').checked = false;
           document.getElementById('scheduleInputs').style.display = 'none';
           document.getElementById('scheduledAt').value = '';
+          document.getElementById('abToggle').checked = false;
+          document.getElementById('abInputs').style.display = 'none';
+          document.getElementById('variantBSubject').value = '';
+          document.getElementById('variantBHtmlBody').value = '';
           updateSendButton();
         } else {
           alert('❌ Error: ' + (result.error || result.message));
@@ -866,6 +903,12 @@
         const later = new Date(Date.now() + 60 * 60 * 1000);
         document.getElementById('scheduledAt').value = later.toISOString().slice(0, 16);
       }
+    }
+
+    // Toggle A/B test section
+    function toggleAbTest() {
+      const checked = document.getElementById('abToggle').checked;
+      document.getElementById('abInputs').style.display = checked ? 'block' : 'none';
     }
 
     // Tab switching

@@ -233,3 +233,13 @@ ALTER TABLE email_blasts
   ADD COLUMN IF NOT EXISTS segment_id INTEGER REFERENCES email_segments(id) ON DELETE SET NULL;
 
 CREATE INDEX IF NOT EXISTS idx_email_blasts_scheduled ON email_blasts(scheduled_at) WHERE status = 'scheduled';
+
+-- A/B Testing Support
+ALTER TABLE email_blasts
+  ADD COLUMN IF NOT EXISTS ab_test_id INTEGER REFERENCES email_blasts(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS ab_variant CHAR(1);
+
+ALTER TABLE email_recipients
+  ADD COLUMN IF NOT EXISTS ab_variant CHAR(1);
+
+CREATE INDEX IF NOT EXISTS idx_email_blasts_ab_test ON email_blasts(ab_test_id);
