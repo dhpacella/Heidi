@@ -130,12 +130,22 @@ function findPersonalizationColumns(headers) {
 
 // POST /api/email/send - Send HTML emails via AWS SES with file upload or list/segment
 router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('file'), async (req, res) => {
+  console.log('📬 POST /api/email/send received');
+  console.log('  📋 Body fields:', Object.keys(req.body || {}));
+  console.log('  📁 File:', req.file ? `${req.file.originalname} (${req.file.size} bytes)` : 'NO FILE');
+
   const { subject, htmlBody, textBody, list_id, segment_id, scheduled_at, variant_b_subject, variant_b_html_body, senderEmail, senderName } = req.body || {};
 
+  console.log('  📧 Sender: name="${senderName}" email="${senderEmail}"');
+  console.log('  📝 Subject:', subject ? `"${subject.substring(0, 50)}..."` : 'NOT PROVIDED');
+  console.log('  📧 List ID:', list_id || 'none');
+
   if (!subject || typeof subject !== 'string' || !subject.trim()) {
+    console.log('  ❌ ERROR: subject is required');
     return res.status(400).json({ error: 'subject is required' });
   }
   if (!htmlBody || typeof htmlBody !== 'string' || !htmlBody.trim()) {
+    console.log('  ❌ ERROR: htmlBody is required');
     return res.status(400).json({ error: 'htmlBody is required' });
   }
 
@@ -195,10 +205,11 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
     } else {
       // Parse file upload
       if (!req.file) {
+        console.log('  ❌ ERROR: file or list_id is required - no file and no list_id');
         return res.status(400).json({ error: 'file or list_id is required' });
       }
 
-      console.log(`📧 Processing email send request: ${req.file.originalname}`);
+      console.log(`  📧 Processing file upload: ${req.file.originalname} (${req.file.size} bytes)`);
 
       const mimeType = req.file.mimetype;
       const filename = req.file.originalname.toLowerCase();
@@ -215,10 +226,11 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
     }
 
     if (records.length === 0) {
+      console.log('  ❌ ERROR: File contains no records');
       return res.status(400).json({ error: 'File contains no records' });
     }
 
-    console.log(`📄 Parsed ${records.length} records from file`);
+    console.log(`  ✅ Parsed ${records.length} records from file`);
 
     // Find email column
     const headers = Object.keys(records[0]);
@@ -251,8 +263,12 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
     });
 
     console.log(`  ✅ Valid: ${validRecords.length} | ❌ Invalid: ${invalidCount}`);
+    if (validRecords.length > 0) {
+      console.log(`  📧 Sample recipient: ${validRecords[0].email}`);
+    }
 
     if (validRecords.length === 0) {
+      console.log('  ❌ ERROR: No valid email addresses in file');
       return res.status(400).json({ error: 'No valid email addresses in file' });
     }
 
@@ -298,7 +314,7 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
 
     const blastResult = await pool.query(blastQuery, blastParams);
     const blastId = blastResult.rows[0].id;
-    console.log(`✅ Created blast record (ID: ${blastId}, status: ${blastStatus})`);
+    console.log(`  ✅ Blast created (ID: ${blastId}, status: ${blastStatus}, recipients: ${validRecords.length})`);
 
     // Step 2: Insert all recipients and get their IDs back
     const { emailToRecipientId } = await insertRecipients(pool, blastId, validRecords);
@@ -402,7 +418,9 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
       message: `Email sent to ${sentCount} recipients (${failedCount} failed, ${invalidCount} invalid)`
     });
   } catch (err) {
-    console.error('❌ Email send error:', err.message);
+    console.error('❌ EMAIL SEND ERROR');
+    console.error('  Error message:', err.message);
+    console.error('  Stack:', err.stack);
     res.status(500).json({ error: `Email send failed: ${err.message}` });
   }
 });
