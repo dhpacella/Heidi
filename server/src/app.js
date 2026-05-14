@@ -148,8 +148,32 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 if (require.main === module) {
-  app.listen(PORT, () => {
+  app.listen(PORT, async () => {
     console.log(`🚀 Server running on port ${PORT}`);
+
+    // Initialize database schema and admin user on startup
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const bcryptjs = require('bcryptjs');
+
+      const schemaPath = path.join(__dirname, 'db', 'schema.sql');
+      const schema = fs.readFileSync(schemaPath, 'utf8');
+      await pool.query(schema);
+      console.log('✅ Database schema ready');
+
+      // Create admin user if it doesn't exist
+      const hashedPassword = await bcryptjs.hash('Admin123!', 10);
+      const result = await pool.query(
+        'INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) ON CONFLICT (email) DO NOTHING RETURNING id',
+        ['admin@test.com', hashedPassword, 'Test Admin', 'admin']
+      );
+      if (result.rows.length > 0) {
+        console.log('✅ Admin user created: admin@test.com / Admin123!');
+      }
+    } catch (err) {
+      console.error('⚠️ Database initialization warning:', err.message);
+    }
 
     // Register email scheduler for dispatching scheduled blasts
     try {
