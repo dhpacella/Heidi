@@ -1,8 +1,15 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 
+if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL not set in .env');
+  process.exit(1);
+}
+
 const pool = new Pool({
-  connectionString: 'postgresql://ebroot:HeiDi2025!Secure@awseb-e-6ptp5j74j4-stack-awsebrdsdatabase-rboc67jcwldv.cgjywa0isf5t.us-east-1.rds.amazonaws.com:5432/postgres'
+  connectionString: process.env.DATABASE_URL
 });
 
 async function createAdmin() {

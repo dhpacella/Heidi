@@ -1,5 +1,12 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
+
+if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL not set in .env');
+  process.exit(1);
+}
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,

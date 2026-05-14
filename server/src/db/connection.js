@@ -1,15 +1,22 @@
 const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
 console.log('📦 Initializing database pool...');
+console.log('DATABASE_URL set:', !!process.env.DATABASE_URL);
+console.log('DATABASE_URL length:', process.env.DATABASE_URL?.length);
 
 // Configure SSL for RDS
 const poolConfig = {
   connectionString: process.env.DATABASE_URL,
   ssl: false // Start with no SSL, will enable below if needed
 };
+
+if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL is not set in environment');
+  process.exit(1);
+}
 
 // If DATABASE_URL contains sslmode parameter, use SSL
 if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('sslmode')) {

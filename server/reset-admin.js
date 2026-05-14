@@ -1,4 +1,8 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+console.log('✅ Loading .env from:', path.join(__dirname, '.env'));
+console.log('DATABASE_URL:', process.env.DATABASE_URL?.substring(0, 30) + '...');
+
 const pool = require('./src/db/connection');
 const bcrypt = require('bcryptjs');
 
