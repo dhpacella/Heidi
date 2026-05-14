@@ -58,6 +58,7 @@ app.use('/api/canvassing', requireApiAuth, require('./routes/canvassing'));
 app.use('/api/referrals', requireApiAuth, require('./routes/referrals'));
 app.use('/api/super-picks', requireApiAuth, require('./routes/superPicks'));
 app.use('/api/sms', requireApiAuth, require('./routes/sms'));
+app.use('/api/lighthouse', requireApiAuth, require('./routes/lighthouse'));
 
 // SES webhook (no auth — authenticated by SNS topic ARN)
 app.post('/api/email/webhooks/ses', express.json({ type: '*/*' }), require('./routes/sesWebhook'));
@@ -221,6 +222,14 @@ if (require.main === module) {
       scheduleDispatcher(pool);
     } catch (err) {
       console.error('⚠️ Failed to start email scheduler:', err.message);
+    }
+
+    // Register Lighthouse performance audit scheduler
+    try {
+      const { scheduleLighthouseAudits } = require('./scheduler/lighthouse-scheduler');
+      scheduleLighthouseAudits();
+    } catch (err) {
+      console.error('⚠️ Failed to start Lighthouse scheduler:', err.message);
     }
   });
 }
