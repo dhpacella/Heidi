@@ -477,4 +477,70 @@ router.get('/blasts/:id/recipients', requireRole('admin', 'campaign_manager'), a
   }
 });
 
+// GET /api/email/templates - list user's email templates
+router.get('/templates', requireRole('admin', 'campaign_manager'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, name, subject, created_at, updated_at
+       FROM email_templates
+       WHERE user_id = $1
+       ORDER BY updated_at DESC`,
+      [req.user.id]
+    );
+
+    res.json({ templates: rows });
+  } catch (err) {
+    console.error('❌ Fetch templates error:', err.message);
+    res.status(500).json({ error: `Database error: ${err.message}` });
+  }
+});
+
+// POST /api/email/templates - save a new email template
+router.post('/templates', requireRole('admin', 'campaign_manager'), async (req, res) => {
+  try {
+    const { name, subject, htmlBody } = req.body || {};
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+    if (!subject || typeof subject !== 'string' || !subject.trim()) {
+      return res.status(400).json({ error: 'subject is required' });
+    }
+    if (!htmlBody || typeof htmlBody !== 'string' || !htmlBody.trim()) {
+      return res.status(400).json({ error: 'htmlBody is required' });
+    }
+
+    const { rows } = await pool.query(
+      `INSERT INTO email_templates (user_id, name, subject, html_body)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, name, subject, created_at, updated_at`,
+      [req.user.id, name.trim(), subject.trim(), htmlBody]
+    );
+
+    res.json({ success: true, template: rows[0] });
+  } catch (err) {
+    console.error('❌ Save template error:', err.message);
+    res.status(500).json({ error: `Save failed: ${err.message}` });
+  }
+});
+
+// DELETE /api/email/templates/:id - delete a template
+router.delete('/templates/:id', requireRole('admin', 'campaign_manager'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'DELETE FROM email_templates WHERE id = $1 AND user_id = $2 RETURNING id',
+      [req.params.id, req.user.id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+
+    res.json({ success: true, templateId: req.params.id });
+  } catch (err) {
+    console.error('❌ Delete template error:', err.message);
+    res.status(500).json({ error: `Delete failed: ${err.message}` });
+  }
+});
+
 module.exports = router;
