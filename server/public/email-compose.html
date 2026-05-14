@@ -461,6 +461,12 @@
     <div class="card">
       <h2>✏️ Compose Email</h2>
 
+      <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+        <select id="templateSelect" onchange="loadTemplate()" style="flex: 1; padding: 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-family: 'Barlow', sans-serif; font-size: 13px;">
+          <option value="">-- Load saved template --</option>
+        </select>
+      </div>
+
       <label for="subject">Subject Line</label>
       <input type="text" id="subject" placeholder="Email subject">
 
@@ -484,7 +490,10 @@
 
       <textarea id="htmlBody" placeholder="<p>Your email message here...</p>&#10;<p>Hello {first_name}!</p>"></textarea>
 
-      <button class="btn" onclick="previewEmail()" style="margin-top: 12px;">👁️ Preview</button>
+      <div style="display: flex; gap: 12px; margin-top: 12px;">
+        <button class="btn" onclick="previewEmail()">👁️ Preview</button>
+        <button class="btn" onclick="saveAsTemplate()">💾 Save as Template</button>
+      </div>
     </div>
 
     <!-- Recipients & Cost Card -->
@@ -889,7 +898,77 @@
       alert('Selection confirmed! Now compose your email.');
     }
 
+    async function loadTemplates() {
+      try {
+        const res = await fetch('/api/email/templates');
+        const data = await res.json();
+        const select = document.getElementById('templateSelect');
+        select.innerHTML = '<option value="">-- Load saved template --</option>';
+        if (data.templates && data.templates.length > 0) {
+          data.templates.forEach(template => {
+            select.innerHTML += `<option value="${template.id}">${template.name}</option>`;
+          });
+        }
+      } catch (err) {
+        console.error('Error loading templates:', err);
+      }
+    }
+
+    async function loadTemplate() {
+      const templateId = document.getElementById('templateSelect').value;
+      if (!templateId) return;
+
+      try {
+        const res = await fetch(`/api/email/templates`);
+        const data = await res.json();
+        const template = data.templates.find(t => t.id == templateId);
+        if (template) {
+          document.getElementById('subject').value = template.subject;
+          document.getElementById('htmlBody').value = template.html_body;
+          document.getElementById('templateSelect').value = '';
+        }
+      } catch (err) {
+        alert('Error loading template: ' + err.message);
+      }
+    }
+
+    async function saveAsTemplate() {
+      const subject = document.getElementById('subject').value.trim();
+      const htmlBody = document.getElementById('htmlBody').value.trim();
+
+      if (!subject) {
+        alert('Enter a subject line first');
+        return;
+      }
+      if (!htmlBody) {
+        alert('Enter a message body first');
+        return;
+      }
+
+      const name = prompt('Template name (e.g., "Election Day Message"):');
+      if (!name) return;
+
+      try {
+        const res = await fetch('/api/email/templates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, subject, htmlBody })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          alert('✅ Template saved!');
+          loadTemplates();
+        } else {
+          alert('❌ Error: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Error saving template: ' + err.message);
+      }
+    }
+
     initTheme();
+    loadTemplates();
   </script>
 </body>
 </html>
