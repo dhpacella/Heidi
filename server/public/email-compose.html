@@ -736,8 +736,8 @@
       const sendBtn = document.getElementById('sendBtn');
       const subject = document.getElementById('subject').value.trim();
       const htmlBody = document.getElementById('htmlBody').value.trim();
-      const hasFile = fileInput.files.length > 0;
-      sendBtn.disabled = !hasFile || !subject || !htmlBody;
+      const hasRecipients = uploadedData && uploadedData.length > 0;
+      sendBtn.disabled = !hasRecipients || !subject || !htmlBody;
     }
 
     document.getElementById('subject').addEventListener('input', updateSendButton);
