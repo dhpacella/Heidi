@@ -457,7 +457,11 @@ router.get('/blasts', requireRole('admin', 'campaign_manager'), async (req, res)
     const { rows: blasts } = await pool.query(
       `SELECT b.*, u.name as sender_name,
               COUNT(CASE WHEN er.opened_at IS NOT NULL THEN 1 END) as opened_count,
-              COUNT(CASE WHEN er.clicked_at IS NOT NULL THEN 1 END) as clicked_count
+              COUNT(CASE WHEN er.clicked_at IS NOT NULL THEN 1 END) as clicked_count,
+              COUNT(CASE WHEN er.bounced_at IS NOT NULL THEN 1 END) as bounced_count,
+              COUNT(CASE WHEN er.complained_at IS NOT NULL THEN 1 END) as complained_count,
+              COUNT(CASE WHEN er.unsubscribed_at IS NOT NULL THEN 1 END) as unsubscribed_count,
+              COUNT(CASE WHEN er.delivered_at IS NOT NULL THEN 1 END) as delivered_count
        FROM email_blasts b
        LEFT JOIN users u ON b.sender_id = u.id
        LEFT JOIN email_recipients er ON er.blast_id = b.id

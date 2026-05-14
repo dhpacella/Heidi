@@ -73,6 +73,29 @@ app.get('/health', (req, res) => {
 });
 
 
+// Database migration endpoint - applies pending schema changes
+app.post('/api/migrate-db', async (req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+
+    const client = await pool.connect();
+    try {
+      const schemaPath = path.join(__dirname, 'db', 'schema.sql');
+      const schema = fs.readFileSync(schemaPath, 'utf8');
+      await client.query(schema);
+
+      console.log('✅ Database schema migration successful');
+      res.json({ success: true, message: 'Database schema migrated successfully' });
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('Migration error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // One-time setup endpoint - initializes database and creates admin user
 app.post('/api/setup', async (req, res) => {
   try {
