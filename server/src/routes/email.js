@@ -475,6 +475,65 @@ router.get('/aws-metrics', requireRole('admin', 'campaign_manager'), async (req,
   }
 });
 
+// GET /api/email/stats/overview - all-time aggregate email metrics
+router.get('/stats/overview', requireRole('admin', 'campaign_manager'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT
+        COUNT(DISTINCT eb.id) AS total_campaigns,
+        SUM(eb.recipient_count) AS total_recipients,
+        COUNT(er.id) AS total_sent,
+        COUNT(CASE WHEN er.delivered_at IS NOT NULL THEN 1 END) AS total_delivered,
+        COUNT(CASE WHEN er.opened_at IS NOT NULL THEN 1 END) AS total_opened,
+        COUNT(CASE WHEN er.clicked_at IS NOT NULL THEN 1 END) AS total_clicked,
+        COUNT(CASE WHEN er.bounce_type = 'hard' THEN 1 END) AS total_hard_bounced,
+        COUNT(CASE WHEN er.bounce_type = 'soft' THEN 1 END) AS total_soft_bounced,
+        COUNT(CASE WHEN er.complained_at IS NOT NULL THEN 1 END) AS total_complained,
+        COUNT(CASE WHEN er.unsubscribed_at IS NOT NULL THEN 1 END) AS total_unsubscribed,
+        COALESCE(SUM(eb.total_cost), 0) AS total_cost
+       FROM email_blasts eb
+       LEFT JOIN email_recipients er ON er.blast_id = eb.id`
+    );
+
+    if (!rows[0]) {
+      return res.json({
+        total_campaigns: 0, total_recipients: 0, total_sent: 0, total_delivered: 0,
+        total_opened: 0, total_clicked: 0, total_hard_bounced: 0, total_soft_bounced: 0,
+        total_complained: 0, total_unsubscribed: 0, total_cost: 0,
+        delivery_rate: 0, open_rate: 0, click_rate: 0, bounce_rate: 0, complaint_rate: 0, unsubscribe_rate: 0
+      });
+    }
+
+    const data = rows[0];
+    const totalSent = parseInt(data.total_sent) || 1;
+    const totalDelivered = parseInt(data.total_delivered) || 0;
+    const totalBounced = (parseInt(data.total_hard_bounced) || 0) + (parseInt(data.total_soft_bounced) || 0);
+
+    res.json({
+      total_campaigns: parseInt(data.total_campaigns) || 0,
+      total_recipients: parseInt(data.total_recipients) || 0,
+      total_sent: totalSent,
+      total_delivered: totalDelivered,
+      total_opened: parseInt(data.total_opened) || 0,
+      total_clicked: parseInt(data.total_clicked) || 0,
+      total_hard_bounced: parseInt(data.total_hard_bounced) || 0,
+      total_soft_bounced: parseInt(data.total_soft_bounced) || 0,
+      total_complained: parseInt(data.total_complained) || 0,
+      total_unsubscribed: parseInt(data.total_unsubscribed) || 0,
+      total_cost: parseFloat(data.total_cost) || 0,
+      delivery_rate: totalSent > 0 ? Math.round((totalDelivered / totalSent) * 100) : 0,
+      open_rate: totalSent > 0 ? Math.round((parseInt(data.total_opened) / totalSent) * 100) : 0,
+      click_rate: totalSent > 0 ? Math.round((parseInt(data.total_clicked) / totalSent) * 100) : 0,
+      bounce_rate: totalSent > 0 ? Math.round((totalBounced / totalSent) * 100) : 0,
+      complaint_rate: totalSent > 0 ? Math.round((parseInt(data.total_complained) / totalSent) * 100) : 0,
+      unsubscribe_rate: totalSent > 0 ? Math.round((parseInt(data.total_unsubscribed) / totalSent) * 100) : 0
+    });
+  } catch (err) {
+    console.error('❌ Error fetching stats overview:', err.message);
+    res.status(500).json({ error: `Failed to fetch stats: ${err.message}` });
+  }
+});
+
 // GET /api/email/blasts - list all email blasts with pagination and tracking counts
 router.get('/blasts', requireRole('admin', 'campaign_manager'), async (req, res) => {
   try {
@@ -487,7 +546,13 @@ router.get('/blasts', requireRole('admin', 'campaign_manager'), async (req, res)
     const { rows: blasts } = await pool.query(
       `SELECT b.*, u.name as sender_name,
               COUNT(CASE WHEN er.opened_at IS NOT NULL THEN 1 END) as opened_count,
-              COUNT(CASE WHEN er.clicked_at IS NOT NULL THEN 1 END) as clicked_count
+              COUNT(CASE WHEN er.clicked_at IS NOT NULL THEN 1 END) as clicked_count,
+              COUNT(CASE WHEN er.bounced_at IS NOT NULL THEN 1 END) as bounced_count,
+              COUNT(CASE WHEN er.bounce_type = 'hard' THEN 1 END) as hard_bounce_count,
+              COUNT(CASE WHEN er.bounce_type = 'soft' THEN 1 END) as soft_bounce_count,
+              COUNT(CASE WHEN er.complained_at IS NOT NULL THEN 1 END) as complained_count,
+              COUNT(CASE WHEN er.unsubscribed_at IS NOT NULL THEN 1 END) as unsubscribed_count,
+              COUNT(CASE WHEN er.delivered_at IS NOT NULL THEN 1 END) as delivered_count
        FROM email_blasts b
        LEFT JOIN users u ON b.sender_id = u.id
        LEFT JOIN email_recipients er ON er.blast_id = b.id
