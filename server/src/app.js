@@ -157,6 +157,8 @@ if (require.main === module) {
       const path = require('path');
       const bcryptjs = require('bcryptjs');
 
+      console.log('🔧 Initializing database...');
+
       const schemaPath = path.join(__dirname, 'db', 'schema.sql');
       const schema = fs.readFileSync(schemaPath, 'utf8');
       await pool.query(schema);
@@ -166,19 +168,25 @@ if (require.main === module) {
       // Use 6 rounds for faster password comparison
       const adminEmail = 'admin@test.com';
       const adminPassword = 'Admin123!';
+
+      console.log('🔐 Hashing admin password...');
       const hashedPassword = await bcryptjs.hash(adminPassword, 6);
+      console.log('✅ Password hashed, attempting to create user...');
 
       // Delete existing admin user if present to ensure fresh hash
-      await pool.query('DELETE FROM users WHERE email = $1', [adminEmail]);
+      const deleteResult = await pool.query('DELETE FROM users WHERE email = $1', [adminEmail]);
+      console.log(`🗑️ Deleted ${deleteResult.rowCount} existing admin user(s)`);
 
       // Create new admin user
       const result = await pool.query(
-        'INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING id',
+        'INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING id, email',
         [adminEmail, hashedPassword, 'Test Admin', 'admin']
       );
-      console.log('✅ Admin user ready: admin@test.com / Admin123!');
+      console.log(`✅ Admin user created with ID: ${result.rows[0].id}`);
+      console.log('✅ Ready to login: admin@test.com / Admin123!');
     } catch (err) {
-      console.error('⚠️ Database initialization warning:', err.message);
+      console.error('❌ Database initialization error:', err.message);
+      console.error('Stack:', err.stack);
     }
 
     // Register email scheduler for dispatching scheduled blasts
