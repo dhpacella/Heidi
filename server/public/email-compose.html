@@ -862,19 +862,30 @@
         const file = fileInput.files[0];
         const isManualTab = document.getElementById('tab-manual-content').style.display === 'block';
 
+        console.log('🔍 sendNow() debug:', {
+          isManualTab,
+          uploadedDataLength: uploadedData ? uploadedData.length : 0,
+          uploadedData,
+          fileSelected: !!file
+        });
+
         if (isManualTab && uploadedData && uploadedData.length > 0) {
+          console.log('✅ Using manual email data');
           // Convert manual email data to CSV blob
           const csvHeader = 'email,first_name,last_name\n';
           const csvRows = uploadedData.map(row =>
             `${row.email},"${row.first_name || ''}","${row.last_name || ''}"`
           ).join('\n');
           const csvContent = csvHeader + csvRows;
+          console.log('📧 CSV content:', csvContent);
           const blob = new Blob([csvContent], { type: 'text/csv' });
           formData.append('file', blob, 'manual-email.csv');
         } else if (file) {
+          console.log('✅ Using file upload');
           formData.append('file', file);
         } else {
-          alert('❌ No file selected and no manual email entered');
+          console.log('❌ No recipients found');
+          alert('❌ No file selected and no manual email entered. Click "✓ Use This Email" first!');
           return;
         }
       }
@@ -960,6 +971,8 @@
 
     function confirmManualEmail() {
       const email = document.getElementById('manualEmail').value.trim();
+      console.log('📧 confirmManualEmail() called with email:', email);
+
       if (!email) {
         alert('Please enter an email address');
         return;
@@ -970,6 +983,7 @@
       }
       fullData = [{ email: email, first_name: 'Test', last_name: 'User' }];
       uploadedData = fullData;
+      console.log('✅ uploadedData set to:', uploadedData);
       updateRecipientCount(1);
       updateSendButton();
       confirmSend();
