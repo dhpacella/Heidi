@@ -942,8 +942,11 @@
         alert('Please enter a valid email address');
         return;
       }
-      uploadedData = [{ email: email, firstName: 'Test', lastName: 'User' }];
-      showConfirmModal();
+      fullData = [{ email: email, first_name: 'Test', last_name: 'User' }];
+      uploadedData = fullData;
+      updateRecipientCount(1);
+      updateSendButton();
+      confirmSend();
     }
 
     async function loadLists() {
