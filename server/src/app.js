@@ -74,6 +74,48 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Debug endpoint to check admin user and database status
+app.get('/debug/admin-status', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT COUNT(*) as count FROM users WHERE email = $1', ['admin@test.com']);
+    const adminExists = rows[0].count > 0;
+
+    if (adminExists) {
+      res.json({
+        status: 'admin_exists',
+        message: 'Admin user exists in database',
+        email: 'admin@test.com',
+        password: 'Admin123!'
+      });
+    } else {
+      res.json({
+        status: 'admin_missing',
+        message: 'Admin user NOT found in database - trying to create now...'
+      });
+
+      // Try to create admin now
+      const bcrypt = require('bcryptjs');
+      const hash = await bcrypt.hash('Admin123!', 10);
+      const createResult = await pool.query(
+        'INSERT INTO users (email, name, password_hash, role) VALUES ($1, $2, $3, $4) ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash RETURNING id',
+        ['admin@test.com', 'Admin', hash, 'admin']
+      );
+
+      res.json({
+        status: 'admin_created',
+        message: 'Admin user just created. Try logging in now with admin@test.com / Admin123!',
+        id: createResult.rows[0].id
+      });
+    }
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: err.message,
+      error: err
+    });
+  }
+});
+
 // TEMPORARY: Setup endpoint to create admin user (remove after initialization)
 app.post('/api/setup', async (req, res) => {
   try {
