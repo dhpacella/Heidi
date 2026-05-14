@@ -485,10 +485,10 @@
         </div>
       </div>
 
-      <label for="subject">Subject Line</label>
-      <input type="text" id="subject" placeholder="Email subject">
+      <label for="subject">Subject Line <span style="color: #FF4D6D;">*</span></label>
+      <input type="text" id="subject" placeholder="Email subject" required>
 
-      <label for="htmlBody" style="margin-top: 16px;">Message Body (HTML)</label>
+      <label for="htmlBody" style="margin-top: 16px;">Message Body (HTML) <span style="color: #FF4D6D;">*</span></label>
 
       <div class="toolbar">
         <button class="toolbar-btn" onclick="insertTag('{first_name}')">👤 {first_name}</button>
@@ -506,7 +506,7 @@
         </div>
       </div>
 
-      <textarea id="htmlBody" placeholder="<p>Your email message here...</p>&#10;<p>Hello {first_name}!</p>"></textarea>
+      <textarea id="htmlBody" placeholder="<p>Your email message here...</p>&#10;<p>Hello {first_name}!</p>" required></textarea>
 
       <div style="display: flex; gap: 12px; margin-top: 12px;">
         <button class="btn" onclick="previewEmail()">👁️ Preview</button>
