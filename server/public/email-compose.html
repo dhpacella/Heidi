@@ -409,6 +409,7 @@
       <h2>📎 Email Recipients</h2>
       <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border);">
         <button onclick="switchTab('upload')" id="tab-upload" style="padding: 12px 16px; border: none; background: transparent; color: var(--gold); font-weight: 600; border-bottom: 3px solid var(--gold); cursor: pointer;">📁 Upload CSV</button>
+        <button onclick="switchTab('manual')" id="tab-manual" style="padding: 12px 16px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; border-bottom: 3px solid transparent; cursor: pointer;">✉️ Manual Email</button>
         <button onclick="switchTab('list')" id="tab-list" style="padding: 12px 16px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; border-bottom: 3px solid transparent; cursor: pointer;">📊 Choose List</button>
       </div>
 
@@ -435,6 +436,12 @@
           <tbody id="previewBody"></tbody>
         </table>
       </div>
+      </div>
+
+      <div id="tab-manual-content" style="display: none;">
+        <label style="display: block; margin-bottom: 12px; font-weight: 600;">Email Address (for testing)</label>
+        <input type="email" id="manualEmail" placeholder="your-email@gmail.com" style="width: 100%; padding: 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-family: 'Barlow', sans-serif; margin-bottom: 12px;">
+        <button class="btn btn-primary" onclick="confirmManualEmail()" style="width: 100%;">✓ Use This Email</button>
       </div>
 
       <div id="tab-list-content" style="display: none;">
@@ -914,12 +921,29 @@
     // Tab switching
     function switchTab(tab) {
       document.getElementById('tab-upload-content').style.display = tab === 'upload' ? 'block' : 'none';
+      document.getElementById('tab-manual-content').style.display = tab === 'manual' ? 'block' : 'none';
       document.getElementById('tab-list-content').style.display = tab === 'list' ? 'block' : 'none';
       document.getElementById('tab-upload').style.color = tab === 'upload' ? 'var(--gold)' : 'var(--text-muted)';
       document.getElementById('tab-upload').style.borderBottomColor = tab === 'upload' ? 'var(--gold)' : 'transparent';
+      document.getElementById('tab-manual').style.color = tab === 'manual' ? 'var(--gold)' : 'var(--text-muted)';
+      document.getElementById('tab-manual').style.borderBottomColor = tab === 'manual' ? 'var(--gold)' : 'transparent';
       document.getElementById('tab-list').style.color = tab === 'list' ? 'var(--gold)' : 'var(--text-muted)';
       document.getElementById('tab-list').style.borderBottomColor = tab === 'list' ? 'var(--gold)' : 'transparent';
       if (tab === 'list') loadLists();
+    }
+
+    function confirmManualEmail() {
+      const email = document.getElementById('manualEmail').value.trim();
+      if (!email) {
+        alert('Please enter an email address');
+        return;
+      }
+      if (!email.includes('@')) {
+        alert('Please enter a valid email address');
+        return;
+      }
+      uploadedData = [{ email: email, firstName: 'Test', lastName: 'User' }];
+      showConfirmModal();
     }
 
     async function loadLists() {
