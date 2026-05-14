@@ -858,12 +858,25 @@
           formData.append('segment_id', selectedSegmentId);
         }
       } else {
+        // Handle file upload or manual email
         const file = fileInput.files[0];
-        if (!file) {
-          alert('❌ No file selected');
+        const isManualTab = document.getElementById('tab-manual-content').style.display === 'block';
+
+        if (isManualTab && uploadedData && uploadedData.length > 0) {
+          // Convert manual email data to CSV blob
+          const csvHeader = 'email,first_name,last_name\n';
+          const csvRows = uploadedData.map(row =>
+            `${row.email},"${row.first_name || ''}","${row.last_name || ''}"`
+          ).join('\n');
+          const csvContent = csvHeader + csvRows;
+          const blob = new Blob([csvContent], { type: 'text/csv' });
+          formData.append('file', blob, 'manual-email.csv');
+        } else if (file) {
+          formData.append('file', file);
+        } else {
+          alert('❌ No file selected and no manual email entered');
           return;
         }
-        formData.append('file', file);
       }
 
       try {
