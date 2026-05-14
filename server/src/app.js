@@ -67,6 +67,7 @@ app.use('/api/email/track', require('./routes/emailTracking'));
 
 app.use('/api/email', requireApiAuth, require('./routes/email'));
 app.use('/api/lists', requireApiAuth, require('./routes/lists'));
+app.use('/api/volunteers', requireApiAuth, require('./routes/volunteers'));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });

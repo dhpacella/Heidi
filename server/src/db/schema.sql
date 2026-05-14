@@ -253,3 +253,44 @@ ALTER TABLE email_recipients
 
 CREATE INDEX IF NOT EXISTS idx_email_recipients_unsub ON email_recipients(unsubscribed_at);
 CREATE INDEX IF NOT EXISTS idx_email_recipients_delivered ON email_recipients(delivered_at);
+
+-- Volunteers (linked to users table)
+CREATE TABLE IF NOT EXISTS volunteers (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  phone VARCHAR(20),
+  precinct_id INTEGER REFERENCES precincts(id) ON DELETE SET NULL,
+  status VARCHAR(50) DEFAULT 'active',
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Voter assignments per volunteer
+CREATE TABLE IF NOT EXISTS volunteer_assignments (
+  id SERIAL PRIMARY KEY,
+  volunteer_id INTEGER NOT NULL REFERENCES volunteers(id) ON DELETE CASCADE,
+  voter_id INTEGER NOT NULL REFERENCES voters(id) ON DELETE CASCADE,
+  status VARCHAR(50) DEFAULT 'pending',
+  visited_at TIMESTAMP,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(volunteer_id, voter_id)
+);
+
+-- GPS tracking log
+CREATE TABLE IF NOT EXISTS volunteer_gps (
+  id SERIAL PRIMARY KEY,
+  volunteer_id INTEGER NOT NULL REFERENCES volunteers(id) ON DELETE CASCADE,
+  latitude DECIMAL(10, 8) NOT NULL,
+  longitude DECIMAL(11, 8) NOT NULL,
+  recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Volunteer indexes
+CREATE INDEX IF NOT EXISTS idx_volunteers_user ON volunteers(user_id);
+CREATE INDEX IF NOT EXISTS idx_volunteers_precinct ON volunteers(precinct_id);
+CREATE INDEX IF NOT EXISTS idx_volunteer_assignments_volunteer ON volunteer_assignments(volunteer_id);
+CREATE INDEX IF NOT EXISTS idx_volunteer_assignments_voter ON volunteer_assignments(voter_id);
+CREATE INDEX IF NOT EXISTS idx_volunteer_gps_volunteer ON volunteer_gps(volunteer_id);
+CREATE INDEX IF NOT EXISTS idx_volunteer_gps_recorded ON volunteer_gps(recorded_at);
