@@ -3,116 +3,745 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Email Lists</title>
+  <title>Email Lists & Segments</title>
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
   <style>
-    :root { --navy: #0B1929; --gold: #F5A623; --text: #EEF2F7; --surface: #122338; --border: rgba(245, 166, 35, 0.2); }
-    body.light-mode { --navy: #F5F5F5; --text: #1A1A1A; --surface: #FFFFFF; }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { font-family: 'Barlow', sans-serif; background: var(--navy); color: var(--text); }
-    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-    header { background: var(--surface); border-bottom: 3px solid var(--gold); padding: 20px 32px; margin: -20px -20px 30px -20px; display: flex; justify-content: space-between; align-items: center; }
-    header h1 { font-family: 'Barlow Condensed', sans-serif; font-size: 32px; color: var(--gold); }
-    .btn { padding: 10px 18px; border: 1px solid var(--gold); border-radius: 6px; background: transparent; color: var(--gold); cursor: pointer; font-weight: 600; font-size: 13px; }
-    .btn:hover { background: rgba(245, 166, 35, 0.1); }
-    .btn-primary { background: var(--gold); color: var(--navy); }
-    .btn-primary:hover { background: #FBBF48; }
-    table { width: 100%; border-collapse: collapse; margin: 20px 0; background: var(--surface); }
-    th { background: rgba(245, 166, 35, 0.1); padding: 12px; text-align: left; font-weight: 600; color: var(--gold); }
-    td { padding: 12px; border-bottom: 1px solid var(--border); }
-    .loading { padding: 40px; text-align: center; }
-    .error { background: rgba(255, 77, 109, 0.1); color: #FF4D6D; padding: 16px; border-radius: 8px; margin: 16px 0; }
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); align-items: center; justify-content: center; z-index: 1000; }
-    .modal.show { display: flex; }
-    .modal-content { background: var(--surface); border-radius: 12px; padding: 32px; max-width: 500px; width: 90%; }
-    input, select { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid var(--border); border-radius: 6px; background: rgba(245, 166, 35, 0.05); color: var(--text); }
+    :root {
+      --navy: #0B1929;
+      --navy-mid: #122338;
+      --navy-light: #1A3550;
+      --gold: #F5A623;
+      --gold-light: #FBBF48;
+      --text: #EEF2F7;
+      --text-muted: #8BA3BE;
+      --surface: #122338;
+      --surface-2: #1A3550;
+      --border: rgba(245, 166, 35, 0.2);
+    }
+
+    body.light-mode {
+      --navy: #F5F5F5;
+      --navy-mid: #FFFFFF;
+      --navy-light: #F0F0F0;
+      --text: #1A1A1A;
+      --text-muted: #666666;
+      --surface: #FFFFFF;
+      --surface-2: #F9F9F9;
+      --border: rgba(245, 166, 35, 0.15);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      font-family: 'Barlow', sans-serif;
+      background: var(--navy);
+      color: var(--text);
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: var(--navy-mid);
+      border-bottom: 3px solid var(--gold);
+      padding: 20px 32px;
+      margin: -20px -20px 30px -20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    header h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--gold);
+      flex: 1;
+    }
+
+    .header-left, .header-right {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border: 1px solid var(--gold);
+      border-radius: 6px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: var(--gold);
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn:hover {
+      background: rgba(245, 166, 35, 0.1);
+    }
+
+    .btn-primary {
+      background: var(--gold);
+      color: var(--navy);
+      border-color: var(--gold);
+    }
+
+    .btn-primary:hover {
+      background: var(--gold-light);
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .btn-danger {
+      background: rgba(255, 77, 109, 0.15);
+      color: #FF4D6D;
+      border-color: #FF4D6D;
+    }
+
+    .btn-danger:hover {
+      background: rgba(255, 77, 109, 0.25);
+    }
+
+    .btn-dark-toggle {
+      background: rgba(245, 166, 35, 0.1);
+    }
+
+    .btn-logout {
+      background: rgba(255, 77, 109, 0.15);
+      color: #FF4D6D;
+      border-color: #FF4D6D;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th {
+      background: var(--surface-2);
+      color: var(--gold);
+      padding: 14px 16px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    tr:hover {
+      background: rgba(245, 166, 35, 0.05);
+    }
+
+    .section {
+      margin: 30px 0;
+    }
+
+    .section-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .segments-panel {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .segments-panel.show {
+      display: block;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-header h3 {
+      font-size: 16px;
+      color: var(--gold);
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .segments-list {
+      margin-bottom: 20px;
+    }
+
+    .segment-item {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .segment-info {
+      flex: 1;
+    }
+
+    .segment-name {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .segment-count {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .segment-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .builder {
+      background: var(--navy-light);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .condition-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: end;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    select, input {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px 10px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 13px;
+    }
+
+    select:focus, input:focus {
+      outline: none;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.1);
+    }
+
+    .condition-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .builder-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .preview-result {
+      background: rgba(93, 224, 176, 0.1);
+      border: 1px solid rgba(93, 224, 176, 0.3);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+      text-align: center;
+      color: #5DE0B0;
+      font-weight: 600;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-content h2 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 20px;
+    }
+
+    .modal-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    @media (max-width: 768px) {
+      header {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .condition-row {
+        grid-template-columns: 1fr;
+      }
+
+      .segment-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .segment-actions {
+        margin-top: 12px;
+        width: 100%;
+      }
+
+      .segment-actions .btn {
+        flex: 1;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <a href="/dashboard" class="btn">← Dashboard</a>
-      <h1>📧 Lists & Segments</h1>
-      <button class="btn" onclick="logout()">Logout</button>
+      <div class="header-left">
+        <a href="/dashboard" class="btn">← Dashboard</a>
+        <a href="/email-compose" class="btn">📧 New Email</a>
+      </div>
+      <h1>📧 Email Lists</h1>
+      <div class="header-right">
+        <button class="btn btn-dark-toggle" onclick="toggleTheme()">🌙 Dark</button>
+        <button class="btn btn-logout" onclick="logout()">Logout</button>
+      </div>
     </header>
 
-    <div style="margin-bottom: 20px;">
-      <button class="btn btn-primary" onclick="openCreateModal()">+ New List</button>
+    <div class="section">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div class="section-title">📋 Your Lists</div>
+        <button class="btn btn-primary" onclick="openCreateModal()">+ New List</button>
+      </div>
+      <div id="listsContainer">
+        <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading lists...</div>
+      </div>
     </div>
 
-    <div id="content">
-      <div class="loading">Loading lists...</div>
+    <div id="segmentsPanel" class="segments-panel">
+      <div class="panel-header">
+        <h3>📊 Manage Segments</h3>
+        <button class="close-btn" onclick="closeSegments()">×</button>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <div class="section-title" style="margin: 0 0 12px 0; font-size: 14px;">Saved Segments</div>
+        <div id="savedSegments" class="segments-list">
+          <div style="color: var(--text-muted); text-align: center; padding: 20px;">No segments yet</div>
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid var(--border); padding-top: 20px;">
+        <div class="section-title" style="margin: 0 0 12px 0; font-size: 14px;">Build New Segment</div>
+        <input type="text" id="segmentName" placeholder="Segment name (e.g., 'Active Engaged Voters')" style="width: 100%; margin-bottom: 16px;">
+
+        <div class="builder">
+          <div style="margin-bottom: 12px; color: var(--text-muted); font-size: 12px; text-transform: uppercase; font-weight: 600;">Conditions (AND'd together)</div>
+          <div id="conditionsContainer"></div>
+          <button class="btn btn-small" onclick="addConditionRow()" style="margin-top: 12px;">+ Add Condition</button>
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+          <button class="btn" onclick="previewSegment()">👁️ Preview</button>
+          <button class="btn btn-primary" onclick="saveSegment()">Save Segment</button>
+        </div>
+
+        <div id="previewResult"></div>
+      </div>
     </div>
   </div>
 
-  <div id="modal" class="modal">
+  <!-- Create List Modal -->
+  <div id="createModal" class="modal">
     <div class="modal-content">
-      <h2>Create New List</h2>
-      <input type="text" id="listName" placeholder="List name">
-      <input type="file" id="listFile" accept=".csv,.xlsx">
-      <div id="error" class="error" style="display: none;"></div>
-      <button class="btn" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="createList()">Create</button>
+      <h2>+ Create New List</h2>
+      <form class="modal-form" onsubmit="submitCreateList(event)">
+        <input type="text" id="listName" placeholder="List name" required>
+        <input type="file" id="listFile" accept=".csv,.xlsx" required>
+        <div class="modal-actions">
+          <button type="button" class="btn" onclick="closeCreateModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create</button>
+        </div>
+      </form>
     </div>
   </div>
 
   <script>
-    function logout() { fetch('/logout', { method: 'POST' }).then(() => window.location.href = '/login'); }
-    function openCreateModal() { document.getElementById('modal').classList.add('show'); }
-    function closeModal() { document.getElementById('modal').classList.remove('show'); }
+    let currentListId = null;
+    let currentListName = null;
+
+    function toggleTheme() {
+      document.body.classList.toggle('light-mode');
+      localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+      document.querySelector('.btn-dark-toggle').textContent = document.body.classList.contains('light-mode') ? '☀️ Light' : '🌙 Dark';
+    }
+
+    function initTheme() {
+      const saved = localStorage.getItem('theme') || 'dark';
+      if (saved === 'light') document.body.classList.add('light-mode');
+      document.querySelector('.btn-dark-toggle').textContent = saved === 'light' ? '☀️ Light' : '🌙 Dark';
+    }
+
+    function logout() {
+      fetch('/logout', { method: 'POST' }).then(() => window.location.href = '/login');
+    }
 
     async function loadLists() {
-      const content = document.getElementById('content');
       try {
-        const res = await fetch('/api/lists');
-        const data = await res.json();
+        const response = await fetch('/api/lists');
+        const data = await response.json();
+
         if (!data.lists || data.lists.length === 0) {
-          content.innerHTML = '<p>No lists yet. Create one to start.</p>';
+          document.getElementById('listsContainer').innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">No lists yet. Create one to get started!</div>';
           return;
         }
-        let html = '<table><thead><tr><th>Name</th><th>Subscribers</th><th>Created</th></tr></thead><tbody>';
+
+        let html = `
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Subscribers</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
         data.lists.forEach(list => {
-          const date = new Date(list.created_at).toLocaleDateString();
-          html += `<tr><td>${list.name}</td><td>${list.subscriber_count}</td><td>${date}</td></tr>`;
+          const date = new Date(list.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          html += `
+            <tr>
+              <td><strong>${list.name}</strong></td>
+              <td>${list.subscriber_count.toLocaleString()}</td>
+              <td>${date}</td>
+              <td><button class="btn btn-small" onclick="manageSegments(${list.id}, '${list.name.replace(/'/g, "\\'")}')">Manage Segments</button></td>
+            </tr>
+          `;
         });
+
         html += '</tbody></table>';
-        content.innerHTML = html;
+        document.getElementById('listsContainer').innerHTML = html;
       } catch (err) {
-        content.innerHTML = `<div class="error">Error: ${err.message}</div>`;
+        console.error('Error loading lists:', err);
+        document.getElementById('listsContainer').innerHTML = `<div style="color: #FF4D6D;">Error loading lists: ${err.message}</div>`;
       }
     }
 
-    async function createList() {
+    function openCreateModal() {
+      document.getElementById('createModal').classList.add('show');
+    }
+
+    function closeCreateModal() {
+      document.getElementById('createModal').classList.remove('show');
+      document.getElementById('listName').value = '';
+      document.getElementById('listFile').value = '';
+    }
+
+    async function submitCreateList(e) {
+      e.preventDefault();
       const name = document.getElementById('listName').value;
       const file = document.getElementById('listFile').files[0];
-      const errorDiv = document.getElementById('error');
 
-      if (!name || !file) {
-        errorDiv.textContent = 'Name and file required';
-        errorDiv.style.display = 'block';
-        return;
-      }
+      if (!name || !file) return;
 
       const formData = new FormData();
       formData.append('name', name);
       formData.append('file', file);
 
       try {
-        const res = await fetch('/api/lists', { method: 'POST', body: formData });
-        const data = await res.json();
+        const response = await fetch('/api/lists', { method: 'POST', body: formData });
+        const data = await response.json();
         if (data.success) {
-          closeModal();
+          closeCreateModal();
           loadLists();
         } else {
-          errorDiv.textContent = data.error;
-          errorDiv.style.display = 'block';
+          alert('Error: ' + (data.error || 'Unknown error'));
         }
       } catch (err) {
-        errorDiv.textContent = err.message;
-        errorDiv.style.display = 'block';
+        alert('Error creating list: ' + err.message);
       }
     }
 
+    function manageSegments(listId, listName) {
+      currentListId = listId;
+      currentListName = listName;
+      document.getElementById('conditionsContainer').innerHTML = '';
+      document.getElementById('previewResult').innerHTML = '';
+      addConditionRow();
+      loadSegments(listId);
+      document.getElementById('segmentsPanel').classList.add('show');
+    }
+
+    function closeSegments() {
+      document.getElementById('segmentsPanel').classList.remove('show');
+      currentListId = null;
+    }
+
+    async function loadSegments(listId) {
+      try {
+        const response = await fetch(`/api/lists/${listId}/segments`);
+        const data = await response.json();
+
+        let html = '';
+        if (data.segments && data.segments.length > 0) {
+          data.segments.forEach(seg => {
+            const cond = JSON.parse(seg.conditions);
+            const condText = cond.map(c => `${c.field} ${c.operator}`).join(' + ');
+            html += `
+              <div class="segment-item">
+                <div class="segment-info">
+                  <div class="segment-name">${seg.name}</div>
+                  <div class="segment-count">${condText}</div>
+                </div>
+                <div class="segment-actions">
+                  <button class="btn btn-small" onclick="deleteSegment(${listId}, ${seg.id})">Delete</button>
+                </div>
+              </div>
+            `;
+          });
+        } else {
+          html = '<div style="color: var(--text-muted); text-align: center; padding: 20px;">No segments yet</div>';
+        }
+        document.getElementById('savedSegments').innerHTML = html;
+      } catch (err) {
+        console.error('Error loading segments:', err);
+      }
+    }
+
+    function addConditionRow() {
+      const container = document.getElementById('conditionsContainer');
+      const row = document.createElement('div');
+      row.className = 'condition-row';
+      row.innerHTML = `
+        <div class="form-group">
+          <label>Field</label>
+          <select class="field-select" onchange="updateOperatorOptions(this)">
+            <option value="status">Status</option>
+            <option value="email">Email</option>
+            <option value="opens">Has Opened Email</option>
+            <option value="clicks">Has Clicked Link</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Operator</label>
+          <select class="operator-select">
+            <option value="equals">Equals</option>
+            <option value="not_equals">Not Equals</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Value</label>
+          <input type="text" class="value-input" placeholder="Value">
+        </div>
+        <button type="button" class="btn btn-small btn-danger" onclick="removeConditionRow(this)">×</button>
+      `;
+      container.appendChild(row);
+      updateOperatorOptions(row.querySelector('.field-select'));
+    }
+
+    function updateOperatorOptions(select) {
+      const row = select.closest('.condition-row');
+      const field = select.value;
+      const opSelect = row.querySelector('.operator-select');
+      const valInput = row.querySelector('.value-input');
+
+      opSelect.innerHTML = '';
+      valInput.style.display = 'block';
+
+      if (field === 'status') {
+        opSelect.innerHTML = '<option value="equals">Equals</option><option value="not_equals">Not Equals</option>';
+        valInput.placeholder = 'active, unsubscribed, bounced';
+      } else if (field === 'email') {
+        opSelect.innerHTML = '<option value="contains">Contains</option><option value="not_contains">Does Not Contain</option>';
+        valInput.placeholder = '@gmail.com';
+      } else if (field === 'opens') {
+        opSelect.innerHTML = '<option value="has_opened">Has Opened</option><option value="has_not_opened">Has Not Opened</option>';
+        valInput.style.display = 'none';
+      } else if (field === 'clicks') {
+        opSelect.innerHTML = '<option value="has_clicked">Has Clicked</option><option value="has_not_clicked">Has Not Clicked</option>';
+        valInput.style.display = 'none';
+      }
+    }
+
+    function removeConditionRow(btn) {
+      btn.closest('.condition-row').remove();
+    }
+
+    function buildConditionsFromUI() {
+      const rows = document.querySelectorAll('.condition-row');
+      const conditions = [];
+      rows.forEach(row => {
+        const field = row.querySelector('.field-select').value;
+        const operator = row.querySelector('.operator-select').value;
+        const value = row.querySelector('.value-input').value || '';
+        conditions.push({ field, operator, value });
+      });
+      return conditions;
+    }
+
+    async function previewSegment() {
+      const conditions = buildConditionsFromUI();
+      if (conditions.length === 0) {
+        alert('Add at least one condition');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/lists/${currentListId}/segments/preview`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conditions })
+        });
+        const data = await response.json();
+        const result = document.getElementById('previewResult');
+        result.innerHTML = `<div class="preview-result">✓ ${data.count} matching subscribers</div>`;
+      } catch (err) {
+        alert('Error previewing: ' + err.message);
+      }
+    }
+
+    async function saveSegment() {
+      const name = document.getElementById('segmentName').value.trim();
+      if (!name) {
+        alert('Enter a segment name');
+        return;
+      }
+
+      const conditions = buildConditionsFromUI();
+      if (conditions.length === 0) {
+        alert('Add at least one condition');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/lists/${currentListId}/segments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, conditions })
+        });
+        const data = await response.json();
+        if (data.segment) {
+          document.getElementById('segmentName').value = '';
+          document.getElementById('conditionsContainer').innerHTML = '';
+          document.getElementById('previewResult').innerHTML = '';
+          addConditionRow();
+          loadSegments(currentListId);
+          alert('Segment saved!');
+        } else {
+          alert('Error: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Error saving segment: ' + err.message);
+      }
+    }
+
+    async function deleteSegment(listId, segmentId) {
+      if (!confirm('Delete this segment?')) return;
+      try {
+        const response = await fetch(`/api/lists/${listId}/segments/${segmentId}`, { method: 'DELETE' });
+        if (response.ok) {
+          loadSegments(listId);
+        } else {
+          alert('Error deleting segment');
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    initTheme();
     loadLists();
   </script>
 </body>

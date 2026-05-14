@@ -35,6 +35,38 @@ function findPersonalizationColumns(headers) {
   return result;
 }
 
+function buildQueryFromConditions(listId, conditions) {
+  const whereParts = ['es.list_id = $1'];
+  const values = [listId];
+  let idx = 2;
+
+  for (const cond of conditions) {
+    if (cond.field === 'status' && cond.operator === 'equals') {
+      whereParts.push(`es.status = $${idx++}`);
+      values.push(cond.value);
+    } else if (cond.field === 'status' && cond.operator === 'not_equals') {
+      whereParts.push(`es.status != $${idx++}`);
+      values.push(cond.value);
+    } else if (cond.field === 'email' && cond.operator === 'contains') {
+      whereParts.push(`es.email ILIKE $${idx++}`);
+      values.push(`%${cond.value}%`);
+    } else if (cond.field === 'email' && cond.operator === 'not_contains') {
+      whereParts.push(`es.email NOT ILIKE $${idx++}`);
+      values.push(`%${cond.value}%`);
+    } else if (cond.field === 'opens' && cond.operator === 'has_opened') {
+      whereParts.push(`EXISTS (SELECT 1 FROM email_recipients er WHERE er.email = es.email AND er.opened_at IS NOT NULL)`);
+    } else if (cond.field === 'opens' && cond.operator === 'has_not_opened') {
+      whereParts.push(`NOT EXISTS (SELECT 1 FROM email_recipients er WHERE er.email = es.email AND er.opened_at IS NOT NULL)`);
+    } else if (cond.field === 'clicks' && cond.operator === 'has_clicked') {
+      whereParts.push(`EXISTS (SELECT 1 FROM email_recipients er WHERE er.email = es.email AND er.clicked_at IS NOT NULL)`);
+    } else if (cond.field === 'clicks' && cond.operator === 'has_not_clicked') {
+      whereParts.push(`NOT EXISTS (SELECT 1 FROM email_recipients er WHERE er.email = es.email AND er.clicked_at IS NOT NULL)`);
+    }
+  }
+
+  return { whereClause: whereParts.join(' AND '), values };
+}
+
 router.get('/', requireRole('admin', 'campaign_manager'), async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -275,6 +307,73 @@ router.delete('/:id/segments/:sid', requireRole('admin', 'campaign_manager'), as
   } catch (err) {
     console.error('❌ Delete segment error:', err.message);
     res.status(500).json({ error: `Delete failed: ${err.message}` });
+  }
+});
+
+// POST /:id/segments/preview - Preview matching subscriber count for a set of conditions
+router.post('/:id/segments/preview', requireRole('admin', 'campaign_manager'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { conditions } = req.body || {};
+
+    if (!conditions || !Array.isArray(conditions)) {
+      return res.status(400).json({ error: 'conditions must be an array' });
+    }
+
+    const { whereClause, values } = buildQueryFromConditions(parseInt(id), conditions);
+    const { rows } = await pool.query(
+      `SELECT COUNT(*) as count FROM email_subscribers es WHERE ${whereClause}`,
+      values
+    );
+
+    res.json({ count: parseInt(rows[0].count) });
+  } catch (err) {
+    console.error('❌ Preview segment error:', err.message);
+    res.status(500).json({ error: `Preview failed: ${err.message}` });
+  }
+});
+
+// GET /:id/segments/:sid/subscribers - Get subscribers matching a saved segment's conditions
+router.get('/:id/segments/:sid/subscribers', requireRole('admin', 'campaign_manager'), async (req, res) => {
+  try {
+    const { id, sid } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = 50;
+    const offset = (page - 1) * limit;
+
+    const { rows: segRows } = await pool.query(
+      'SELECT conditions FROM email_segments WHERE id = $1 AND list_id = $2',
+      [sid, id]
+    );
+
+    if (segRows.length === 0) {
+      return res.status(404).json({ error: 'Segment not found' });
+    }
+
+    const conditions = segRows[0].conditions;
+    const { whereClause, values } = buildQueryFromConditions(parseInt(id), conditions);
+
+    const { rows } = await pool.query(
+      `SELECT id, email, first_name, last_name, status FROM email_subscribers es WHERE ${whereClause} ORDER BY created_at DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+      [...values, limit, offset]
+    );
+
+    const countResult = await pool.query(
+      `SELECT COUNT(*) as total FROM email_subscribers es WHERE ${whereClause}`,
+      values
+    );
+    const total = parseInt(countResult.rows[0].total);
+
+    res.json({
+      subscribers: rows,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit)
+    });
+  } catch (err) {
+    console.error('❌ Fetch segment subscribers error:', err.message);
+    res.status(500).json({ error: `Database error: ${err.message}` });
   }
 });
 
