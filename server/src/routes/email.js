@@ -4,7 +4,7 @@ const { parse } = require('csv-parse/sync');
 const XLSX = require('xlsx');
 const pool = require('../db/connection');
 const { requireRole } = require('../middleware/auth');
-const { normalizeEmail, sendEmail } = require('../lib/sesClient');
+const { normalizeEmail, sendEmail, getSESReputationMetrics } = require('../lib/sesClient');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
@@ -461,6 +461,17 @@ router.delete('/scheduled/:id', requireRole('admin', 'campaign_manager'), async 
   } catch (err) {
     console.error('❌ Cancel scheduled blast error:', err.message);
     res.status(500).json({ error: `Cancel failed: ${err.message}` });
+  }
+});
+
+// GET /api/email/aws-metrics - AWS SES account reputation metrics
+router.get('/aws-metrics', requireRole('admin', 'campaign_manager'), async (req, res) => {
+  try {
+    const metrics = await getSESReputationMetrics();
+    res.json(metrics);
+  } catch (err) {
+    console.error('❌ Error fetching AWS SES metrics:', err.message);
+    res.status(500).json({ error: `Failed to fetch AWS metrics: ${err.message}` });
   }
 });
 

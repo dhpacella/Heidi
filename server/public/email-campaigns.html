@@ -399,39 +399,73 @@
       </div>
     </header>
 
-    <!-- 8 Stat Cards -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">Total Campaigns</div>
-        <div class="stat-value" id="statTotal">-</div>
+    <!-- Local Database Metrics (8 Cards) -->
+    <div style="margin-bottom: 20px;">
+      <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.05em;">📊 Local Database Metrics</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Campaigns</div>
+          <div class="stat-value" id="statTotal">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Sent</div>
+          <div class="stat-value" id="statSent">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Delivery Rate</div>
+          <div class="stat-value" id="statDeliveryRate">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Open Rate</div>
+          <div class="stat-value" id="statOpenRate">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Click Rate</div>
+          <div class="stat-value" id="statClickRate">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Bounce Rate</div>
+          <div class="stat-value" id="statBounceRate">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Complaint Rate</div>
+          <div class="stat-value" id="statComplaintRate">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Unsubscribe Rate</div>
+          <div class="stat-value" id="statUnsubscribeRate">-</div>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Total Sent</div>
-        <div class="stat-value" id="statSent">-</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Delivery Rate</div>
-        <div class="stat-value" id="statDeliveryRate">-</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Open Rate</div>
-        <div class="stat-value" id="statOpenRate">-</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Click Rate</div>
-        <div class="stat-value" id="statClickRate">-</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Bounce Rate</div>
-        <div class="stat-value" id="statBounceRate">-</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Complaint Rate</div>
-        <div class="stat-value" id="statComplaintRate">-</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Unsubscribe Rate</div>
-        <div class="stat-value" id="statUnsubscribeRate">-</div>
+    </div>
+
+    <!-- AWS SES Reputation Metrics (6 Cards) -->
+    <div style="margin-bottom: 20px;">
+      <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.05em;">☁️ AWS SES Reputation Metrics (Last 14 Days)</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Reputation Status</div>
+          <div class="stat-value" id="awsReputationStatus" style="font-size: 20px;">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">AWS Bounce Rate</div>
+          <div class="stat-value" id="awsBounceRate">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">AWS Complaint Rate</div>
+          <div class="stat-value" id="awsComplaintRate">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">AWS Delivery Rate</div>
+          <div class="stat-value" id="awsDeliveryRate">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">AWS Total Sends</div>
+          <div class="stat-value" id="awsTotalSends">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Sending Enabled</div>
+          <div class="stat-value" id="awsSendingEnabled" style="font-size: 24px;">-</div>
+        </div>
       </div>
     </div>
 
@@ -513,7 +547,7 @@
       window.location.href = '/dashboard';
     }
 
-    // Load overview stats and populate 8 stat cards + donut chart
+    // Load overview stats and populate stat cards + donut chart
     async function loadStats() {
       try {
         const response = await fetch('/api/email/stats/overview');
@@ -538,7 +572,39 @@
 
         renderDeliveryChart(delivered, hardBounced, softBounced, complained, unsubscribed, other);
       } catch (err) {
-        console.error('Error loading stats:', err);
+        console.error('Error loading local stats:', err);
+      }
+
+      // Load AWS SES reputation metrics
+      try {
+        const response = await fetch('/api/email/aws-metrics');
+        const data = await response.json();
+
+        if (data.success && data.aws_metrics) {
+          const m = data.aws_metrics;
+          document.getElementById('awsBounceRate').textContent = m.bounce_rate + '%';
+          document.getElementById('awsComplaintRate').textContent = m.complaint_rate + '%';
+          document.getElementById('awsDeliveryRate').textContent = m.delivery_rate + '%';
+          document.getElementById('awsTotalSends').textContent = m.total_sends.toLocaleString();
+          document.getElementById('awsSendingEnabled').textContent = m.sending_enabled ? '✅' : '❌';
+
+          // Status badge
+          const statusEl = document.getElementById('awsReputationStatus');
+          if (m.reputation_status === 'healthy') {
+            statusEl.textContent = '✅ Healthy';
+            statusEl.style.color = '#1DB87A';
+          } else if (m.reputation_status === 'caution') {
+            statusEl.textContent = '⚠️ Caution';
+            statusEl.style.color = '#F5A623';
+          } else {
+            statusEl.textContent = '🔴 Warning';
+            statusEl.style.color = '#E03434';
+          }
+        } else {
+          console.warn('AWS SES metrics not available:', data.error);
+        }
+      } catch (err) {
+        console.error('Error loading AWS metrics:', err);
       }
     }
 
