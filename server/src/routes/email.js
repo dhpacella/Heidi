@@ -123,13 +123,25 @@ function findPersonalizationColumns(headers) {
 
 // POST /api/email/send - Send HTML emails via AWS SES with file upload or list/segment
 router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('file'), async (req, res) => {
-  const { subject, htmlBody, textBody, list_id, segment_id } = req.body || {};
+  const { subject, htmlBody, textBody, list_id, segment_id, scheduled_at } = req.body || {};
 
   if (!subject || typeof subject !== 'string' || !subject.trim()) {
     return res.status(400).json({ error: 'subject is required' });
   }
   if (!htmlBody || typeof htmlBody !== 'string' || !htmlBody.trim()) {
     return res.status(400).json({ error: 'htmlBody is required' });
+  }
+
+  // Validate scheduled_at if provided
+  if (scheduled_at) {
+    const scheduledTime = new Date(scheduled_at);
+    const now = new Date();
+    if (isNaN(scheduledTime.getTime())) {
+      return res.status(400).json({ error: 'Invalid scheduled_at datetime format' });
+    }
+    if (scheduledTime <= now) {
+      return res.status(400).json({ error: 'Scheduled time must be in the future' });
+    }
   }
 
   const fromAddress = process.env.SES_FROM_EMAIL || 'noreply@example.com';
@@ -240,15 +252,35 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
       return res.status(400).json({ error: 'Cannot send to more than 500 recipients per batch' });
     }
 
+    // Determine if this is a scheduled or immediate send
+    const isScheduled = scheduled_at !== undefined && scheduled_at !== null && scheduled_at !== '';
+    const blastStatus = isScheduled ? 'scheduled' : 'sending';
+
     // Step 1: Create blast record
-    const blastResult = await pool.query(
-      `INSERT INTO email_blasts (sender_id, subject, html_body, from_address, recipient_count, status)
-       VALUES ($1, $2, $3, $4, $5, 'sending')
-       RETURNING id`,
-      [req.user.id, subject, htmlBody, fromAddress, validRecords.length]
-    );
+    const blastParams = [
+      req.user.id,
+      subject,
+      htmlBody,
+      fromAddress,
+      validRecords.length,
+      blastStatus
+    ];
+
+    let blastQuery = `INSERT INTO email_blasts (sender_id, subject, html_body, from_address, recipient_count, status`;
+    let valuesPart = `VALUES ($1, $2, $3, $4, $5, $6`;
+
+    let paramIndex = 7;
+    if (isScheduled) {
+      blastQuery += `, scheduled_at, list_id, segment_id`;
+      valuesPart += `, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}`;
+      blastParams.push(new Date(scheduled_at), list_id || null, segment_id || null);
+    }
+
+    blastQuery += `) ${valuesPart}) RETURNING id`;
+
+    const blastResult = await pool.query(blastQuery, blastParams);
     const blastId = blastResult.rows[0].id;
-    console.log(`✅ Created blast record (ID: ${blastId})`);
+    console.log(`✅ Created blast record (ID: ${blastId}, status: ${blastStatus})`);
 
     // Step 2: Insert all recipients and get their IDs back
     const recipientValues = validRecords.map((_, i) =>
@@ -274,10 +306,23 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
     });
     console.log(`✅ Inserted ${recipientsResult.rows.length} recipient records`);
 
-    // Step 3: Send emails in batches with tracking injected
-    let sendResults = [];
+    // Step 3: Handle scheduled vs immediate send
+    if (isScheduled) {
+      // Scheduled send: recipients already inserted, just return 202 Accepted
+      console.log(`⏰ Blast #${blastId} scheduled for ${scheduled_at}`);
+      return res.status(202).json({
+        success: true,
+        blastId,
+        status: 'scheduled',
+        scheduledAt: scheduled_at,
+        message: `Email scheduled for ${new Date(scheduled_at).toLocaleString()}`
+      });
+    }
+
+    // Immediate send: dispatch now
     console.log(`📤 Sending ${validRecords.length} emails in batches of ${BATCH_SIZE}...`);
 
+    let sendResults = [];
     for (let i = 0; i < validRecords.length; i += BATCH_SIZE) {
       const batch = validRecords.slice(i, i + BATCH_SIZE);
 
@@ -345,7 +390,7 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
     };
 
     await pool.query(
-      `UPDATE email_blasts SET recipient_count = $1, total_cost = $2, status = $3, results = $4 WHERE id = $5`,
+      `UPDATE email_blasts SET recipient_count = $1, total_cost = $2, status = $3, results = $4, sent_at = NOW() WHERE id = $5`,
       [sentCount, totalCost, finalStatus, JSON.stringify(resultsJson), blastId]
     );
 
@@ -361,6 +406,45 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
   } catch (err) {
     console.error('❌ Email send error:', err.message);
     res.status(500).json({ error: `Email send failed: ${err.message}` });
+  }
+});
+
+// GET /api/email/scheduled - list scheduled blasts for current user
+router.get('/scheduled', requireRole('admin', 'campaign_manager'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, subject, recipient_count, scheduled_at, status, created_at
+       FROM email_blasts
+       WHERE status = 'scheduled' AND sender_id = $1
+       ORDER BY scheduled_at ASC`,
+      [req.user.id]
+    );
+    res.json({ blasts: rows });
+  } catch (err) {
+    console.error('❌ Fetch scheduled blasts error:', err.message);
+    res.status(500).json({ error: `Database error: ${err.message}` });
+  }
+});
+
+// DELETE /api/email/scheduled/:id - cancel a scheduled blast
+router.delete('/scheduled/:id', requireRole('admin', 'campaign_manager'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `UPDATE email_blasts SET status = 'cancelled'
+       WHERE id = $1 AND sender_id = $2 AND status = 'scheduled'
+       RETURNING id`,
+      [req.params.id, req.user.id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Scheduled blast not found' });
+    }
+
+    console.log(`✅ Cancelled scheduled blast #${req.params.id}`);
+    res.json({ success: true, message: 'Blast cancelled' });
+  } catch (err) {
+    console.error('❌ Cancel scheduled blast error:', err.message);
+    res.status(500).json({ error: `Cancel failed: ${err.message}` });
   }
 });
 
@@ -543,4 +627,83 @@ router.delete('/templates/:id', requireRole('admin', 'campaign_manager'), async 
   }
 });
 
+// Helper: Dispatch a scheduled or queued blast
+async function dispatchBlast(pool, blastId, validRecords, emailToRecipientId, subject, htmlBody, textBody, fromAddress, baseUrl) {
+  try {
+    let sendResults = [];
+    console.log(`📤 Dispatching blast #${blastId} to ${validRecords.length} emails in batches of ${BATCH_SIZE}...`);
+
+    for (let i = 0; i < validRecords.length; i += BATCH_SIZE) {
+      const batch = validRecords.slice(i, i + BATCH_SIZE);
+
+      const personalizedBatch = batch.map(record => {
+        const recipientId = emailToRecipientId[record.email];
+        let personalized = htmlBody
+          .replace(/{first_name}/g, record.firstName || '')
+          .replace(/{last_name}/g, record.lastName || '');
+
+        personalized = injectOpenPixel(personalized, recipientId, baseUrl);
+        personalized = injectClickTracking(personalized, recipientId, baseUrl);
+
+        let textPersonalized = textBody || ''
+          .replace(/{first_name}/g, record.firstName || '')
+          .replace(/{last_name}/g, record.lastName || '');
+
+        return { email: record.email, recipientId, htmlBody: personalized, textBody: textPersonalized };
+      });
+
+      const batchResults = await Promise.all(
+        personalizedBatch.map(item => sendEmail(item.email, subject, item.htmlBody, item.textBody, fromAddress))
+      );
+
+      for (let j = 0; j < batchResults.length; j++) {
+        const result = batchResults[j];
+        const item = personalizedBatch[j];
+        if (result.success) {
+          await pool.query(
+            `UPDATE email_recipients SET ses_message_id = $1, status = 'sent' WHERE id = $2`,
+            [result.messageId, item.recipientId]
+          );
+        } else {
+          await pool.query(
+            `UPDATE email_recipients SET status = 'failed' WHERE id = $1`,
+            [item.recipientId]
+          );
+        }
+      }
+
+      sendResults.push(...batchResults);
+
+      if (i + BATCH_SIZE < validRecords.length) {
+        await new Promise(r => setTimeout(r, BATCH_DELAY_MS));
+      }
+    }
+
+    const sentCount = sendResults.filter(r => r.success).length;
+    const failedCount = sendResults.filter(r => !r.success).length;
+    const totalCost = (sentCount * SES_COST_PER_EMAIL).toFixed(6);
+    const finalStatus = sentCount === validRecords.length ? 'sent' : (sentCount > 0 ? 'partial' : 'failed');
+
+    const resultsJson = {
+      total: validRecords.length,
+      sent: sentCount,
+      failed: failedCount,
+      details: sendResults
+    };
+
+    await pool.query(
+      `UPDATE email_blasts SET recipient_count = $1, total_cost = $2, status = $3, results = $4, sent_at = NOW() WHERE id = $5`,
+      [sentCount, totalCost, finalStatus, JSON.stringify(resultsJson), blastId]
+    );
+
+    console.log(`✅ Blast #${blastId} dispatch complete: ${sentCount} sent, ${failedCount} failed`);
+    return { sentCount, failedCount };
+  } catch (err) {
+    console.error(`❌ Dispatch blast #${blastId} error:`, err.message);
+    await pool.query(`UPDATE email_blasts SET status = 'failed' WHERE id = $1`, [blastId]);
+    throw err;
+  }
+}
+
 module.exports = router;
+module.exports.dispatchBlast = dispatchBlast;

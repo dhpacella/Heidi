@@ -513,6 +513,21 @@
       </div>
     </div>
 
+    <!-- Schedule Section -->
+    <div id="scheduleSection" style="margin-bottom: 24px; padding: 16px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--border);">
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 12px;">
+        <input type="checkbox" id="scheduleToggle" onchange="toggleSchedule()" />
+        <span style="font-weight: 600;">Schedule for later</span>
+      </label>
+      <div id="scheduleInputs" style="display: none;">
+        <input type="datetime-local" id="scheduledAt"
+               style="width: 100%; padding: 10px; background: var(--surface-1); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-family: 'Barlow', sans-serif;" />
+        <p id="scheduleHint" style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+          ⏰ Email will be queued and sent automatically at the selected time.
+        </p>
+      </div>
+    </div>
+
     <!-- Send Button -->
     <div style="text-align: center; margin-bottom: 24px;">
       <button class="btn btn-primary" id="sendBtn" onclick="confirmSend()" style="padding: 12px 48px; font-size: 14px; font-weight: 700;" disabled>
@@ -524,14 +539,17 @@
   <!-- Confirmation Modal -->
   <div id="confirmModal" class="modal">
     <div class="modal-content">
-      <h2>Confirm Send</h2>
+      <h2 id="confirmTitle">Confirm Send</h2>
       <p><strong>Recipients:</strong> <span id="modalRecipients">0</span></p>
       <p><strong>Subject:</strong> <span id="modalSubject"></span></p>
       <p><strong>Cost:</strong> <span id="modalCost">$0.00</span></p>
-      <p style="font-size: 12px; color: var(--text-muted); margin-top: 16px;">This will send emails to all recipients in your file.</p>
+      <p id="scheduleConfirmLine" style="display:none; margin-top: 12px;">
+        <strong>⏰ Scheduled for:</strong> <span id="scheduleConfirmTime"></span>
+      </p>
+      <p style="font-size: 12px; color: var(--text-muted); margin-top: 16px;" id="confirmDesc">This will send emails to all recipients in your file.</p>
       <div class="modal-buttons">
         <button class="btn" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="sendNow()">Send Now</button>
+        <button class="btn btn-primary" id="confirmBtn" onclick="sendNow()">Send Now</button>
       </div>
     </div>
   </div>
@@ -736,9 +754,26 @@
       const subject = document.getElementById('subject').value;
       const recipientCount = uploadedData ? uploadedData.length : 0;
       const cost = (recipientCount * 0.0001).toFixed(4);
+      const isScheduled = document.getElementById('scheduleToggle')?.checked;
+      const scheduledAt = document.getElementById('scheduledAt')?.value;
+
       document.getElementById('modalSubject').textContent = subject;
       document.getElementById('modalRecipients').textContent = recipientCount.toLocaleString();
       document.getElementById('modalCost').textContent = '$' + cost;
+
+      // Show scheduled time if applicable
+      if (isScheduled && scheduledAt) {
+        const scheduledTime = new Date(scheduledAt).toLocaleString();
+        document.getElementById('scheduleConfirmLine').style.display = 'block';
+        document.getElementById('scheduleConfirmTime').textContent = scheduledTime;
+        document.getElementById('confirmBtn').textContent = 'Schedule Email';
+        document.getElementById('confirmDesc').textContent = 'Email will be queued and sent at the scheduled time.';
+      } else {
+        document.getElementById('scheduleConfirmLine').style.display = 'none';
+        document.getElementById('confirmBtn').textContent = 'Send Now';
+        document.getElementById('confirmDesc').textContent = 'This will send emails to all recipients in your file.';
+      }
+
       document.getElementById('confirmModal').classList.add('show');
     }
 
@@ -759,6 +794,13 @@
       formData.append('subject', subject);
       formData.append('htmlBody', htmlBody);
       formData.append('textBody', textBody);
+
+      // Add scheduled_at if scheduling is enabled
+      const isScheduled = document.getElementById('scheduleToggle')?.checked;
+      const scheduledAt = document.getElementById('scheduledAt')?.value;
+      if (isScheduled && scheduledAt) {
+        formData.append('scheduled_at', scheduledAt);
+      }
 
       if (isListTab && selectedListId) {
         formData.append('list_id', selectedListId);
@@ -782,19 +824,47 @@
 
         const result = await response.json();
         if (result.success) {
-          alert(`✅ Email sent to ${result.sent} recipients`);
+          if (response.status === 202) {
+            // Scheduled send
+            const scheduledTime = new Date(scheduledAt).toLocaleString();
+            alert(`✅ Email scheduled for ${scheduledTime}`);
+          } else {
+            // Immediate send
+            alert(`✅ Email sent to ${result.sent} recipients`);
+          }
+
+          // Clear form
           if (!isListTab) {
             fileInput.value = '';
             document.getElementById('fileInfo').style.display = 'none';
           }
           document.getElementById('subject').value = '';
           document.getElementById('htmlBody').value = '';
+          document.getElementById('scheduleToggle').checked = false;
+          document.getElementById('scheduleInputs').style.display = 'none';
+          document.getElementById('scheduledAt').value = '';
           updateSendButton();
         } else {
           alert('❌ Error: ' + (result.error || result.message));
         }
       } catch (err) {
         alert('❌ Send failed: ' + err.message);
+      }
+    }
+
+    // Toggle schedule section
+    function toggleSchedule() {
+      const checked = document.getElementById('scheduleToggle').checked;
+      document.getElementById('scheduleInputs').style.display = checked ? 'block' : 'none';
+
+      if (checked) {
+        // Set minimum to 5 minutes from now
+        const now = new Date(Date.now() + 5 * 60 * 1000);
+        const isoString = now.toISOString().slice(0, 16);
+        document.getElementById('scheduledAt').min = isoString;
+        // Set default to 1 hour from now
+        const later = new Date(Date.now() + 60 * 60 * 1000);
+        document.getElementById('scheduledAt').value = later.toISOString().slice(0, 16);
       }
     }
 

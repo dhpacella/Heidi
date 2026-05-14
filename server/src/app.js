@@ -123,6 +123,14 @@ const PORT = process.env.PORT || 5000;
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
+
+    // Register email scheduler for dispatching scheduled blasts
+    try {
+      const { scheduleDispatcher } = require('./scheduler');
+      scheduleDispatcher(pool);
+    } catch (err) {
+      console.error('⚠️ Failed to start email scheduler:', err.message);
+    }
   });
 }
 

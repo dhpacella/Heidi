@@ -224,3 +224,12 @@ CREATE TABLE IF NOT EXISTS email_templates (
 );
 
 CREATE INDEX IF NOT EXISTS idx_email_templates_user ON email_templates(user_id);
+
+-- Scheduled Sending Support
+ALTER TABLE email_blasts
+  ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS sent_at TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS list_id INTEGER REFERENCES email_lists(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS segment_id INTEGER REFERENCES email_segments(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_email_blasts_scheduled ON email_blasts(scheduled_at) WHERE status = 'scheduled';
