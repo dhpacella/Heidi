@@ -146,4 +146,25 @@ router.get('/email-ab-tests', requireSession, (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'email-ab-tests.html'));
 });
 
+router.get('/volunteers', requireSession, (req, res) => {
+  if (req.session.role !== 'admin' && req.session.role !== 'campaign_manager') {
+    return res.status(403).send('Access denied. Admin or Campaign Manager required.');
+  }
+  res.sendFile(path.join(PUBLIC_DIR, 'volunteers.html'));
+});
+
+router.get('/volunteer-map', requireSession, (req, res) => {
+  if (req.session.role !== 'admin' && req.session.role !== 'campaign_manager') {
+    return res.status(403).send('Access denied. Admin or Campaign Manager required.');
+  }
+  res.sendFile(path.join(PUBLIC_DIR, 'volunteer-map.html'));
+});
+
+router.get('/volunteer-portal', requireSession, (req, res) => {
+  if (req.session.role !== 'volunteer') {
+    return res.status(403).send('Access denied. Volunteers only.');
+  }
+  res.sendFile(path.join(PUBLIC_DIR, 'volunteer-portal.html'));
+});
+
 module.exports = router;
