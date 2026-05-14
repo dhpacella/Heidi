@@ -211,3 +211,16 @@ ALTER TABLE email_recipients
   ADD COLUMN IF NOT EXISTS complained_at TIMESTAMP;
 
 CREATE INDEX IF NOT EXISTS idx_email_recipients_ses_message_id ON email_recipients(ses_message_id);
+
+-- Email Templates (reusable message templates)
+CREATE TABLE IF NOT EXISTS email_templates (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  subject VARCHAR(255) NOT NULL,
+  html_body TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_email_templates_user ON email_templates(user_id);
