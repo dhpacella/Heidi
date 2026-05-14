@@ -116,6 +116,37 @@ app.get('/debug/admin-status', async (req, res) => {
   }
 });
 
+// Force reset admin user
+app.get('/debug/reset-admin', async (req, res) => {
+  try {
+    const bcrypt = require('bcryptjs');
+
+    // Delete existing
+    await pool.query('DELETE FROM users WHERE email = $1', ['admin@test.com']);
+
+    // Create with fresh hash using 10 rounds
+    const hash = await bcrypt.hash('Admin123!', 10);
+    const result = await pool.query(
+      'INSERT INTO users (email, name, password_hash, role, created_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id, email',
+      ['admin@test.com', 'Admin User', hash, 'admin']
+    );
+
+    res.json({
+      status: 'success',
+      message: '✅ Admin user reset successfully!',
+      email: 'admin@test.com',
+      password: 'Admin123!',
+      userId: result.rows[0].id,
+      instruction: 'Go back to /login and try again'
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: err.message
+    });
+  }
+});
+
 // TEMPORARY: Setup endpoint to create admin user (remove after initialization)
 app.post('/api/setup', async (req, res) => {
   try {
