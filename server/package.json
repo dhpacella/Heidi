@@ -20,7 +20,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@aws-sdk/client-cloudwatch": "^3.1045.0",
+    "@aws-sdk/client-cloudwatch": "^3.1047.0",
     "@aws-sdk/client-ses": "^3.1045.0",
     "@aws-sdk/client-sns": "^3.1045.0",
     "bcryptjs": "^2.4.3",
@@ -36,7 +36,7 @@
     "jsonwebtoken": "^9.0.0",
     "lighthouse": "^10.4.0",
     "multer": "^2.1.1",
-    "node-cron": "^3.0.2",
+    "node-cron": "^3.0.3",
     "pg": "^8.8.0",
     "xlsx": "^0.18.5"
   },
