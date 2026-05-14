@@ -274,6 +274,9 @@ CREATE TABLE IF NOT EXISTS volunteer_assignments (
   status VARCHAR(50) DEFAULT 'pending',
   visited_at TIMESTAMP,
   notes TEXT,
+  already_canvassed BOOLEAN DEFAULT FALSE,
+  canvassed_at TIMESTAMP,
+  concerns JSONB DEFAULT '[]',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(volunteer_id, voter_id)
 );
