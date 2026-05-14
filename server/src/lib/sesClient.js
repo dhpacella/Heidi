@@ -9,10 +9,11 @@ function normalizeEmail(raw) {
   return emailRegex.test(trimmed) ? trimmed : null;
 }
 
-async function sendEmail(toAddress, subject, htmlBody, textBody, fromAddress) {
+async function sendEmail(toAddress, subject, htmlBody, textBody, fromAddress, fromName) {
   try {
+    const source = fromName ? `"${fromName}" <${fromAddress}>` : fromAddress;
     const command = new SendEmailCommand({
-      Source: fromAddress,
+      Source: source,
       Destination: {
         ToAddresses: [toAddress],
       },

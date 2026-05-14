@@ -474,6 +474,17 @@
         </select>
       </div>
 
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+        <div>
+          <label for="senderName">From Name</label>
+          <input type="text" id="senderName" placeholder="e.g., Heidi Campaign" value="Heidi">
+        </div>
+        <div>
+          <label for="senderEmail">From Email</label>
+          <input type="email" id="senderEmail" placeholder="heidi@hadleytrees.com" value="heidi@hadleytrees.com">
+        </div>
+      </div>
+
       <label for="subject">Subject Line</label>
       <input type="text" id="subject" placeholder="Email subject">
 
@@ -818,6 +829,8 @@
       formData.append('subject', subject);
       formData.append('htmlBody', htmlBody);
       formData.append('textBody', textBody);
+      formData.append('senderName', document.getElementById('senderName').value);
+      formData.append('senderEmail', document.getElementById('senderEmail').value);
 
       // Add scheduled_at if scheduling is enabled
       const isScheduled = document.getElementById('scheduleToggle')?.checked;

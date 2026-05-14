@@ -130,7 +130,7 @@ function findPersonalizationColumns(headers) {
 
 // POST /api/email/send - Send HTML emails via AWS SES with file upload or list/segment
 router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('file'), async (req, res) => {
-  const { subject, htmlBody, textBody, list_id, segment_id, scheduled_at, variant_b_subject, variant_b_html_body } = req.body || {};
+  const { subject, htmlBody, textBody, list_id, segment_id, scheduled_at, variant_b_subject, variant_b_html_body, senderEmail, senderName } = req.body || {};
 
   if (!subject || typeof subject !== 'string' || !subject.trim()) {
     return res.status(400).json({ error: 'subject is required' });
@@ -151,7 +151,8 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
     }
   }
 
-  const fromAddress = process.env.SES_FROM_EMAIL || 'noreply@example.com';
+  const fromAddress = senderEmail || process.env.SES_FROM_EMAIL || 'noreply@example.com';
+  const fromName = senderName || 'Campaign';
   const baseUrl = process.env.BASE_URL || `https://${req.hostname}`;
 
   try {
@@ -344,7 +345,7 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
 
       // Send batch in parallel
       const batchResults = await Promise.all(
-        personalizedBatch.map(item => sendEmail(item.email, subject, item.htmlBody, item.textBody, fromAddress))
+        personalizedBatch.map(item => sendEmail(item.email, subject, item.htmlBody, item.textBody, fromAddress, fromName))
       );
 
       // Update recipients with ses_message_id and status
@@ -752,7 +753,7 @@ async function insertRecipients(pool, blastId, validRecords, abVariant = null) {
 }
 
 // Helper: Dispatch a scheduled or queued blast
-async function dispatchBlast(pool, blastId, validRecords, emailToRecipientId, subject, htmlBody, textBody, fromAddress, baseUrl) {
+async function dispatchBlast(pool, blastId, validRecords, emailToRecipientId, subject, htmlBody, textBody, fromAddress, baseUrl, fromName) {
   try {
     let sendResults = [];
     console.log(`📤 Dispatching blast #${blastId} to ${validRecords.length} emails in batches of ${BATCH_SIZE}...`);
@@ -778,7 +779,7 @@ async function dispatchBlast(pool, blastId, validRecords, emailToRecipientId, su
       });
 
       const batchResults = await Promise.all(
-        personalizedBatch.map(item => sendEmail(item.email, subject, item.htmlBody, item.textBody, fromAddress))
+        personalizedBatch.map(item => sendEmail(item.email, subject, item.htmlBody, item.textBody, fromAddress, fromName))
       );
 
       for (let j = 0; j < batchResults.length; j++) {
