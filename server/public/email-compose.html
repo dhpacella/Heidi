@@ -441,6 +441,18 @@
       <div id="tab-manual-content" style="display: none;">
         <label style="display: block; margin-bottom: 12px; font-weight: 600;">Email Address (for testing)</label>
         <input type="email" id="manualEmail" placeholder="your-email@gmail.com" style="width: 100%; padding: 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-family: 'Barlow', sans-serif; margin-bottom: 12px;">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div>
+            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">First Name</label>
+            <input type="text" id="manualFirstName" placeholder="e.g., John" style="width: 100%; padding: 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-family: 'Barlow', sans-serif;">
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Last Name</label>
+            <input type="text" id="manualLastName" placeholder="e.g., Voter" style="width: 100%; padding: 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-family: 'Barlow', sans-serif;">
+          </div>
+        </div>
+
         <button class="btn btn-primary" onclick="confirmManualEmail()" style="width: 100%;">✓ Use This Email</button>
       </div>
 
@@ -971,7 +983,9 @@
 
     function confirmManualEmail() {
       const email = document.getElementById('manualEmail').value.trim();
-      console.log('📧 confirmManualEmail() called with email:', email);
+      const firstName = document.getElementById('manualFirstName').value.trim() || 'Test';
+      const lastName = document.getElementById('manualLastName').value.trim() || 'User';
+      console.log('📧 confirmManualEmail() called with email:', email, 'name:', firstName, lastName);
 
       if (!email) {
         alert('Please enter an email address');
@@ -981,7 +995,7 @@
         alert('Please enter a valid email address');
         return;
       }
-      fullData = [{ email: email, first_name: 'Test', last_name: 'User' }];
+      fullData = [{ email: email, first_name: firstName, last_name: lastName }];
       uploadedData = fullData;
       console.log('✅ uploadedData set to:', uploadedData);
       updateRecipientCount(1);
