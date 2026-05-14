@@ -25,6 +25,13 @@ function injectClickTracking(html, recipientId, baseUrl) {
   });
 }
 
+function injectUnsubscribeLink(html, recipientId, baseUrl) {
+  const footer = `<div style="text-align:center;margin-top:24px;font-size:11px;color:#999;">
+    <a href="${baseUrl}/api/email/track/unsubscribe/${recipientId}" style="color:#999;">Unsubscribe</a>
+  </div>`;
+  return html.includes('</body>') ? html.replace('</body>', footer + '</body>') : html + footer;
+}
+
 // Health check — test database connection and email_blasts table
 router.get('/health', async (req, res) => {
   try {
@@ -438,36 +445,6 @@ router.delete('/scheduled/:id', requireRole('admin', 'campaign_manager'), async 
   }
 });
 
-// GET /api/email/track/open/:recipientId - record open event
-router.get('/track/open/:recipientId', async (req, res) => {
-  const gif = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
-  res.set({ 'Content-Type': 'image/gif', 'Cache-Control': 'no-cache, no-store' }).send(gif);
-
-  // Update asynchronously
-  pool.query(
-    `UPDATE email_recipients SET opened_at = NOW(),
-     status = CASE WHEN status = 'sent' THEN 'opened' ELSE status END
-     WHERE id = $1 AND opened_at IS NULL`,
-    [req.params.recipientId]
-  ).catch(err => console.error('Error recording open:', err));
-});
-
-// GET /api/email/track/click/:recipientId - record click and redirect
-router.get('/track/click/:recipientId', async (req, res) => {
-  const url = Buffer.from(req.query.url || '', 'base64url').toString();
-  if (!url.startsWith('http')) {
-    return res.status(400).send('Invalid URL');
-  }
-
-  res.redirect(url);
-
-  // Update asynchronously
-  pool.query(
-    'UPDATE email_recipients SET clicked_at = NOW() WHERE id = $1 AND clicked_at IS NULL',
-    [req.params.recipientId]
-  ).catch(err => console.error('Error recording click:', err));
-});
-
 // GET /api/email/blasts - list all email blasts with pagination and tracking counts
 router.get('/blasts', requireRole('admin', 'campaign_manager'), async (req, res) => {
   try {
@@ -480,7 +457,11 @@ router.get('/blasts', requireRole('admin', 'campaign_manager'), async (req, res)
     const { rows: blasts } = await pool.query(
       `SELECT b.*, u.name as sender_name,
               COUNT(CASE WHEN er.opened_at IS NOT NULL THEN 1 END) as opened_count,
-              COUNT(CASE WHEN er.clicked_at IS NOT NULL THEN 1 END) as clicked_count
+              COUNT(CASE WHEN er.clicked_at IS NOT NULL THEN 1 END) as clicked_count,
+              COUNT(CASE WHEN er.bounced_at IS NOT NULL THEN 1 END) as bounced_count,
+              COUNT(CASE WHEN er.complained_at IS NOT NULL THEN 1 END) as complained_count,
+              COUNT(CASE WHEN er.unsubscribed_at IS NOT NULL THEN 1 END) as unsubscribed_count,
+              COUNT(CASE WHEN er.delivered_at IS NOT NULL THEN 1 END) as delivered_count
        FROM email_blasts b
        LEFT JOIN users u ON b.sender_id = u.id
        LEFT JOIN email_recipients er ON er.blast_id = b.id
@@ -548,6 +529,25 @@ router.get('/blasts/:id/recipients', requireRole('admin', 'campaign_manager'), a
   } catch (err) {
     console.error('Fetch recipients error:', err);
     res.status(500).json({ error: 'Failed to fetch recipients' });
+  }
+});
+
+// GET /api/email/blasts/:id/bounces - get bounce details for a blast
+router.get('/blasts/:id/bounces', requireRole('admin', 'campaign_manager'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT email, first_name, last_name, bounce_type, bounce_subtype,
+              bounce_diagnostic_code, bounced_at
+       FROM email_recipients
+       WHERE blast_id = $1 AND bounced_at IS NOT NULL
+       ORDER BY bounced_at DESC`,
+      [req.params.id]
+    );
+
+    res.json({ bounces: rows, total: rows.length });
+  } catch (err) {
+    console.error('Fetch bounces error:', err);
+    res.status(500).json({ error: 'Failed to fetch bounce details' });
   }
 });
 
@@ -772,6 +772,7 @@ async function dispatchBlast(pool, blastId, validRecords, emailToRecipientId, su
 
         personalized = injectOpenPixel(personalized, recipientId, baseUrl);
         personalized = injectClickTracking(personalized, recipientId, baseUrl);
+        personalized = injectUnsubscribeLink(personalized, recipientId, baseUrl);
 
         let textPersonalized = textBody || ''
           .replace(/{first_name}/g, record.firstName || '')

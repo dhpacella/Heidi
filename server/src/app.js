@@ -62,6 +62,9 @@ app.use('/api/sms', requireApiAuth, require('./routes/sms'));
 // SES webhook (no auth — authenticated by SNS topic ARN)
 app.post('/api/email/webhooks/ses', express.json({ type: '*/*' }), require('./routes/sesWebhook'));
 
+// Email tracking endpoints (no auth — email clients need to access without a session)
+app.use('/api/email/track', require('./routes/emailTracking'));
+
 app.use('/api/email', requireApiAuth, require('./routes/email'));
 app.use('/api/lists', requireApiAuth, require('./routes/lists'));
 

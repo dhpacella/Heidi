@@ -243,3 +243,13 @@ ALTER TABLE email_recipients
   ADD COLUMN IF NOT EXISTS ab_variant CHAR(1);
 
 CREATE INDEX IF NOT EXISTS idx_email_blasts_ab_test ON email_blasts(ab_test_id);
+
+-- Email Metrics Support (unsubscribe, delivery confirmation, bounce details)
+ALTER TABLE email_recipients
+  ADD COLUMN IF NOT EXISTS unsubscribed_at TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS bounce_subtype VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS bounce_diagnostic_code TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_email_recipients_unsub ON email_recipients(unsubscribed_at);
+CREATE INDEX IF NOT EXISTS idx_email_recipients_delivered ON email_recipients(delivered_at);
