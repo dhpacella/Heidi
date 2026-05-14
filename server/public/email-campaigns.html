@@ -547,10 +547,23 @@
       window.location.href = '/dashboard';
     }
 
+    // Fetch with timeout wrapper
+    async function fetchWithTimeout(url, timeout = 8000) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+        return response;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+
     // Load overview stats and populate stat cards + donut chart
     async function loadStats() {
+      // Load local database stats with timeout
       try {
-        const response = await fetch('/api/email/stats/overview');
+        const response = await fetchWithTimeout('/api/email/stats/overview', 8000);
         const stats = await response.json();
 
         document.getElementById('statTotal').textContent = stats.total_campaigns;
@@ -573,11 +586,13 @@
         renderDeliveryChart(delivered, hardBounced, softBounced, complained, unsubscribed, other);
       } catch (err) {
         console.error('Error loading local stats:', err);
+        document.getElementById('statTotal').textContent = '—';
+        document.getElementById('statSent').textContent = '—';
       }
 
-      // Load AWS SES reputation metrics
+      // Load AWS SES reputation metrics with timeout (non-blocking)
       try {
-        const response = await fetch('/api/email/aws-metrics');
+        const response = await fetchWithTimeout('/api/email/aws-metrics', 8000);
         const data = await response.json();
 
         if (data.success && data.aws_metrics) {
@@ -611,7 +626,7 @@
     // Load campaigns and populate table + bar chart
     async function loadCampaigns(page = 1) {
       try {
-        const response = await fetch(`/api/email/blasts?page=${page}`);
+        const response = await fetchWithTimeout(`/api/email/blasts?page=${page}`, 8000);
         const data = await response.json();
 
         if (!data.blasts || data.blasts.length === 0) {
