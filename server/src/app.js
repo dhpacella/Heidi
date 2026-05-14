@@ -73,6 +73,32 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// TEMPORARY: Setup endpoint to create admin user (remove after initialization)
+app.post('/api/setup', async (req, res) => {
+  try {
+    const bcryptjs = require('bcryptjs');
+    const adminEmail = 'admin@test.com';
+    const adminPassword = 'Admin123!';
+
+    const hashedPassword = await bcryptjs.hash(adminPassword, 6);
+    await pool.query('DELETE FROM users WHERE email = $1', [adminEmail]);
+    const result = await pool.query(
+      'INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING id',
+      [adminEmail, hashedPassword, 'Test Admin', 'admin']
+    );
+
+    res.json({
+      success: true,
+      message: 'Admin user created',
+      email: adminEmail,
+      password: adminPassword,
+      userId: result.rows[0].id
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // Database migration endpoint - applies pending schema changes
 app.post('/api/migrate-db', async (req, res) => {
