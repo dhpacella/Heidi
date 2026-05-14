@@ -139,6 +139,13 @@ router.get('/email-metrics', requireSession, (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'email-metrics.html'));
 });
 
+router.get('/email-campaigns', requireSession, (req, res) => {
+  if (req.session.role !== 'admin' && req.session.role !== 'campaign_manager') {
+    return res.status(403).send('Access denied. Admin or Campaign Manager required.');
+  }
+  res.sendFile(path.join(PUBLIC_DIR, 'email-campaigns.html'));
+});
+
 router.get('/email-ab-tests', requireSession, (req, res) => {
   if (req.session.role !== 'admin' && req.session.role !== 'campaign_manager') {
     return res.status(403).send('Access denied. Admin or Campaign Manager required.');
