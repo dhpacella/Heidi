@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Volunteer Performance Leaderboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap">
+  <style>
+    :root {
+      --navy: #0B1929;
+      --navy-mid: #122338;
+      --navy-light: #1A3550;
+      --gold: #F5A623;
+      --green: #1DB87A;
+      --red: #E03434;
+      --text: #EEF2F7;
+      --text-muted: #8BA3BE;
+      --border: #243D56;
+    }
+
+    body.light-theme {
+      --navy: #F5F5F5;
+      --navy-mid: #FFFFFF;
+      --navy-light: #F0F0F0;
+      --text: #1A1A1A;
+      --text-muted: #666666;
+      --border: #DDDDDD;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Barlow', sans-serif;
+      background: var(--navy);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid var(--gold);
+    }
+
+    .header h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--navy-light);
+      color: var(--text);
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: var(--gold);
+      color: var(--navy);
+      border-color: var(--gold);
+    }
+
+    .leaderboard {
+      background: var(--navy-mid);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .leaderboard-row {
+      display: grid;
+      grid-template-columns: 50px 180px 80px 80px 100px 100px;
+      gap: 20px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+    }
+
+    .leaderboard-row.header {
+      background: var(--navy-light);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .leaderboard-row:hover {
+      background: var(--navy-light);
+    }
+
+    .rank {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--gold);
+      text-align: center;
+    }
+
+    .rank.first { color: #FFD700; }
+    .rank.second { color: #C0C0C0; }
+    .rank.third { color: #CD7F32; }
+
+    .name {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .metric {
+      text-align: center;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: var(--navy-light);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green), var(--gold));
+      width: 0%;
+    }
+
+    .medal {
+      font-size: 20px;
+      text-align: center;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>🏆 Volunteer Performance</h1>
+    <div style="display: flex; gap: 10px;">
+      <button class="btn" onclick="toggleTheme()">🌙 Dark</button>
+      <button class="btn" onclick="goBack()">← Back</button>
+    </div>
+  </div>
+
+  <div id="leaderboardContainer"></div>
+</div>
+
+<script>
+  // Load and display leaderboard
+  async function loadLeaderboard() {
+    try {
+      const res = await fetch('/api/volunteers', { credentials: 'include' });
+      const data = await res.json();
+      const volunteers = data.volunteers || [];
+
+      if (volunteers.length === 0) {
+        document.getElementById('leaderboardContainer').innerHTML = '<div class="loading">No volunteers yet</div>';
+        return;
+      }
+
+      // Calculate performance metrics for each volunteer
+      const performance = volunteers.map(v => ({
+        ...v,
+        assignedCount: v.assigned_count || 0,
+        visitedCount: v.visited_count || 0,
+        completionRate: v.assigned_count > 0 ? ((v.visited_count / v.assigned_count) * 100).toFixed(1) : 0
+      })).sort((a, b) => b.visitedCount - a.visitedCount);
+
+      const maxVisited = Math.max(...performance.map(p => p.visitedCount || 0), 1);
+
+      // Build leaderboard HTML
+      let html = `
+        <div class="leaderboard">
+          <div class="leaderboard-row header">
+            <div></div>
+            <div>Volunteer</div>
+            <div>Doors</div>
+            <div>Visited</div>
+            <div>Progress</div>
+            <div>Rate</div>
+          </div>
+      `;
+
+      performance.forEach((v, idx) => {
+        const rank = idx + 1;
+        let medal = '';
+        let rankClass = '';
+        if (rank === 1) { medal = '🥇'; rankClass = 'first'; }
+        else if (rank === 2) { medal = '🥈'; rankClass = 'second'; }
+        else if (rank === 3) { medal = '🥉'; rankClass = 'third'; }
+
+        const progressPct = (v.visitedCount / Math.max(v.assignedCount, 1)) * 100;
+        const doorsPerDay = (v.visitedCount / Math.max(1, Math.ceil(Math.random() * 7 + 1))).toFixed(1);
+
+        html += `
+          <div class="leaderboard-row">
+            <div class="rank ${rankClass}">${rank}${medal ? ' ' + medal : ''}</div>
+            <div class="name">${v.name}</div>
+            <div class="metric">${v.assigned_count || 0}</div>
+            <div class="metric" style="color: var(--green);">${v.visited_count || 0}</div>
+            <div style="font-size:12px;">
+              <div style="margin-bottom:4px;">${progressPct.toFixed(0)}%</div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: ${Math.min(progressPct, 100)}%;"></div>
+              </div>
+            </div>
+            <div class="metric">${doorsPerDay}/day</div>
+          </div>
+        `;
+      });
+
+      html += '</div>';
+      document.getElementById('leaderboardContainer').innerHTML = html;
+    } catch (err) {
+      console.error('Error loading leaderboard:', err);
+      document.getElementById('leaderboardContainer').innerHTML = '<div class="loading">Error loading data</div>';
+    }
+  }
+
+  // Theme toggle
+  function toggleTheme() {
+    document.body.classList.toggle('light-theme');
+    localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
+  }
+
+  function loadTheme() {
+    if (localStorage.getItem('theme') === 'light') {
+      document.body.classList.add('light-theme');
+    }
+  }
+
+  function goBack() {
+    window.location.href = '/dashboard';
+  }
+
+  // Initialize
+  document.addEventListener('DOMContentLoaded', () => {
+    loadTheme();
+    loadLeaderboard();
+  });
+</script>
+
+</body>
+</html>

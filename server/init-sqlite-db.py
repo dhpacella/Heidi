@@ -26,7 +26,7 @@ def init_database():
     # Enable foreign keys
     cursor.execute('PRAGMA foreign_keys = ON')
 
-    print("Creating tables...")
+    print("[*] Creating tables...")
 
     # Precincts
     cursor.execute('''
@@ -302,7 +302,7 @@ def init_database():
     ''')
 
     # Create indexes
-    print("Creating indexes...")
+    print("[*] Creating indexes...")
     indexes = [
         'CREATE INDEX IF NOT EXISTS idx_voters_name ON voters(last_name, first_name)',
         'CREATE INDEX IF NOT EXISTS idx_voters_email ON voters(email)',
@@ -347,7 +347,7 @@ def init_database():
             pass  # Index already exists
 
     # Create admin user
-    print("Creating admin user...")
+    print("[*] Creating admin user...")
     admin_email = 'admin@test.com'
     admin_password = 'Admin123!'
     admin_hash = hash_password(admin_password)
@@ -368,8 +368,8 @@ def init_database():
     conn.commit()
     conn.close()
 
-    print(f"✅ SQLite database initialized: {DB_PATH}")
-    print(f"📧 Admin credentials: {admin_email} / {admin_password}")
+    print("[OK] SQLite database initialized: {}".format(DB_PATH))
+    print("[INFO] Admin credentials: {} / {}".format(admin_email, admin_password))
 
 if __name__ == '__main__':
     init_database()

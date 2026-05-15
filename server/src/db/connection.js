@@ -16,7 +16,8 @@ if (process.env.NODE_ENV !== 'production') {
   }
 }
 
-const dbUrl = process.env.DATABASE_URL || '';
+let dbUrl = process.env.DATABASE_URL || '';
+const { getSecret } = require('../lib/secretsClient');
 
 // Check if using SQLite or PostgreSQL
 if (dbUrl.startsWith('sqlite:')) {
@@ -85,74 +86,96 @@ if (dbUrl.startsWith('sqlite:')) {
 
   module.exports = pool;
 } else {
-  // PostgreSQL for production/RDS
+  // PostgreSQL for production/RDS, or mock DB for local development
   const { Pool } = require('pg');
   const mockDb = require('./mock-db');
 
-  const poolConfig = dbUrl ? {
-    connectionString: dbUrl,
-    ssl: { rejectUnauthorized: false }
-  } : {
-    host: 'heidi-voter-db-east2.cf6y8ieas57y.us-east-2.rds.amazonaws.com',
-    port: 5432,
-    user: 'ebroot',
-    password: 'etMf3W5t4EchcjG',
-    database: 'postgres',
-    ssl: { rejectUnauthorized: false }
-  };
+  // In development mode, prefer mock database unless explicitly using localhost
+  const isDev = process.env.NODE_ENV !== 'production';
+  const isLocalDb = dbUrl && (dbUrl.includes('localhost') || dbUrl.includes('127.0.0.1'));
 
-  let pgPool = new Pool(poolConfig);
-  let connectionFailed = false;
+  if (isDev && !isLocalDb) {
+    console.log('✅ Using in-memory mock database for local development');
+    module.exports = mockDb;
+  } else {
+    let poolConfig = dbUrl ? {
+      connectionString: dbUrl,
+      ssl: { rejectUnauthorized: false }
+    } : {
+      host: 'heidi-voter-db-east2.cf6y8ieas57y.us-east-2.rds.amazonaws.com',
+      port: 5432,
+      user: 'ebroot',
+      password: 'etMf3W5t4EchcjG',
+      database: 'postgres',
+      ssl: { rejectUnauthorized: false }
+    };
 
-  pgPool.on('error', (err) => {
-    if (!connectionFailed) {
-      console.warn('⚠️ Database connection error:', err.message);
-      connectionFailed = true;
-    }
-  });
+    let pgPool = new Pool(poolConfig);
+    let connectionFailed = false;
 
-  pgPool.on('connect', () => {
-    console.log('✅ PostgreSQL connected');
-  });
-
-  // Wrapper that automatically falls back to mock DB on connection errors
-  const pool = {
-    query: async (sql, params = []) => {
-      if (connectionFailed) {
-        return mockDb.query(sql, params);
-      }
-      try {
-        return await pgPool.query(sql, params);
-      } catch (err) {
-        if (!connectionFailed) {
-          console.warn('⚠️ PostgreSQL query failed, switching to mock database');
-          connectionFailed = true;
-        }
-        return mockDb.query(sql, params);
-      }
-    },
-    connect: (callback) => {
-      if (connectionFailed) {
-        return mockDb.connect(callback);
-      }
-      return pgPool.connect(callback);
-    },
-    on: (event, handler) => {
+    pgPool.on('error', (err) => {
       if (!connectionFailed) {
-        pgPool.on(event, handler);
+        console.warn('⚠️ Database connection error:', err.message);
+        connectionFailed = true;
       }
-    },
-    end: () => pgPool.end()
-  };
+    });
 
-  // Test connection immediately
-  pgPool.query('SELECT 1').catch(() => {
-    if (!connectionFailed) {
-      console.warn('⚠️ Could not connect to PostgreSQL');
-      console.warn('⚠️ Using in-memory mock database for local development');
-      connectionFailed = true;
-    }
-  });
+    pgPool.on('connect', () => {
+      console.log('✅ PostgreSQL connected');
+    });
 
-  module.exports = pool;
+    // Wrapper that automatically falls back to mock DB on connection errors
+    const pool = {
+      query: async (sql, params = []) => {
+        if (connectionFailed) {
+          return mockDb.query(sql, params);
+        }
+        try {
+          return await pgPool.query(sql, params);
+        } catch (err) {
+          if (!connectionFailed) {
+            console.warn('⚠️ PostgreSQL query failed, switching to mock database');
+            connectionFailed = true;
+          }
+          return mockDb.query(sql, params);
+        }
+      },
+      connect: (callback) => {
+        if (connectionFailed) {
+          return mockDb.connect(callback);
+        }
+        return pgPool.connect(callback);
+      },
+      on: (event, handler) => {
+        if (!connectionFailed) {
+          pgPool.on(event, handler);
+        }
+      },
+      end: () => pgPool.end(),
+      initAsync: async function() {
+        // Fetch RDS credentials from Secrets Manager if not already set via DATABASE_URL
+        if (!dbUrl && process.env.NODE_ENV === 'production') {
+          try {
+            console.log('🔐 Fetching database credentials from Secrets Manager...');
+            const secret = await getSecret('heidi-voter-dashboard/db');
+            const connectionString = `postgresql://${secret.username}:${secret.password}@${secret.host}:${secret.port}/${secret.database}?sslmode=require`;
+
+            // Reinitialize pool with Secrets Manager credentials
+            await pgPool.end();
+            poolConfig = {
+              connectionString,
+              ssl: { rejectUnauthorized: false }
+            };
+            pgPool = new Pool(poolConfig);
+            connectionFailed = false;
+            console.log('✅ Database credentials loaded from Secrets Manager');
+          } catch (err) {
+            console.warn('⚠️ Failed to fetch from Secrets Manager, using fallback credentials:', err.message);
+          }
+        }
+      }
+    };
+
+    module.exports = pool;
+  }
 }

@@ -4,6 +4,8 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
+const { putEmailEvent } = require('../lib/dynamoClient');
+const { publishEmailEvent } = require('../lib/kinesisClient');
 
 // GET /api/email/track/open/:recipientId - record open event
 router.get('/open/:recipientId', async (req, res) => {
@@ -16,7 +18,26 @@ router.get('/open/:recipientId', async (req, res) => {
      status = CASE WHEN status = 'sent' THEN 'opened' ELSE status END
      WHERE id = $1 AND opened_at IS NULL`,
     [req.params.recipientId]
-  ).catch(err => console.error('Error recording open:', err));
+  ).then(() => {
+    // Also fetch recipient info for DynamoDB/Kinesis
+    pool.query(
+      'SELECT blast_id, email FROM email_recipients WHERE id = $1',
+      [req.params.recipientId]
+    ).then(res => {
+      if (res.rows.length) {
+        const { blast_id, email } = res.rows[0];
+        const timestamp = new Date().toISOString();
+
+        // Write to DynamoDB
+        putEmailEvent(blast_id, `${timestamp}#${email}`, email, 'open')
+          .catch(err => console.warn('⚠️ Failed to write open event to DynamoDB:', err.message));
+
+        // Publish to Kinesis
+        publishEmailEvent('open', blast_id, email)
+          .catch(err => console.warn('⚠️ Failed to publish open event to Kinesis:', err.message));
+      }
+    }).catch(err => console.error('Error fetching recipient info:', err));
+  }).catch(err => console.error('Error recording open:', err));
 });
 
 // GET /api/email/track/click/:recipientId - record click and redirect
@@ -32,7 +53,26 @@ router.get('/click/:recipientId', async (req, res) => {
   pool.query(
     'UPDATE email_recipients SET clicked_at = NOW() WHERE id = $1 AND clicked_at IS NULL',
     [req.params.recipientId]
-  ).catch(err => console.error('Error recording click:', err));
+  ).then(() => {
+    // Also fetch recipient info for DynamoDB/Kinesis
+    pool.query(
+      'SELECT blast_id, email FROM email_recipients WHERE id = $1',
+      [req.params.recipientId]
+    ).then(res => {
+      if (res.rows.length) {
+        const { blast_id, email } = res.rows[0];
+        const timestamp = new Date().toISOString();
+
+        // Write to DynamoDB
+        putEmailEvent(blast_id, `${timestamp}#${email}`, email, 'click', { url })
+          .catch(err => console.warn('⚠️ Failed to write click event to DynamoDB:', err.message));
+
+        // Publish to Kinesis
+        publishEmailEvent('click', blast_id, email, { url })
+          .catch(err => console.warn('⚠️ Failed to publish click event to Kinesis:', err.message));
+      }
+    }).catch(err => console.error('Error fetching recipient info:', err));
+  }).catch(err => console.error('Error recording click:', err));
 });
 
 // GET /api/email/track/unsubscribe/:recipientId - unsubscribe and confirm
@@ -61,6 +101,25 @@ router.get('/unsubscribe/:recipientId', async (req, res) => {
      WHERE id = $1 AND unsubscribed_at IS NULL`,
     [req.params.recipientId]
   ).then(() => {
+    // Fetch recipient info for DynamoDB/Kinesis
+    pool.query(
+      'SELECT blast_id, email FROM email_recipients WHERE id = $1',
+      [req.params.recipientId]
+    ).then(res => {
+      if (res.rows.length) {
+        const { blast_id, email } = res.rows[0];
+        const timestamp = new Date().toISOString();
+
+        // Write to DynamoDB
+        putEmailEvent(blast_id, `${timestamp}#${email}`, email, 'unsubscribe')
+          .catch(err => console.warn('⚠️ Failed to write unsubscribe event to DynamoDB:', err.message));
+
+        // Publish to Kinesis
+        publishEmailEvent('unsubscribe', blast_id, email)
+          .catch(err => console.warn('⚠️ Failed to publish unsubscribe event to Kinesis:', err.message));
+      }
+    }).catch(err => console.error('Error fetching recipient info:', err));
+
     // Also mark subscriber as unsubscribed if in a list
     pool.query(
       `UPDATE email_subscribers es

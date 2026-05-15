@@ -1,11 +1,12 @@
 const express = require('express');
+const pool = require('../db/connection');
 const router = express.Router();
 
 // Get all precincts
 router.get('/', async (req, res) => {
   try {
-    // TODO: Fetch precincts from database
-    res.json({ precincts: [] });
+    const { rows } = await pool.query('SELECT id, name FROM precincts ORDER BY name');
+    res.json({ precincts: rows });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

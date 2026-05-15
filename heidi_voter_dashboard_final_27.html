@@ -608,17 +608,16 @@ tr:hover td{background:var(--surface);}
     <div class="banner-right">
       <div class="days" id="days">—</div>
       <div class="dayslbl">days to election</div>
-      <div class="banner-btns">
-        <button onclick="toggleTheme()" class="banner-btn" id="themeToggleBtn">🌙 Dark</button>
-        <div id="adminButtonContainer" style="display:none">
-          <a href="/admin/users" class="banner-btn banner-btn-admin">⚙ Admin</a>
-          <a href="/volunteers" class="banner-btn banner-btn-admin">👥 Volunteers</a>
-          <a href="/volunteer-map" class="banner-btn banner-btn-admin">🗺 Live Map</a>
-        </div>
-        <form method="POST" action="/logout" style="margin:0">
-          <button type="submit" class="banner-btn">Sign out</button>
-        </form>
-      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;margin-left:auto">
+      <a href="/volunteers" class="banner-btn banner-btn-admin">👥 Volunteers</a>
+      <a href="/volunteer-map" class="banner-btn banner-btn-admin">📍 GPS Map</a>
+      <a href="/volunteer-leaderboard.html" class="banner-btn banner-btn-admin">🏆 Leaderboard</a>
+      <a href="/admin/users" class="banner-btn banner-btn-admin">⚙️ Admin</a>
+      <button onclick="toggleTheme()" class="banner-btn" id="themeToggleBtn">🌙 Dark</button>
+      <form method="POST" action="/logout" style="margin:0">
+        <button type="submit" class="banner-btn">Sign out</button>
+      </form>
     </div>
   </div>
 </div>
@@ -767,8 +766,8 @@ tr:hover td{background:var(--surface);}
   <div class="btn-row">
     <button class="btn" onclick="sw('map')">View on map ↗</button>
     <button class="btn btn-p" onclick="sw('export')">Export this list ↗</button>
-    <button class="btn" id="sms-btn" onclick="openSmsCompose()" style="display:none;background:rgba(29,184,122,.15);color:#1DB87A">💬 Send SMS ↗</button>
-    <button class="btn" id="email-btn" onclick="openEmailCompose()" style="display:none;background:rgba(30,100,200,.15);color:#1E64C8">📧 Send Email ↗</button>
+    <button class="btn" id="sms-btn" onclick="openSmsCompose()" style="background:rgba(29,184,122,.15);color:#1DB87A">💬 SMS Outreach ↗</button>
+    <button class="btn" id="email-btn" onclick="openEmailCompose()" style="background:rgba(30,100,200,.15);color:#1E64C8">📧 Email Outreach ↗</button>
   </div>
 </div>
 <div class="table-wrap">

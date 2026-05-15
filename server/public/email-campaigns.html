@@ -15,8 +15,10 @@
       --gold-light: #FBBF48;
       --green: #1DB87A;
       --red: #E03434;
+      --orange: #FF9500;
       --text: #EEF2F7;
       --text-muted: #8BA3BE;
+      --surface: #122338;
       --border: rgba(245, 166, 35, 0.2);
     }
 
@@ -26,6 +28,7 @@
       --navy-light: #F0F0F0;
       --text: #1A1A1A;
       --text-muted: #666666;
+      --surface: #FFFFFF;
       --border: rgba(245, 166, 35, 0.15);
     }
 
@@ -68,11 +71,13 @@
       letter-spacing: 0.08em;
       color: var(--gold);
       flex: 1;
+      min-width: 250px;
     }
 
     .header-controls {
       display: flex;
       gap: 12px;
+      align-items: center;
     }
 
     .btn {
@@ -94,17 +99,21 @@
       background: rgba(245, 166, 35, 0.1);
     }
 
-    .btn-primary {
-      background: var(--gold);
-      color: var(--navy);
-      border-color: var(--gold);
+    .btn-dark-toggle {
+      background: rgba(245, 166, 35, 0.1);
     }
 
-    .btn-primary:hover {
-      background: var(--gold-light);
+    .btn-logout {
+      background: rgba(255, 77, 109, 0.15);
+      color: #FF4D6D;
+      border-color: #FF4D6D;
     }
 
-    /* Stat Cards Row */
+    .btn-logout:hover {
+      background: rgba(255, 77, 109, 0.25);
+    }
+
+    /* Stat Cards Grid */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -113,7 +122,7 @@
     }
 
     .stat-card {
-      background: var(--navy-light);
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 16px;
@@ -127,6 +136,13 @@
       margin: 8px 0;
     }
 
+    .stat-percent {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--gold);
+      margin: 8px 0;
+    }
+
     .stat-label {
       font-size: 11px;
       color: var(--text-muted);
@@ -134,7 +150,7 @@
       letter-spacing: 0.05em;
     }
 
-    /* Charts Row */
+    /* Charts Container */
     .charts-container {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -143,247 +159,67 @@
     }
 
     .chart-card {
-      background: var(--navy-light);
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 20px;
     }
 
     .chart-title {
+      font-family: 'Barlow Condensed', sans-serif;
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--gold);
       margin-bottom: 16px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
-    .chart-canvas-wrapper {
+    .chart-wrapper {
       position: relative;
-      height: 280px;
+      height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     canvas {
-      max-height: 280px;
-    }
-
-    /* Live Sending Monitor */
-    .monitor-panel {
-      background: var(--navy-light);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 30px;
-      display: none;
-    }
-
-    .monitor-panel.active {
-      display: block;
-    }
-
-    .monitor-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--gold);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 12px;
-    }
-
-    .sending-campaign {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 12px;
-      background: var(--navy-mid);
-      border-radius: 6px;
-      margin-bottom: 12px;
-    }
-
-    .spinner {
-      width: 20px;
-      height: 20px;
-      border: 2px solid var(--border);
-      border-top-color: var(--gold);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .sending-info {
-      flex: 1;
-      font-size: 13px;
-    }
-
-    .sending-progress {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    /* Campaign Table */
-    .table-wrapper {
-      background: var(--navy-light);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-      margin-bottom: 20px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    thead {
-      background: var(--navy-mid);
-    }
-
-    th {
-      padding: 12px 10px;
-      text-align: left;
-      font-weight: 600;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--gold);
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-
-    td {
-      padding: 10px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    tbody tr:hover {
-      background: var(--navy-mid);
-    }
-
-    .subject-cell {
-      font-weight: 500;
-      max-width: 200px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .status-badge {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-
-    .status-sent {
-      background: rgba(29, 184, 122, 0.2);
-      color: var(--green);
-    }
-
-    .status-scheduled {
-      background: rgba(245, 166, 35, 0.2);
-      color: var(--gold);
-    }
-
-    .status-draft {
-      background: rgba(139, 163, 190, 0.2);
-      color: var(--text-muted);
-    }
-
-    /* Metric cells - color coded */
-    .metric-good {
-      color: var(--green);
-      font-weight: 500;
-    }
-
-    .metric-warning {
-      color: var(--gold);
-      font-weight: 500;
-    }
-
-    .metric-bad {
-      color: var(--red);
-      font-weight: 500;
-    }
-
-    .metric-neutral {
-      color: var(--text);
-    }
-
-    .pagination {
-      display: flex;
-      gap: 8px;
-      justify-content: center;
-      margin-top: 20px;
-    }
-
-    .pagination button {
-      padding: 8px 12px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text);
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      transition: all 0.2s;
-    }
-
-    .pagination button:hover:not(:disabled) {
-      background: var(--border);
-    }
-
-    .pagination button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .pagination .active {
-      background: var(--gold);
-      color: var(--navy);
-      border-color: var(--gold);
+      max-height: 300px;
     }
 
     .loading {
       text-align: center;
-      padding: 40px;
+      padding: 40px 20px;
       color: var(--text-muted);
     }
 
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--text-muted);
-    }
-
-    .empty-state h2 {
-      font-size: 20px;
-      margin-bottom: 10px;
-      color: var(--text);
-    }
-
-    @media (max-width: 1200px) {
+    @media (max-width: 1024px) {
       .charts-container {
         grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
       }
     }
 
     @media (max-width: 768px) {
+      header {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      header h1 {
+        flex: none;
+        min-width: auto;
+      }
+
       .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr;
       }
 
-      table {
-        font-size: 11px;
-      }
-
-      th, td {
-        padding: 8px 6px;
+      .charts-container {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -391,144 +227,78 @@
 <body>
   <div class="container">
     <header>
-      <h1>📊 Email Deliverability Dashboard</h1>
+      <h1>📊 Email Deliverability</h1>
       <div class="header-controls">
+        <a href="/email-metrics" class="btn">📈 View Details</a>
+        <a href="/email-compose" class="btn">📧 New Campaign</a>
         <button class="btn btn-dark-toggle" onclick="toggleTheme()">🌙 Dark</button>
-        <a href="/email-compose" class="btn btn-primary">+ New Campaign</a>
-        <button class="btn" onclick="logout()">← Back</button>
+        <button class="btn btn-logout" onclick="logout()">Logout</button>
       </div>
     </header>
 
-    <!-- Local Database Metrics (8 Cards) -->
-    <div style="margin-bottom: 20px;">
-      <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.05em;">📊 Local Database Metrics</div>
+    <div id="content" style="display: none;">
+      <!-- Stat Cards -->
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-label">Total Campaigns</div>
-          <div class="stat-value" id="statTotal">-</div>
+          <div class="stat-value" id="totalCampaigns">0</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Total Sent</div>
-          <div class="stat-value" id="statSent">-</div>
+          <div class="stat-value" id="totalSent">0</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Delivery Rate</div>
-          <div class="stat-value" id="statDeliveryRate">-</div>
+          <div class="stat-percent" id="deliveryRate">0%</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Open Rate</div>
-          <div class="stat-value" id="statOpenRate">-</div>
+          <div class="stat-percent" id="openRate">0%</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Click Rate</div>
-          <div class="stat-value" id="statClickRate">-</div>
+          <div class="stat-percent" id="clickRate">0%</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Bounce Rate</div>
-          <div class="stat-value" id="statBounceRate">-</div>
+          <div class="stat-percent" id="bounceRate">0%</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Complaint Rate</div>
-          <div class="stat-value" id="statComplaintRate">-</div>
+          <div class="stat-percent" id="complaintRate">0%</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Unsubscribe Rate</div>
-          <div class="stat-value" id="statUnsubscribeRate">-</div>
+          <div class="stat-percent" id="unsubscribeRate">0%</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-container">
+        <div class="chart-card">
+          <div class="chart-title">Delivery Status Breakdown</div>
+          <div class="chart-wrapper">
+            <canvas id="deliveryChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title">Engagement Metrics</div>
+          <div class="chart-wrapper">
+            <canvas id="engagementChart"></canvas>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- AWS SES Reputation Metrics (6 Cards) -->
-    <div style="margin-bottom: 20px;">
-      <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.05em;">☁️ AWS SES Reputation Metrics (Last 14 Days)</div>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-label">Reputation Status</div>
-          <div class="stat-value" id="awsReputationStatus" style="font-size: 20px;">-</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">AWS Bounce Rate</div>
-          <div class="stat-value" id="awsBounceRate">-</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">AWS Complaint Rate</div>
-          <div class="stat-value" id="awsComplaintRate">-</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">AWS Delivery Rate</div>
-          <div class="stat-value" id="awsDeliveryRate">-</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">AWS Total Sends</div>
-          <div class="stat-value" id="awsTotalSends">-</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Sending Enabled</div>
-          <div class="stat-value" id="awsSendingEnabled" style="font-size: 24px;">-</div>
-        </div>
-      </div>
+    <div id="loading" class="loading">
+      <p>Loading deliverability data...</p>
     </div>
-
-    <!-- Charts Row -->
-    <div class="charts-container">
-      <div class="chart-card">
-        <div class="chart-title">Delivery Status Breakdown</div>
-        <div class="chart-canvas-wrapper">
-          <canvas id="deliveryChart"></canvas>
-        </div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">Open Rate by Campaign (Last 10)</div>
-        <div class="chart-canvas-wrapper">
-          <canvas id="openRateChart"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <!-- Live Sending Monitor -->
-    <div class="monitor-panel" id="monitorPanel">
-      <div class="monitor-title">🔴 Live Sending Monitor</div>
-      <div id="sendingList"></div>
-    </div>
-
-    <!-- Campaign Table -->
-    <div class="table-wrapper">
-      <div id="loading" class="loading">Loading campaigns...</div>
-      <div id="emptyState" class="empty-state" style="display: none;">
-        <h2>No campaigns yet</h2>
-        <p>Create your first email campaign to get started</p>
-      </div>
-      <table id="campaignsTable" style="display: none;">
-        <thead>
-          <tr>
-            <th>Subject</th>
-            <th>Sender</th>
-            <th>Sent</th>
-            <th>Delivered</th>
-            <th>Opened</th>
-            <th>Clicked</th>
-            <th>H. Bounce</th>
-            <th>S. Bounce</th>
-            <th>Complaints</th>
-            <th>Unsubs</th>
-            <th>Status</th>
-            <th>Date</th>
-            <th>Cost</th>
-          </tr>
-        </thead>
-        <tbody id="campaignsBody"></tbody>
-      </table>
-    </div>
-
-    <div class="pagination" id="pagination" style="display: none;"></div>
   </div>
 
   <script>
-    let currentPage = 1;
-    let totalPages = 1;
-    let deliveryChart = null;
-    let openRateChart = null;
-    let sendingMonitorInterval = null;
+    let deliveryChartInstance = null;
+    let engagementChartInstance = null;
 
     function toggleTheme() {
       document.body.classList.toggle('light-mode');
@@ -544,313 +314,137 @@
     }
 
     function logout() {
-      window.location.href = '/dashboard';
+      fetch('/logout', { method: 'POST' }).then(() => window.location.href = '/login');
     }
 
-    // Fetch with timeout wrapper
-    async function fetchWithTimeout(url, timeout = 8000) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
+    async function loadDashboard() {
       try {
-        const response = await fetch(url, { signal: controller.signal });
-        return response;
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    }
+        // Fetch blasts data and aggregate metrics
+        const res = await fetch('/api/email/blasts');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const { blasts } = await res.json();
 
-    // Load overview stats and populate stat cards + donut chart
-    async function loadStats() {
-      // Load local database stats with timeout
-      try {
-        const response = await fetchWithTimeout('/api/email/stats/overview', 8000);
-        const stats = await response.json();
+        // Aggregate stats from blasts
+        let stats = {
+          totalCampaigns: 0,
+          totalSent: 0,
+          totalDelivered: 0,
+          totalOpened: 0,
+          totalClicked: 0,
+          totalBounced: 0,
+          totalComplained: 0,
+          totalUnsubscribed: 0
+        };
 
-        document.getElementById('statTotal').textContent = stats.total_campaigns;
-        document.getElementById('statSent').textContent = stats.total_sent.toLocaleString();
-        document.getElementById('statDeliveryRate').textContent = stats.delivery_rate + '%';
-        document.getElementById('statOpenRate').textContent = stats.open_rate + '%';
-        document.getElementById('statClickRate').textContent = stats.click_rate + '%';
-        document.getElementById('statBounceRate').textContent = stats.bounce_rate + '%';
-        document.getElementById('statComplaintRate').textContent = stats.complaint_rate + '%';
-        document.getElementById('statUnsubscribeRate').textContent = stats.unsubscribe_rate + '%';
-
-        // Prepare donut chart data
-        const delivered = stats.total_delivered;
-        const hardBounced = stats.total_hard_bounced;
-        const softBounced = stats.total_soft_bounced;
-        const complained = stats.total_complained;
-        const unsubscribed = stats.total_unsubscribed;
-        const other = Math.max(0, stats.total_sent - delivered - hardBounced - softBounced - complained - unsubscribed);
-
-        renderDeliveryChart(delivered, hardBounced, softBounced, complained, unsubscribed, other);
-      } catch (err) {
-        console.error('Error loading local stats:', err);
-        document.getElementById('statTotal').textContent = '—';
-        document.getElementById('statSent').textContent = '—';
-      }
-
-      // Load AWS SES reputation metrics with timeout (non-blocking)
-      try {
-        const response = await fetchWithTimeout('/api/email/aws-metrics', 8000);
-        const data = await response.json();
-
-        if (data.success && data.aws_metrics) {
-          const m = data.aws_metrics;
-          document.getElementById('awsBounceRate').textContent = m.bounce_rate + '%';
-          document.getElementById('awsComplaintRate').textContent = m.complaint_rate + '%';
-          document.getElementById('awsDeliveryRate').textContent = m.delivery_rate + '%';
-          document.getElementById('awsTotalSends').textContent = m.total_sends.toLocaleString();
-          document.getElementById('awsSendingEnabled').textContent = m.sending_enabled ? '✅' : '❌';
-
-          // Status badge
-          const statusEl = document.getElementById('awsReputationStatus');
-          if (m.reputation_status === 'healthy') {
-            statusEl.textContent = '✅ Healthy';
-            statusEl.style.color = '#1DB87A';
-          } else if (m.reputation_status === 'caution') {
-            statusEl.textContent = '⚠️ Caution';
-            statusEl.style.color = '#F5A623';
-          } else {
-            statusEl.textContent = '🔴 Warning';
-            statusEl.style.color = '#E03434';
-          }
-        } else {
-          console.warn('AWS SES metrics not available:', data.error);
-        }
-      } catch (err) {
-        console.error('Error loading AWS metrics:', err);
-      }
-    }
-
-    // Load campaigns and populate table + bar chart
-    async function loadCampaigns(page = 1) {
-      try {
-        const response = await fetchWithTimeout(`/api/email/blasts?page=${page}`, 8000);
-        const data = await response.json();
-
-        if (!data.blasts || data.blasts.length === 0) {
-          document.getElementById('loading').style.display = 'none';
-          document.getElementById('emptyState').style.display = 'block';
-          document.getElementById('campaignsTable').style.display = 'none';
-          return;
-        }
-
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('campaignsTable').style.display = 'table';
-        currentPage = data.page;
-        totalPages = data.pages;
-
-        // Render table
-        const tbody = document.getElementById('campaignsBody');
-        tbody.innerHTML = data.blasts.map(blast => {
-          const openRate = blast.delivered_count > 0
-            ? Math.round((blast.opened_count / blast.delivered_count) * 100)
-            : 0;
-          const clickRate = blast.delivered_count > 0
-            ? Math.round((blast.clicked_count / blast.delivered_count) * 100)
-            : 0;
-          const sentDate = new Date(blast.created_at).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+        if (blasts && blasts.length > 0) {
+          stats.totalCampaigns = blasts.length;
+          blasts.forEach(b => {
+            stats.totalSent += parseInt(b.recipient_count) || 0;
+            stats.totalDelivered += parseInt(b.delivered_count) || 0;
+            stats.totalOpened += parseInt(b.opened_count) || 0;
+            stats.totalClicked += parseInt(b.clicked_count) || 0;
+            stats.totalBounced += parseInt(b.bounced_count) || 0;
+            stats.totalComplained += parseInt(b.complained_count) || 0;
+            stats.totalUnsubscribed += parseInt(b.unsubscribed_count) || 0;
           });
+        }
 
-          let statusClass = 'status-' + (blast.status || 'sent');
+        // Calculate rates
+        const totalSent = stats.totalSent;
+        stats.deliveryRate = totalSent ? ((stats.totalDelivered / totalSent) * 100).toFixed(1) : 0;
+        stats.openRate = totalSent ? ((stats.totalOpened / totalSent) * 100).toFixed(1) : 0;
+        stats.clickRate = totalSent ? ((stats.totalClicked / totalSent) * 100).toFixed(1) : 0;
+        stats.bounceRate = totalSent ? ((stats.totalBounced / totalSent) * 100).toFixed(1) : 0;
+        stats.complaintRate = totalSent ? ((stats.totalComplained / totalSent) * 100).toFixed(1) : 0;
+        stats.unsubscribeRate = totalSent ? ((stats.totalUnsubscribed / totalSent) * 100).toFixed(1) : 0;
 
-          // Color code metrics
-          const openMetricClass = openRate >= 20 ? 'metric-good' : (openRate >= 10 ? 'metric-warning' : 'metric-neutral');
-          const bounceMetricClass = blast.bounced_count > 0 ? (blast.hard_bounce_count > 0 ? 'metric-bad' : 'metric-warning') : 'metric-good';
+        // Update stat cards
+        document.getElementById('totalCampaigns').textContent = stats.totalCampaigns.toLocaleString();
+        document.getElementById('totalSent').textContent = stats.totalSent.toLocaleString();
+        document.getElementById('deliveryRate').textContent = stats.deliveryRate + '%';
+        document.getElementById('openRate').textContent = stats.openRate + '%';
+        document.getElementById('clickRate').textContent = stats.clickRate + '%';
+        document.getElementById('bounceRate').textContent = stats.bounceRate + '%';
+        document.getElementById('complaintRate').textContent = stats.complaintRate + '%';
+        document.getElementById('unsubscribeRate').textContent = stats.unsubscribeRate + '%';
 
-          return `
-            <tr>
-              <td class="subject-cell" title="${blast.subject}">${blast.subject}</td>
-              <td>${blast.sender_name || 'Unknown'}</td>
-              <td>${blast.recipient_count}</td>
-              <td>${blast.delivered_count || 0}</td>
-              <td class="${openMetricClass}">${blast.opened_count || 0}</td>
-              <td>${blast.clicked_count || 0}</td>
-              <td class="${bounceMetricClass}">${blast.hard_bounce_count || 0}</td>
-              <td>${blast.soft_bounce_count || 0}</td>
-              <td>${blast.complained_count || 0}</td>
-              <td>${blast.unsubscribed_count || 0}</td>
-              <td><span class="status-badge ${statusClass}">${blast.status || 'Sent'}</span></td>
-              <td style="font-size: 12px; color: var(--text-muted);">${sentDate}</td>
-              <td>$${(blast.total_cost || 0).toFixed(2)}</td>
-            </tr>
-          `;
-        }).join('');
-
-        // Render bar chart with last 10 campaigns
-        const last10 = data.blasts.slice(0, 10).reverse();
-        renderOpenRateChart(last10);
-
-        // Check for sending campaigns
-        checkSendingCampaigns(data.blasts);
-
-        renderPagination(data.pages, data.page);
-      } catch (err) {
-        console.error('Error loading campaigns:', err);
-        document.getElementById('loading').textContent = 'Error loading campaigns';
-      }
-    }
-
-    function renderDeliveryChart(delivered, hardBounced, softBounced, complained, unsubscribed, other) {
-      const ctx = document.getElementById('deliveryChart').getContext('2d');
-
-      if (deliveryChart) deliveryChart.destroy();
-
-      deliveryChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Delivered', 'Hard Bounce', 'Soft Bounce', 'Complained', 'Unsubscribed', 'Other'],
-          datasets: [{
-            data: [delivered, hardBounced, softBounced, complained, unsubscribed, other],
-            backgroundColor: [
-              '#1DB87A',  // green
-              '#E03434',  // red
-              '#F5A623',  // gold
-              '#FBBF48',  // gold-light
-              '#8BA3BE',  // text-muted
-              '#243D56'   // darker
-            ],
-            borderColor: '#1A3550',
-            borderWidth: 2
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'bottom',
-              labels: {
-                color: '#EEF2F7',
-                font: { size: 12 },
-                padding: 15
+        // Delivery Status Donut Chart
+        const deliveryCtx = document.getElementById('deliveryChart').getContext('2d');
+        if (deliveryChartInstance) deliveryChartInstance.destroy();
+        deliveryChartInstance = new Chart(deliveryCtx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Delivered', 'Bounced', 'Complained', 'Unsubscribed'],
+            datasets: [{
+              data: [
+                stats.totalDelivered,
+                stats.totalBounced,
+                stats.totalComplained,
+                stats.totalUnsubscribed
+              ],
+              backgroundColor: ['#1DB87A', '#E03434', '#FF9500', '#8BA3BE'],
+              borderColor: 'var(--surface)',
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: { color: 'var(--text)', font: { size: 12 }, padding: 15 }
               }
             }
           }
-        }
-      });
-    }
+        });
 
-    function renderOpenRateChart(campaigns) {
-      const ctx = document.getElementById('openRateChart').getContext('2d');
-
-      const labels = campaigns.map(c => {
-        const subj = c.subject.substring(0, 15);
-        return subj.length < c.subject.length ? subj + '...' : subj;
-      });
-
-      const openRates = campaigns.map(c => {
-        const delivered = c.delivered_count || c.recipient_count || 1;
-        return Math.round((c.opened_count || 0) / delivered * 100);
-      });
-
-      if (openRateChart) openRateChart.destroy();
-
-      openRateChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [{
-            label: 'Open Rate (%)',
-            data: openRates,
-            backgroundColor: 'rgba(245, 166, 35, 0.7)',
-            borderColor: '#F5A623',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
+        // Engagement Metrics Bar Chart
+        const engagementCtx = document.getElementById('engagementChart').getContext('2d');
+        if (engagementChartInstance) engagementChartInstance.destroy();
+        engagementChartInstance = new Chart(engagementCtx, {
+          type: 'bar',
+          data: {
+            labels: ['Delivered', 'Opened', 'Clicked'],
+            datasets: [{
+              label: 'Count',
+              data: [stats.totalDelivered, stats.totalOpened, stats.totalClicked],
+              backgroundColor: ['#1DB87A', '#F5A623', '#5DE0B0'],
+              borderRadius: 4,
+              borderSkipped: false
+            }]
           },
-          scales: {
-            x: {
-              beginAtZero: true,
-              max: 100,
-              grid: { color: 'rgba(139, 163, 190, 0.15)' },
-              ticks: { color: '#EEF2F7' }
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: { color: 'var(--text)', font: { size: 12 } }
+              }
             },
-            y: {
-              grid: { display: false },
-              ticks: { color: '#EEF2F7' }
+            scales: {
+              x: {
+                grid: { color: 'rgba(245, 166, 35, 0.1)' },
+                ticks: { color: 'var(--text-muted)', font: { size: 11 } }
+              },
+              y: {
+                ticks: { color: 'var(--text)', font: { size: 11 } }
+              }
             }
           }
-        }
-      });
-    }
+        });
 
-    function checkSendingCampaigns(blasts) {
-      const sending = blasts.filter(b => b.status === 'sending' || b.status === 'scheduled');
-      const panel = document.getElementById('monitorPanel');
-
-      if (sending.length > 0) {
-        panel.classList.add('active');
-        const list = document.getElementById('sendingList');
-        list.innerHTML = sending.map(b => `
-          <div class="sending-campaign">
-            <div class="spinner"></div>
-            <div class="sending-info">
-              <strong>${b.subject}</strong>
-              <div class="sending-progress">${b.recipient_count} recipients • Status: ${b.status}</div>
-            </div>
-          </div>
-        `).join('');
-
-        // Auto-refresh every 10 seconds
-        if (sendingMonitorInterval) clearInterval(sendingMonitorInterval);
-        sendingMonitorInterval = setInterval(() => loadCampaigns(currentPage), 10000);
-      } else {
-        panel.classList.remove('active');
-        if (sendingMonitorInterval) clearInterval(sendingMonitorInterval);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('content').style.display = 'block';
+      } catch (err) {
+        console.error(err);
+        document.getElementById('loading').innerHTML = `<p style="color: #E03434;">Error loading data: ${err.message}</p>`;
       }
     }
 
-    function renderPagination(pages, currentPageNum) {
-      if (pages <= 1) {
-        document.getElementById('pagination').style.display = 'none';
-        return;
-      }
-
-      const pagination = document.getElementById('pagination');
-      pagination.innerHTML = '';
-
-      const prevBtn = document.createElement('button');
-      prevBtn.textContent = '← Prev';
-      prevBtn.disabled = currentPageNum === 1;
-      prevBtn.onclick = () => loadCampaigns(currentPageNum - 1);
-      pagination.appendChild(prevBtn);
-
-      for (let i = 1; i <= pages; i++) {
-        const btn = document.createElement('button');
-        btn.textContent = i;
-        btn.className = i === currentPageNum ? 'active' : '';
-        btn.onclick = () => loadCampaigns(i);
-        pagination.appendChild(btn);
-      }
-
-      const nextBtn = document.createElement('button');
-      nextBtn.textContent = 'Next →';
-      nextBtn.disabled = currentPageNum === pages;
-      nextBtn.onclick = () => loadCampaigns(currentPageNum + 1);
-      pagination.appendChild(nextBtn);
-
-      pagination.style.display = 'flex';
-    }
-
-    // Initialize
-    window.addEventListener('load', () => {
-      initTheme();
-      loadStats();
-      loadCampaigns();
-    });
+    initTheme();
+    loadDashboard();
   </script>
 </body>
 </html>

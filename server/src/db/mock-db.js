@@ -6,7 +6,7 @@ const mockData = {
       id: 1,
       email: 'admin@test.com',
       name: 'Admin User',
-      password_hash: '$2a$12$IOTHd2yBlSpItrE9VkLEIe5e3LOnOtnI.BfHiQtQQjCrMvroxSdoC',
+      password_hash: '$2a$06$hBGC8STuPcV25myd4a8Od.5bKMMaGyHfiO9WlPqFwzKj5LQ.HUE0m',
       role: 'admin',
       created_at: new Date().toISOString()
     }
@@ -39,18 +39,25 @@ const pool = {
 
     // INSERT INTO users
     if (sql.includes('INSERT INTO users')) {
-      const [email, name, password_hash, role] = params;
+      const columnMatch = sql.match(/INSERT INTO users \((.*?)\)/i);
+      const columns = columnMatch ? columnMatch[1].split(',').map(c => c.trim()) : [];
       const user = {
         id: mockData.users.length + 1,
-        email,
-        name,
-        password_hash,
-        role: role || 'staff',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
+      columns.forEach((col, i) => {
+        user[col] = params[i];
+      });
+      user.role = user.role || 'staff';
       mockData.users.push(user);
-      return { rows: [{ id: user.id }], rowCount: 1 };
+      const returningMatch = sql.match(/RETURNING\s+(.*?)(?:;|$)/i);
+      const returning = returningMatch ? returningMatch[1].split(',').map(c => c.trim()) : [];
+      const returnRow = {};
+      returning.forEach(col => {
+        returnRow[col] = user[col];
+      });
+      return { rows: returning.length > 0 ? [returnRow] : [{ id: user.id }], rowCount: 1 };
     }
 
     // DELETE FROM users

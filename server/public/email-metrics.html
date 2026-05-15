@@ -150,6 +150,9 @@
     tr:hover { background: #f5f5f5; }
     body.dark-mode tr:hover { background: #333; }
 
+    tbody tr[onclick] { cursor: pointer; }
+    tbody tr[onclick]:hover { opacity: 0.8; }
+
     .stat { font-weight: 600; }
     .stat-label { font-size: 12px; color: #666; }
     body.dark-mode .stat-label { color: #aaa; }
@@ -289,6 +292,21 @@
     </div>
   </div>
 
+  <!-- AI Analysis Modal -->
+  <div class="modal" id="analyzeModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>✨ Campaign Analysis</h2>
+        <button class="modal-close" onclick="closeAnalyzeModal()">×</button>
+      </div>
+      <div id="analyzeContent" style="line-height: 1.6;">
+        <div style="text-align: center; padding: 20px; color: #666;">
+          <p>Analyzing campaign...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const themeToggle = document.getElementById('themeToggle');
     const isDarkMode = localStorage.getItem('darkMode') === 'true';
@@ -356,7 +374,7 @@
               const clickPct = sent ? ((b.clicked_count || 0) / sent * 100).toFixed(1) : 0;
               const bouncePct = sent ? ((b.bounced_count || 0) / sent * 100).toFixed(1) : 0;
               return `
-              <tr>
+              <tr style="cursor: pointer;" onclick="window.location.href='/email-campaign-detail?id=${b.id}'">
                 <td>${new Date(b.created_at).toLocaleDateString()}</td>
                 <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis;">${b.subject}</td>
                 <td class="stat">${sent}</td>
@@ -366,8 +384,11 @@
                 <td class="stat">${b.bounced_count || 0}<br><span class="stat-label">${bouncePct}%</span></td>
                 <td class="stat">${b.complained_count || 0}</td>
                 <td class="stat">${b.unsubscribed_count || 0}</td>
-                <td>
-                  ${(b.bounced_count || 0) > 0 ? `<button class="view-bounces" onclick="viewBounces(${b.id})">View Bounces</button>` : '—'}
+                <td onclick="event.stopPropagation();">
+                  <div style="display: flex; gap: 8px;">
+                    ${(b.bounced_count || 0) > 0 ? `<button class="view-bounces" onclick="viewBounces(${b.id})">View Bounces</button>` : ''}
+                    <button class="view-bounces" style="background: #9c27b0;" onclick="analyzeBlast(${b.id}, '${b.subject.replace(/'/g, "\\'")}', ${JSON.stringify({sent: b.recipient_count, opened: b.opened_count, clicked: b.clicked_count, bounced: b.bounced_count, complained: b.complained_count, unsubscribed: b.unsubscribed_count, delivered: b.delivered_count}).replace(/"/g, "&quot;")})">Analyze AI</button>
+                  </div>
                 </td>
               </tr>
               `;
@@ -426,6 +447,45 @@
 
     function logout() {
       window.location.href = '/logout';
+    }
+
+    async function analyzeBlast(blastId, subject, metrics) {
+      document.getElementById('analyzeModal').classList.add('show');
+
+      try {
+        const response = await fetch('/api/ai/analyze-campaign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            blast: {
+              id: blastId,
+              subject: subject,
+              ...metrics
+            }
+          })
+        });
+
+        const result = await response.json();
+        if (result.analysis) {
+          const html = `
+            <div>
+              <h3 style="color: #9c27b0; margin-bottom: 16px;">Campaign Insights</h3>
+              <div style="background: #f5f5f5; padding: 16px; border-radius: 8px; line-height: 1.8;">
+                ${result.analysis.split('\n').map(line => line.trim() ? `<p>${line}</p>` : '').join('')}
+              </div>
+            </div>
+          `;
+          document.getElementById('analyzeContent').innerHTML = html;
+        } else {
+          document.getElementById('analyzeContent').innerHTML = '<div class="error">Failed to generate analysis</div>';
+        }
+      } catch (err) {
+        document.getElementById('analyzeContent').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+      }
+    }
+
+    function closeAnalyzeModal() {
+      document.getElementById('analyzeModal').classList.remove('show');
     }
 
     loadBlasts();

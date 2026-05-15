@@ -54,6 +54,20 @@ router.get('/me', requireApiAuth, async (req, res) => {
   }
 });
 
+router.get('/session', (req, res) => {
+  if (!req.session || !req.session.userId) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  res.json({
+    user: {
+      id: req.session.userId,
+      email: req.session.email,
+      name: req.session.name,
+      role: req.session.role
+    }
+  });
+});
+
 router.post('/token', requireApiAuth, (req, res) => {
   const token = signToken(req.user);
   res.json({ token });

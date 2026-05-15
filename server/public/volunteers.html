@@ -743,7 +743,7 @@
       renderVolunteerList();
 
       try {
-        const res = await fetch(`/api/volunteers/${vol.id}`);
+        const res = await fetch(`/api/volunteers/${vol.id}`, { credentials: 'include' });
         const data = await res.json();
         displayVolunteerDetail(data.volunteer, data.assignments);
       } catch (err) {
@@ -801,11 +801,27 @@
             <span class="section-title">Assigned Voters</span>
             <button class="btn btn-sm" onclick="openAssignModal(${vol.id}, '${vol.name}')">+ Assign More</button>
           </div>
-          <div class="assignments-list">
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div class="form-group">
+              <label style="margin-bottom: 4px; font-size: 12px;">Filter Status</label>
+              <select id="assignmentFilterStatus" onchange="filterAssignments()" style="width: 100%; padding: 8px 12px; background: var(--navy-light); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'Barlow', sans-serif; font-size: 13px;">
+                <option value="">All</option>
+                <option value="pending">Pending</option>
+                <option value="visited">Visited</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label style="margin-bottom: 4px; font-size: 12px;">Search Name</label>
+              <input type="text" id="assignmentFilterName" placeholder="First or last name" onkeyup="filterAssignments()" style="width: 100%; padding: 8px 12px; background: var(--navy-light); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'Barlow', sans-serif; font-size: 13px;">
+            </div>
+          </div>
+
+          <div class="assignments-list" id="assignmentsList">
             ${assignments.length === 0
               ? '<div style="padding: 12px; text-align: center; color: var(--text-muted);">No assignments yet</div>'
               : assignments.map(a => `
-                <div class="assignment-item">
+                <div class="assignment-item" data-status="${a.status}" data-name="${a.first_name} ${a.last_name}">
                   <div class="assignment-name">${a.first_name} ${a.last_name}</div>
                   <div class="assignment-status ${a.status === 'visited' ? 'status-visited' : 'status-pending'}">
                     ${a.status}
@@ -842,6 +858,7 @@
         const res = await fetch('/api/volunteers', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             name,
             email,
@@ -887,7 +904,7 @@
       if (!confirm('Are you sure you want to delete this volunteer?')) return;
 
       try {
-        const res = await fetch(`/api/volunteers/${volId}`, { method: 'DELETE' });
+        const res = await fetch(`/api/volunteers/${volId}`, { method: 'DELETE', credentials: 'include' });
         const data = await res.json();
 
         if (!res.ok) throw new Error(data.error);
@@ -928,6 +945,7 @@
         const res = await fetch(`/api/volunteers/${volunteerId}/assign`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             precinct: precinct || null,
             party: party || null,
@@ -952,6 +970,44 @@
         const msg = document.getElementById('assignMessage');
         msg.className = 'alert alert-error';
         msg.textContent = '❌ ' + err.message;
+      }
+    }
+
+    // Filter assignments
+    function filterAssignments() {
+      const statusFilter = document.getElementById('assignmentFilterStatus').value;
+      const nameFilter = document.getElementById('assignmentFilterName').value.toLowerCase();
+      const items = document.querySelectorAll('.assignment-item');
+
+      let visibleCount = 0;
+      items.forEach(item => {
+        const itemStatus = item.dataset.status;
+        const itemName = item.dataset.name.toLowerCase();
+
+        const statusMatch = !statusFilter || itemStatus === statusFilter;
+        const nameMatch = !nameFilter || itemName.includes(nameFilter);
+
+        if (statusMatch && nameMatch) {
+          item.style.display = '';
+          visibleCount++;
+        } else {
+          item.style.display = 'none';
+        }
+      });
+
+      // Show "no results" if all hidden
+      const list = document.getElementById('assignmentsList');
+      if (visibleCount === 0 && items.length > 0) {
+        if (!document.getElementById('noResultsMsg')) {
+          const msg = document.createElement('div');
+          msg.id = 'noResultsMsg';
+          msg.style.cssText = 'padding: 12px; text-align: center; color: var(--text-muted);';
+          msg.textContent = 'No assignments match filters';
+          list.appendChild(msg);
+        }
+      } else {
+        const msg = document.getElementById('noResultsMsg');
+        if (msg) msg.remove();
       }
     }
 

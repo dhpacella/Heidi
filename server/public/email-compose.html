@@ -502,13 +502,18 @@
       </div>
 
       <label for="subject">Subject Line <span style="color: #FF4D6D;">*</span></label>
-      <input type="text" id="subject" placeholder="Email subject" required>
+      <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <input type="text" id="subject" placeholder="Email subject" required style="flex: 1;">
+        <button class="btn" onclick="suggestSubjects()" style="white-space: nowrap;">💡 Suggest</button>
+      </div>
 
       <label for="htmlBody" style="margin-top: 16px;">Message Body (HTML) <span style="color: #FF4D6D;">*</span></label>
 
       <div class="toolbar">
         <button class="toolbar-btn" onclick="insertTag('{first_name}')">👤 {first_name}</button>
         <button class="toolbar-btn" onclick="insertTag('{last_name}')">👤 {last_name}</button>
+        <button class="toolbar-btn" onclick="openGenerateModal()">✨ Generate Email</button>
+        <button class="toolbar-btn" onclick="improveEmail()">🤖 Improve Email</button>
       </div>
 
       <div style="margin-bottom: 16px;">
@@ -612,6 +617,38 @@
       <div id="previewContent" style="background: var(--surface-2); padding: 16px; border-radius: 8px; margin: 16px 0; max-height: 400px; overflow-y: auto; border: 1px solid var(--border);"></div>
       <div class="modal-buttons">
         <button class="btn btn-primary" onclick="closePreviewModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generate Email Modal -->
+  <div id="generateModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <h2>✨ Generate Email</h2>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Describe your email idea and AI will generate HTML for you.</p>
+      <label style="display: block; margin-bottom: 8px;">Campaign Name (optional)</label>
+      <input type="text" id="genCampaignName" placeholder="e.g., Get Out The Vote" style="width: 100%; margin-bottom: 12px;">
+      <label style="display: block; margin-bottom: 8px;">Email Idea <span style="color: #FF4D6D;">*</span></label>
+      <textarea id="genIdea" placeholder="Describe what you want the email to say..." style="width: 100%; min-height: 120px; margin-bottom: 12px;"></textarea>
+      <div class="modal-buttons">
+        <button class="btn" onclick="closeGenerateModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="generateEmail()">Generate</button>
+      </div>
+      <div id="genStatus" style="display: none; margin-top: 12px; color: var(--text-muted); font-size: 12px;"></div>
+    </div>
+  </div>
+
+  <!-- Suggest Subjects Modal -->
+  <div id="suggestModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <h2>💡 Suggest Subject Lines</h2>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">AI will generate 3 compelling subject line options based on your email body.</p>
+      <div id="suggestStatus" style="display: none; color: var(--text-muted); font-size: 12px; margin-bottom: 12px;">Generating suggestions...</div>
+      <div id="suggestList" style="display: none; margin-bottom: 16px;">
+        <div style="display: flex; flex-direction: column; gap: 8px;" id="suggestOptions"></div>
+      </div>
+      <div class="modal-buttons">
+        <button class="btn" onclick="closeSuggestModal()">Close</button>
       </div>
     </div>
   </div>
@@ -1185,6 +1222,135 @@
 
     initTheme();
     loadTemplates();
+
+    // AI Features
+    function openGenerateModal() {
+      document.getElementById('generateModal').classList.add('show');
+      document.getElementById('genStatus').style.display = 'none';
+      document.getElementById('genIdea').value = '';
+      document.getElementById('genCampaignName').value = '';
+    }
+
+    function closeGenerateModal() {
+      document.getElementById('generateModal').classList.remove('show');
+    }
+
+    async function generateEmail() {
+      const idea = document.getElementById('genIdea').value.trim();
+      const campaignName = document.getElementById('genCampaignName').value.trim();
+
+      if (!idea) {
+        alert('Please describe your email idea');
+        return;
+      }
+
+      const status = document.getElementById('genStatus');
+      status.textContent = '✨ Generating email...';
+      status.style.display = 'block';
+
+      try {
+        const response = await fetch('/api/ai/generate-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idea, campaignName })
+        });
+
+        const result = await response.json();
+        if (result.html) {
+          document.getElementById('htmlBody').value = result.html;
+          status.textContent = '✅ Email generated!';
+          setTimeout(() => closeGenerateModal(), 1500);
+          updateSendButton();
+        } else {
+          status.textContent = '❌ ' + (result.error || 'Failed to generate email');
+        }
+      } catch (err) {
+        status.textContent = '❌ Error: ' + err.message;
+      }
+    }
+
+    function suggestSubjects() {
+      const htmlBody = document.getElementById('htmlBody').value.trim();
+      if (!htmlBody) {
+        alert('Please write or generate an email body first');
+        return;
+      }
+
+      document.getElementById('suggestModal').classList.add('show');
+      document.getElementById('suggestStatus').style.display = 'block';
+      document.getElementById('suggestList').style.display = 'none';
+      document.getElementById('suggestStatus').textContent = '💡 Generating subject suggestions...';
+
+      fetch('/api/ai/suggest-subjects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ htmlBody })
+      })
+        .then(res => res.json())
+        .then(result => {
+          if (result.subjects && result.subjects.length > 0) {
+            const options = document.getElementById('suggestOptions');
+            options.innerHTML = result.subjects.map((subject, idx) => `
+              <button onclick="setSubject('${subject.replace(/'/g, "\\'")}'); closeSuggestModal();" style="padding: 12px; background: rgba(245, 166, 35, 0.1); color: var(--gold); border: 1px solid var(--gold); border-radius: 6px; cursor: pointer; text-align: left; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='rgba(245, 166, 35, 0.2)'" onmouseout="this.style.background='rgba(245, 166, 35, 0.1)'">
+                <strong>Option ${idx + 1}:</strong><br>${subject}
+              </button>
+            `).join('');
+            document.getElementById('suggestStatus').style.display = 'none';
+            document.getElementById('suggestList').style.display = 'block';
+          } else {
+            document.getElementById('suggestStatus').textContent = '❌ ' + (result.error || 'Failed to generate subjects');
+          }
+        })
+        .catch(err => {
+          document.getElementById('suggestStatus').textContent = '❌ Error: ' + err.message;
+        });
+    }
+
+    function setSubject(subject) {
+      document.getElementById('subject').value = subject;
+      updateSendButton();
+    }
+
+    function closeSuggestModal() {
+      document.getElementById('suggestModal').classList.remove('show');
+    }
+
+    async function improveEmail() {
+      const htmlBody = document.getElementById('htmlBody').value.trim();
+      if (!htmlBody) {
+        alert('Please write or generate an email body first');
+        return;
+      }
+
+      const instructions = prompt('How should we improve the email? (optional)', 'Improve for engagement and clarity');
+      if (instructions === null) return;
+
+      const btn = event.target;
+      btn.disabled = true;
+      btn.textContent = '⏳ Improving...';
+
+      try {
+        const response = await fetch('/api/ai/improve-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ htmlBody, instructions })
+        });
+
+        const result = await response.json();
+        if (result.html) {
+          document.getElementById('htmlBody').value = result.html;
+          alert('✅ Email improved!');
+          updateSendButton();
+        } else {
+          alert('❌ ' + (result.error || 'Failed to improve email'));
+        }
+      } catch (err) {
+        alert('❌ Error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🤖 Improve Email';
+      }
+    }
   </script>
 </body>
 </html>

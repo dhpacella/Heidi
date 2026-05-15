@@ -2,6 +2,9 @@ const express = require('express');
 const pool = require('../db/connection');
 const { requireRole } = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
+const { sendEmail } = require('../lib/sesClient');
+const { putGPS, getGPSHistory } = require('../lib/dynamoClient');
+const { publishGPSEvent } = require('../lib/kinesisClient');
 
 const router = express.Router();
 
@@ -78,6 +81,19 @@ router.post('/', requireRole('admin', 'campaign_manager'), async (req, res) => {
       );
 
       await client.query('COMMIT');
+
+      // Send welcome email with temp password
+      const emailHtml = `
+        <h2>Welcome to Heidi's Campaign!</h2>
+        <p>You've been added as a volunteer. Here are your login credentials:</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Temporary Password:</strong> ${tempPassword}</p>
+        <p><a href="http://localhost:5000/volunteer-portal">Click here to access the volunteer portal</a></p>
+        <p>Please change your password after first login.</p>
+      `;
+
+      sendEmail(email, 'Volunteer Account Created', emailHtml, '', 'noreply@heidi-campaign.com')
+        .catch(err => console.error('❌ Email send error:', err.message));
 
       res.status(201).json({
         success: true,
@@ -332,10 +348,28 @@ router.post('/:id/gps', requireRole('volunteer'), async (req, res) => {
       return res.status(403).json({ error: 'Cannot log GPS for other volunteers' });
     }
 
+    const volunteerId = req.params.id;
+    const timestamp = new Date().toISOString();
+
+    // Write to PostgreSQL (source of truth)
     await pool.query(
       'INSERT INTO volunteer_gps (volunteer_id, latitude, longitude) VALUES ($1, $2, $3)',
-      [req.params.id, latitude, longitude]
+      [volunteerId, latitude, longitude]
     );
+
+    // Write to DynamoDB (real-time queries)
+    try {
+      await putGPS(volunteerId, timestamp, latitude, longitude);
+    } catch (err) {
+      console.warn('⚠️ Failed to write GPS to DynamoDB:', err.message);
+    }
+
+    // Publish to Kinesis (real-time streaming)
+    try {
+      await publishGPSEvent(volunteerId, latitude, longitude);
+    } catch (err) {
+      console.warn('⚠️ Failed to publish GPS to Kinesis:', err.message);
+    }
 
     res.json({ success: true, message: 'GPS position recorded' });
   } catch (err) {
@@ -349,14 +383,28 @@ router.get('/:id/gps', requireRole('admin', 'campaign_manager'), async (req, res
   try {
     const { limit = 100 } = req.query;
 
-    const { rows } = await pool.query(
-      `SELECT latitude, longitude, recorded_at
-       FROM volunteer_gps
-       WHERE volunteer_id = $1
-       ORDER BY recorded_at DESC
-       LIMIT $2`,
-      [req.params.id, limit]
-    );
+    // Try DynamoDB first (faster for real-time queries)
+    let rows = [];
+    try {
+      const items = await getGPSHistory(req.params.id, limit);
+      rows = items.map(item => ({
+        latitude: item.latitude,
+        longitude: item.longitude,
+        recorded_at: item.recordedAt
+      }));
+    } catch (err) {
+      // Fall back to PostgreSQL
+      console.warn('⚠️ DynamoDB query failed, falling back to PostgreSQL:', err.message);
+      const pgRes = await pool.query(
+        `SELECT latitude, longitude, recorded_at
+         FROM volunteer_gps
+         WHERE volunteer_id = $1
+         ORDER BY recorded_at DESC
+         LIMIT $2`,
+        [req.params.id, limit]
+      );
+      rows = pgRes.rows;
+    }
 
     res.json({ gps: rows });
   } catch (err) {

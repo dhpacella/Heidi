@@ -1,5 +1,6 @@
 const express = require('express');
 const pool = require('../db/connection');
+const { publishVoterRegistered } = require('../lib/eventBridgeClient');
 
 const router = express.Router();
 
@@ -156,7 +157,16 @@ router.post('/', async (req, res) => {
     );
 
     await client.query('COMMIT');
-    res.status(201).json({ voter: insertRes.rows[0] });
+
+    const voter = insertRes.rows[0];
+    res.status(201).json({ voter });
+
+    // Publish voter.registered event to EventBridge (async, non-blocking)
+    try {
+      await publishVoterRegistered(voter.id, voter.email, voter.first_name, voter.last_name, voter.precinct_id);
+    } catch (err) {
+      console.warn('⚠️ Failed to publish voter.registered event:', err.message);
+    }
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('Voter create error:', err);

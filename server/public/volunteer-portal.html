@@ -556,6 +556,7 @@
     let selectedVoter = null;
     let selectedStatus = null;
     let selectedCanvassed = null;
+    let currentGPS = { latitude: null, longitude: null };
     const PRESET_CONCERNS = [
       'Refuses to speak',
       'Not interested',
@@ -591,6 +592,18 @@
       }
     }
 
+    // Calculate distance between two GPS points (haversine formula)
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      const R = 3959; // Earth radius in miles
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return (R * c).toFixed(2);
+    }
+
     // Load assignments
     async function loadAssignments() {
       if (!volunteerId) return;
@@ -599,6 +612,15 @@
         const res = await fetch(`/api/volunteers/${volunteerId}`);
         const data = await res.json();
         assignments = data.assignments || [];
+
+        // Sort by distance if GPS available
+        if (currentGPS.latitude && currentGPS.longitude) {
+          assignments = assignments.map(a => ({
+            ...a,
+            distance: calculateDistance(currentGPS.latitude, currentGPS.longitude, a.lat || 40.7128, a.lng || -74.0060)
+          })).sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
+        }
+
         renderVoterList();
         addMarkers();
       } catch (err) {
@@ -621,9 +643,26 @@
         item.className = `voter-item ${selectedVoter?.voter_id === a.voter_id ? 'selected' : ''} ${a.status === 'visited' ? 'visited' : ''}`;
         item.onclick = () => selectVoter(a);
 
+        // Format last contact date
+        let lastContactStr = '';
+        if (a.canvassed_at) {
+          const lastDate = new Date(a.canvassed_at);
+          const today = new Date();
+          const daysAgo = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+          if (daysAgo === 0) lastContactStr = 'Today';
+          else if (daysAgo === 1) lastContactStr = 'Yesterday';
+          else lastContactStr = `${daysAgo}d ago`;
+        }
+
         item.innerHTML = `
-          <div class="voter-name">${a.first_name} ${a.last_name}</div>
+          <div class="voter-name">${a.first_name} ${a.last_name} ${a.distance ? `<span style="font-size:11px;color:var(--text-muted);">${a.distance}mi</span>` : ''}</div>
           <div class="voter-address">📍 ${a.address || 'Address unknown'}</div>
+          <div style="display:flex;gap:8px;margin-top:6px;font-size:11px;">
+            <div style="color:var(--text-muted);">
+              ${lastContactStr ? `Last: ${lastContactStr}` : 'Never contacted'}
+            </div>
+            ${a.notes ? '<span style="color:var(--gold);">📝 Has notes</span>' : ''}
+          </div>
           <div class="voter-status">
             <span class="status-tag ${a.status === 'visited' ? 'visited' : 'pending'}">
               ${a.status === 'visited' ? '✅ Visited' : '⏳ Pending'}
@@ -754,6 +793,12 @@
     function logGPS(latitude, longitude) {
       if (!volunteerId) return;
 
+      // Store current GPS for distance calculations
+      currentGPS = { latitude, longitude };
+
+      // Re-sort assignments by distance when GPS updates
+      loadAssignments();
+
       fetch(`/api/volunteers/${volunteerId}/gps`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -789,7 +834,19 @@
       selectedStatus = null;
       selectedCanvassed = false;
 
-      // Show voter details
+      // Show voter details with conversation history
+      let historyHtml = '';
+      if (assignment.notes) {
+        const lastDate = assignment.canvassed_at ? new Date(assignment.canvassed_at).toLocaleDateString() : 'Unknown date';
+        historyHtml = `
+          <div style="background:rgba(245,166,35,0.15);border:1px solid rgba(245,166,35,0.3);border-radius:6px;padding:10px;margin-top:12px;">
+            <div style="font-size:11px;font-weight:600;color:var(--gold);margin-bottom:6px;">📝 CONVERSATION HISTORY</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;font-weight:600;">${lastDate}</div>
+            <div style="font-size:13px;color:var(--text);font-style:italic;">${assignment.notes}</div>
+          </div>
+        `;
+      }
+
       document.getElementById('voterDetails').innerHTML = `
         <div class="detail-row">
           <span class="detail-label">Name:</span>
@@ -803,6 +860,7 @@
           <span class="detail-label">Phone:</span>
           <span class="detail-value">${assignment.phone || 'Unknown'}</span>
         </div>
+        ${historyHtml}
       `;
 
       // Reset form

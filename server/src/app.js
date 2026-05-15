@@ -13,10 +13,16 @@ const PgSession = require('connect-pg-simple')(session);
 
 const pool = require('./db/connection');
 const { requireApiAuth } = require('./middleware/auth');
+const { xrayMiddleware } = require('./middleware/xray');
 
 const app = express();
 
 app.set('trust proxy', 1);
+
+// X-Ray distributed tracing middleware (production only)
+if (process.env.NODE_ENV === 'production') {
+  app.use(xrayMiddleware.openSegment('heidi-voter-dashboard'));
+}
 
 app.use(cors({
   origin: process.env.CLIENT_URL || true,
@@ -72,6 +78,7 @@ app.post('/api/email/webhooks/ses', express.json({ type: '*/*' }), require('./ro
 // Email tracking endpoints (no auth — email clients need to access without a session)
 app.use('/api/email/track', require('./routes/emailTracking'));
 
+app.use('/api/ai', requireApiAuth, require('./routes/ai'));
 app.use('/api/email', requireApiAuth, require('./routes/email'));
 app.use('/api/lists', requireApiAuth, require('./routes/lists'));
 app.use('/api/volunteers', requireApiAuth, require('./routes/volunteers'));
@@ -253,10 +260,51 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
+// X-Ray close segment (production only)
+if (process.env.NODE_ENV === 'production') {
+  app.use(xrayMiddleware.closeSegment());
+}
+
 const PORT = process.env.PORT || 5000;
 if (require.main === module) {
   app.listen(PORT, '0.0.0.0', async () => {
     console.log(`🚀 Server running on port ${PORT}`);
+
+    // Initialize async pool (Secrets Manager, if needed)
+    try {
+      await pool.initAsync();
+    } catch (err) {
+      console.error('⚠️ Pool async initialization failed:', err.message);
+    }
+
+    // Load configuration from SSM Parameter Store (production)
+    if (process.env.NODE_ENV === 'production') {
+      try {
+        const { getParameters } = require('./lib/parameterStore');
+        const params = await getParameters([
+          '/heidi/s3-bucket',
+          '/heidi/sqs-queue-url',
+          '/heidi/pinpoint-app-id',
+          '/heidi/kinesis-stream-name',
+          '/heidi/kinesis-gps-stream',
+          '/heidi/email-batch-size',
+          '/heidi/sms-batch-size'
+        ]);
+
+        // Populate process.env for backward compatibility
+        if (params['s3-bucket']) process.env.S3_BUCKET = params['s3-bucket'];
+        if (params['sqs-queue-url']) process.env.SQS_QUEUE_URL = params['sqs-queue-url'];
+        if (params['pinpoint-app-id']) process.env.PINPOINT_APP_ID = params['pinpoint-app-id'];
+        if (params['kinesis-stream-name']) process.env.KINESIS_STREAM_NAME = params['kinesis-stream-name'];
+        if (params['kinesis-gps-stream']) process.env.KINESIS_GPS_STREAM = params['kinesis-gps-stream'];
+        if (params['email-batch-size']) process.env.EMAIL_BATCH_SIZE = params['email-batch-size'];
+        if (params['sms-batch-size']) process.env.SMS_BATCH_SIZE = params['sms-batch-size'];
+
+        console.log('✅ SSM parameters loaded');
+      } catch (err) {
+        console.warn('⚠️ Failed to load SSM parameters, using environment variables:', err.message);
+      }
+    }
 
     // Initialize database schema and admin user on startup
     try {
@@ -310,6 +358,14 @@ if (require.main === module) {
       scheduleLighthouseAudits();
     } catch (err) {
       console.error('⚠️ Failed to start Lighthouse scheduler:', err.message);
+    }
+
+    // Start SQS blast worker for async email/SMS dispatch
+    try {
+      const { startBlastWorker } = require('./workers/blastWorker');
+      startBlastWorker();
+    } catch (err) {
+      console.error('⚠️ Failed to start blast worker:', err.message);
     }
   });
 }
