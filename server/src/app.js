@@ -82,6 +82,15 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+app.get('/test-db', (req, res) => {
+  res.json({
+    node_env: process.env.NODE_ENV,
+    database_url_set: !!process.env.DATABASE_URL,
+    database_url_preview: process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 60) : 'NOT SET',
+    pool_config: 'check logs'
+  });
+});
+
 // Debug endpoint to check admin user and database status
 app.get('/debug/admin-status', async (req, res) => {
   try {
