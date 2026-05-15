@@ -1,0 +1,17 @@
+﻿{
+  "name": "heidi-emailEventProcessor",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "pg": "^8.8.0",
+    "@aws-sdk/client-dynamodb": "^3.1047.0",
+    "@aws-sdk/lib-dynamodb": "^3.1047.0",
+    "@aws-sdk/client-cloudwatch": "^3.1047.0",
+    "@aws-sdk/client-kinesis": "^3.1047.0",
+    "@aws-sdk/client-eventbridge": "^3.1047.0",
+    "@aws-sdk/client-ssm": "^3.1047.0",
+    "@aws-sdk/client-secrets-manager": "^3.1047.0",
+    "lighthouse": "^11.0.0",
+    "chrome-launcher": "^1.0.0"
+  }
+}
