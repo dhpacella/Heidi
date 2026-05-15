@@ -1,5 +1,8 @@
 require('dotenv').config();
-console.log('🚀 Starting app, DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
+console.log('🚀 Starting app');
+console.log('   NODE_ENV:', process.env.NODE_ENV);
+console.log('   DATABASE_URL:', process.env.DATABASE_URL ? `SET (${process.env.DATABASE_URL.substring(0, 50)}...)` : 'NOT SET');
+console.log('   Available env keys:', Object.keys(process.env).filter(k => !k.includes('SECRET')).slice(0, 15).join(', '));
 
 const express = require('express');
 const cors = require('cors');
