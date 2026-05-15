@@ -10,6 +10,8 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 console.log('📦 Initializing database pool...');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('DATABASE_URL:', process.env.DATABASE_URL ? '***SET***' : 'NOT SET');
 
 // Use environment variables if available, otherwise hardcoded RDS (us-east-2)
 const poolConfig = process.env.DATABASE_URL ? {
@@ -24,7 +26,13 @@ const poolConfig = process.env.DATABASE_URL ? {
   ssl: { rejectUnauthorized: false }
 };
 
-console.log('Database:', poolConfig.host || 'from DATABASE_URL');
+console.log('PoolConfig:', {
+  host: poolConfig.host,
+  port: poolConfig.port,
+  database: poolConfig.database,
+  user: poolConfig.user,
+  connectionString: poolConfig.connectionString ? '***SET***' : undefined
+});
 
 const pool = new Pool(poolConfig);
 
