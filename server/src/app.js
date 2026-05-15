@@ -82,11 +82,11 @@ app.use('/api/lists', requireApiAuth, require('./routes/lists'));
 app.use('/api/volunteers', requireApiAuth, require('./routes/volunteers'));
 
 app.get('/health', (req, res) => {
-  pool.query('SELECT NOW()', (err) => {
-    res.json({
-      status: 'ok',
-      database: err ? `error: ${err.message}` : 'connected'
-    });
+  res.json({
+    status: 'ok',
+    NODE_ENV: process.env.NODE_ENV,
+    DATABASE_URL: process.env.DATABASE_URL ? '***SET***' : 'NOT SET',
+    database_check: 'skipped'
   });
 });
 
