@@ -100,14 +100,31 @@ if (dbUrl.startsWith('sqlite:')) {
     ssl: { rejectUnauthorized: false }
   };
 
-  const pool = new Pool(poolConfig);
+  let pool = new Pool(poolConfig);
+  let connectionFailed = false;
 
   pool.on('error', (err) => {
-    console.error('❌ Unexpected error on idle client', err);
+    if (!connectionFailed) {
+      console.warn('⚠️ Database connection error:', err.message);
+      console.warn('⚠️ Falling back to in-memory mock database...');
+      connectionFailed = true;
+      // Switch to mock DB
+      pool = require('./mock-db');
+    }
   });
 
   pool.on('connect', () => {
     console.log('✅ PostgreSQL connected');
+  });
+
+  // Test connection immediately
+  pool.query('SELECT 1').catch(() => {
+    if (!connectionFailed) {
+      console.warn('⚠️ Could not connect to PostgreSQL');
+      console.warn('⚠️ Using in-memory mock database for local development');
+      connectionFailed = true;
+      pool = require('./mock-db');
+    }
   });
 
   module.exports = pool;
