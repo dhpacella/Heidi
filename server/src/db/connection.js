@@ -1,9 +1,17 @@
 const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+
+// Load .env if it exists (local dev only; EB uses environment variables)
+const envPath = path.join(__dirname, '../../.env');
+if (fs.existsSync(envPath)) {
+  require('dotenv').config({ path: envPath });
+}
 
 console.log('📦 Initializing database pool...');
+if (!process.env.DATABASE_URL) {
+  console.error('❌ ERROR: DATABASE_URL not set in environment');
+}
 
 // Configure SSL for RDS
 const poolConfig = {
