@@ -1,0 +1,517 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: 'Heidi Voter Dashboard - AWS Infrastructure as Code (CloudFormation)'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Deployment environment
+
+  AWSRegion:
+    Type: String
+    Default: us-east-2
+    Description: AWS Region for all resources
+
+  DBEndpoint:
+    Type: String
+    Description: PostgreSQL database endpoint
+    Default: localhost
+
+  DBPort:
+    Type: Number
+    Default: 5432
+    Description: Database port
+
+  DBName:
+    Type: String
+    Default: heidi
+    Description: Database name
+
+  DBUsername:
+    Type: String
+    Default: heidi_user
+    Description: Database username
+    NoEcho: true
+
+  SESFromEmail:
+    Type: String
+    Description: Verified SES email address
+    Default: heidi@hadleytrees.com
+
+  SESRegion:
+    Type: String
+    Default: us-east-2
+    Description: AWS Region for SES
+
+Resources:
+  # ============================================================================
+  # IAM Roles & Permissions
+  # ============================================================================
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'heidi-lambda-execution-role-${Environment}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: HeidiLambdaPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:BatchWriteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                Resource:
+                  - !GetAtt HeidiVolunteerGPSTable.Arn
+                  - !GetAtt HeidiEmailEventsTable.Arn
+                  - !GetAtt HeidiLeaderboardTable.Arn
+              - Effect: Allow
+                Action:
+                  - kinesis:GetRecords
+                  - kinesis:GetShardIterator
+                  - kinesis:DescribeStream
+                  - kinesis:ListStreams
+                  - kinesis:ListShards
+                  - kinesis:DescribeStreamSummary
+                  - kinesis:PutRecord
+                  - kinesis:PutRecords
+                Resource:
+                  - !GetAtt HeidiEventsStream.Arn
+                  - !GetAtt HeidiGPSStream.Arn
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:GetQueueUrl
+                Resource: !GetAtt HeidiBlastsQueue.Arn
+              - Effect: Allow
+                Action:
+                  - ses:SendEmail
+                  - ses:SendRawEmail
+                  - ses:SendBulkTemplatedEmail
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt HeidiLambdaArtifactsBucket.Arn
+                  - !Sub '${HeidiLambdaArtifactsBucket.Arn}/*'
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Sub 'arn:aws:secretsmanager:${AWSRegion}:${AWS::AccountId}:secret:heidi/*'
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:GetParametersByPath
+                Resource: !Sub 'arn:aws:ssm:${AWSRegion}:${AWS::AccountId}:parameter/heidi/*'
+              - Effect: Allow
+                Action:
+                  - cloudwatch:PutMetricData
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: '*'
+
+  # ============================================================================
+  # Kinesis Streams
+  # ============================================================================
+
+  HeidiEventsStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: !Sub 'heidi-events-${Environment}'
+      StreamModeDetails:
+        StreamMode: ON_DEMAND
+      RetentionPeriod: 24
+
+  HeidiGPSStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: !Sub 'heidi-gps-${Environment}'
+      StreamModeDetails:
+        StreamMode: ON_DEMAND
+      RetentionPeriod: 24
+
+  # ============================================================================
+  # DynamoDB Tables
+  # ============================================================================
+
+  HeidiVolunteerGPSTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'HeidiVolunteerGPS-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: volunteerId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: N
+      KeySchema:
+        - AttributeName: volunteerId
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+  HeidiEmailEventsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'HeidiEmailEvents-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: recipientId
+          AttributeType: S
+        - AttributeName: eventTimestamp
+          AttributeType: N
+      KeySchema:
+        - AttributeName: recipientId
+          KeyType: HASH
+        - AttributeName: eventTimestamp
+          KeyType: RANGE
+
+  HeidiLeaderboardTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'HeidiLeaderboard-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: volunteerId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: volunteerId
+          KeyType: HASH
+
+  # ============================================================================
+  # SQS Queue
+  # ============================================================================
+
+  HeidiBlastsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub 'heidi-blasts-${Environment}'
+      VisibilityTimeout: 300
+      MessageRetentionPeriod: 1209600
+
+  # ============================================================================
+  # S3 Bucket
+  # ============================================================================
+
+  HeidiLambdaArtifactsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'heidi-lambda-artifacts-${AWS::AccountId}-${AWSRegion}'
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            NoncurrentVersionExpirationInDays: 30
+            Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # ============================================================================
+  # Lambda Functions
+  # ============================================================================
+
+  EmailEventProcessorFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'heidi-emailEventProcessor-${Environment}'
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      MemorySize: 256
+      Timeout: 60
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            console.log('Email event processor triggered', event);
+            return { statusCode: 200, body: 'OK' };
+          };
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          DB_ENDPOINT: !Ref DBEndpoint
+          DB_PORT: !Ref DBPort
+          DB_NAME: !Ref DBName
+          DB_USERNAME: !Ref DBUsername
+          SES_FROM_EMAIL: !Ref SESFromEmail
+
+  GPSProcessorFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'heidi-gpsProcessor-${Environment}'
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      MemorySize: 256
+      Timeout: 60
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            console.log('GPS processor triggered', event);
+            return { statusCode: 200, body: 'OK' };
+          };
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          DB_ENDPOINT: !Ref DBEndpoint
+          DB_PORT: !Ref DBPort
+          DB_NAME: !Ref DBName
+          DB_USERNAME: !Ref DBUsername
+
+  BlastDispatcherFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'heidi-blastDispatcher-${Environment}'
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      MemorySize: 512
+      Timeout: 300
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            console.log('Blast dispatcher triggered', event);
+            return { statusCode: 200, body: 'OK' };
+          };
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          SES_FROM_EMAIL: !Ref SESFromEmail
+          DB_ENDPOINT: !Ref DBEndpoint
+
+  LighthouseAuditFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'heidi-lighthouseAudit-${Environment}'
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      MemorySize: 1024
+      Timeout: 300
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            console.log('Lighthouse audit triggered', event);
+            return { statusCode: 200, body: 'OK' };
+          };
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          LIGHTHOUSE_TARGET_URL: http://localhost:5000
+          S3_BUCKET: !Ref HeidiLambdaArtifactsBucket
+
+  # ============================================================================
+  # EventBridge Rules
+  # ============================================================================
+
+  EventBridgeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'heidi-eventbridge-role-${Environment}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokeLambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !GetAtt LighthouseAuditFunction.Arn
+
+  DailyLighthouseAuditRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub 'heidi-daily-audit-${Environment}'
+      Description: Daily Lighthouse audit at 2:00 AM UTC
+      ScheduleExpression: cron(0 2 * * ? *)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt LighthouseAuditFunction.Arn
+          Id: DailyLighthouseAuditTarget
+          RoleArn: !GetAtt EventBridgeRole.Arn
+
+  SixHourlyLighthouseAuditRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub 'heidi-6h-audit-${Environment}'
+      Description: Lighthouse audit every 6 hours
+      ScheduleExpression: rate(6 hours)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt LighthouseAuditFunction.Arn
+          Id: SixHourlyLighthouseAuditTarget
+          RoleArn: !GetAtt EventBridgeRole.Arn
+
+  LighthouseAuditFunctionPermissionDaily:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LighthouseAuditFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt DailyLighthouseAuditRule.Arn
+
+  LighthouseAuditFunctionPermission6H:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LighthouseAuditFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt SixHourlyLighthouseAuditRule.Arn
+
+  # ============================================================================
+  # Kinesis Event Source Mappings
+  # ============================================================================
+
+  EmailEventProcessorEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt HeidiEventsStream.Arn
+      FunctionName: !Ref EmailEventProcessorFunction
+      Enabled: true
+      StartingPosition: LATEST
+      BatchSize: 100
+
+  GPSProcessorEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt HeidiGPSStream.Arn
+      FunctionName: !Ref GPSProcessorFunction
+      Enabled: true
+      StartingPosition: LATEST
+      BatchSize: 50
+
+  BlastDispatcherEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt HeidiBlastsQueue.Arn
+      FunctionName: !Ref BlastDispatcherFunction
+      Enabled: true
+      BatchSize: 10
+
+Outputs:
+  KinesisEventsStreamName:
+    Description: Kinesis stream for email/general events
+    Value: !Ref HeidiEventsStream
+    Export:
+      Name: !Sub '${AWS::StackName}-HeidiEventsStream'
+
+  KinesisGPSStreamName:
+    Description: Kinesis stream for GPS tracking
+    Value: !Ref HeidiGPSStream
+    Export:
+      Name: !Sub '${AWS::StackName}-HeidiGPSStream'
+
+  DynamoDBVolunteerGPSTableName:
+    Description: DynamoDB table for volunteer GPS data
+    Value: !Ref HeidiVolunteerGPSTable
+    Export:
+      Name: !Sub '${AWS::StackName}-HeidiVolunteerGPSTable'
+
+  DynamoDBEmailEventsTableName:
+    Description: DynamoDB table for email events
+    Value: !Ref HeidiEmailEventsTable
+    Export:
+      Name: !Sub '${AWS::StackName}-HeidiEmailEventsTable'
+
+  DynamoDBLeaderboardTableName:
+    Description: DynamoDB table for volunteer leaderboard
+    Value: !Ref HeidiLeaderboardTable
+    Export:
+      Name: !Sub '${AWS::StackName}-HeidiLeaderboardTable'
+
+  SQSBlastsQueueUrl:
+    Description: SQS queue for email/SMS blasts
+    Value: !Ref HeidiBlastsQueue
+    Export:
+      Name: !Sub '${AWS::StackName}-HeidiBlastsQueue'
+
+  S3ArtifactsBucketName:
+    Description: S3 bucket for Lambda artifacts and reports
+    Value: !Ref HeidiLambdaArtifactsBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-HeidiArtifactsBucket'
+
+  EmailEventProcessorFunctionArn:
+    Description: ARN of Email Event Processor Lambda
+    Value: !GetAtt EmailEventProcessorFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-EmailEventProcessorArn'
+
+  GPSProcessorFunctionArn:
+    Description: ARN of GPS Processor Lambda
+    Value: !GetAtt GPSProcessorFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-GPSProcessorArn'
+
+  BlastDispatcherFunctionArn:
+    Description: ARN of Blast Dispatcher Lambda
+    Value: !GetAtt BlastDispatcherFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-BlastDispatcherArn'
+
+  LighthouseAuditFunctionArn:
+    Description: ARN of Lighthouse Audit Lambda
+    Value: !GetAtt LighthouseAuditFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-LighthouseAuditArn'
+
+  LambdaExecutionRoleArn:
+    Description: ARN of Lambda Execution Role
+    Value: !GetAtt LambdaExecutionRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-LambdaExecutionRoleArn'
+
+  StackName:
+    Description: CloudFormation Stack Name
+    Value: !Ref AWS::StackName
+
+  Region:
+    Description: AWS Region
+    Value: !Ref AWS::Region
+
+  Environment:
+    Description: Environment
+    Value: !Ref Environment

@@ -1,0 +1,21 @@
+version = 0.1
+
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "heidi-prod"
+s3_prefix = "heidi-prod"
+region = "us-east-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_NAMED_IAM"
+parameter_overrides = [
+  "Environment=prod",
+  "AWSRegion=us-east-2",
+  "DBEndpoint=localhost",
+  "DBPort=5432",
+  "DBName=heidi",
+  "DBUsername=heidi_user",
+  "SESFromEmail=heidi@hadleytrees.com",
+  "SESRegion=us-east-2"
+]
+image_repositories = []

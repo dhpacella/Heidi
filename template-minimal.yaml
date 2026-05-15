@@ -1,0 +1,98 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Heidi Voter Dashboard - AWS Infrastructure (Minimal)'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+
+Resources:
+  # Kinesis Streams
+  HeidiEventsStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: heidi-events-prod
+      StreamModeDetails:
+        StreamMode: ON_DEMAND
+
+  HeidiGPSStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: heidi-gps-prod
+      StreamModeDetails:
+        StreamMode: ON_DEMAND
+
+  # DynamoDB Tables
+  HeidiVolunteerGPSTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: HeidiVolunteerGPS-prod
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: volunteerId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: N
+      KeySchema:
+        - AttributeName: volunteerId
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+
+  HeidiEmailEventsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: HeidiEmailEvents-prod
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: recipientId
+          AttributeType: S
+        - AttributeName: eventTimestamp
+          AttributeType: N
+      KeySchema:
+        - AttributeName: recipientId
+          KeyType: HASH
+        - AttributeName: eventTimestamp
+          KeyType: RANGE
+
+  HeidiLeaderboardTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: HeidiLeaderboard-prod
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: volunteerId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: volunteerId
+          KeyType: HASH
+
+  # SQS Queue
+  HeidiBlastsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: heidi-blasts-prod
+      VisibilityTimeout: 300
+      MessageRetentionPeriod: 1209600
+
+  # S3 Bucket
+  HeidiArtifactsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'heidi-artifacts-${AWS::AccountId}-prod'
+
+Outputs:
+  HeidiEventsStream:
+    Value: !Ref HeidiEventsStream
+  HeidiGPSStream:
+    Value: !Ref HeidiGPSStream
+  HeidiVolunteerGPSTable:
+    Value: !Ref HeidiVolunteerGPSTable
+  HeidiEmailEventsTable:
+    Value: !Ref HeidiEmailEventsTable
+  HeidiLeaderboardTable:
+    Value: !Ref HeidiLeaderboardTable
+  HeidiBlastsQueue:
+    Value: !Ref HeidiBlastsQueue
+  HeidiArtifactsBucket:
+    Value: !Ref HeidiArtifactsBucket
