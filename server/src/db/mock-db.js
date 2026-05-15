@@ -6,7 +6,7 @@ const mockData = {
       id: 1,
       email: 'admin@test.com',
       name: 'Admin User',
-      password_hash: '$2a$10$...',
+      password_hash: '$2a$12$IOTHd2yBlSpItrE9VkLEIe5e3LOnOtnI.BfHiQtQQjCrMvroxSdoC',
       role: 'admin',
       created_at: new Date().toISOString()
     }

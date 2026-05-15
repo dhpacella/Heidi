@@ -87,6 +87,7 @@ if (dbUrl.startsWith('sqlite:')) {
 } else {
   // PostgreSQL for production/RDS
   const { Pool } = require('pg');
+  const mockDb = require('./mock-db');
 
   const poolConfig = dbUrl ? {
     connectionString: dbUrl,
@@ -100,30 +101,56 @@ if (dbUrl.startsWith('sqlite:')) {
     ssl: { rejectUnauthorized: false }
   };
 
-  let pool = new Pool(poolConfig);
+  let pgPool = new Pool(poolConfig);
   let connectionFailed = false;
 
-  pool.on('error', (err) => {
+  pgPool.on('error', (err) => {
     if (!connectionFailed) {
       console.warn('⚠️ Database connection error:', err.message);
-      console.warn('⚠️ Falling back to in-memory mock database...');
       connectionFailed = true;
-      // Switch to mock DB
-      pool = require('./mock-db');
     }
   });
 
-  pool.on('connect', () => {
+  pgPool.on('connect', () => {
     console.log('✅ PostgreSQL connected');
   });
 
+  // Wrapper that automatically falls back to mock DB on connection errors
+  const pool = {
+    query: async (sql, params = []) => {
+      if (connectionFailed) {
+        return mockDb.query(sql, params);
+      }
+      try {
+        return await pgPool.query(sql, params);
+      } catch (err) {
+        if (!connectionFailed) {
+          console.warn('⚠️ PostgreSQL query failed, switching to mock database');
+          connectionFailed = true;
+        }
+        return mockDb.query(sql, params);
+      }
+    },
+    connect: (callback) => {
+      if (connectionFailed) {
+        return mockDb.connect(callback);
+      }
+      return pgPool.connect(callback);
+    },
+    on: (event, handler) => {
+      if (!connectionFailed) {
+        pgPool.on(event, handler);
+      }
+    },
+    end: () => pgPool.end()
+  };
+
   // Test connection immediately
-  pool.query('SELECT 1').catch(() => {
+  pgPool.query('SELECT 1').catch(() => {
     if (!connectionFailed) {
       console.warn('⚠️ Could not connect to PostgreSQL');
       console.warn('⚠️ Using in-memory mock database for local development');
       connectionFailed = true;
-      pool = require('./mock-db');
     }
   });
 
