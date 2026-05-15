@@ -11,20 +11,22 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 console.log('📦 Initializing database pool...');
-console.log('DATABASE_URL env var:', process.env.DATABASE_URL ? `${process.env.DATABASE_URL.substring(0, 40)}...` : 'UNDEFINED');
 
-if (!process.env.DATABASE_URL) {
-  console.error('❌ FATAL: DATABASE_URL not set. Cannot connect to database.');
+// Use DATABASE_URL from environment, or fallback to hardcoded RDS connection
+const dbUrl = process.env.DATABASE_URL || 'postgresql://ebroot:etMf3W5t4EchcjG@heidi-voter-db-east2.cf6y8ieas57y.us-east-2.rds.amazonaws.com:5432/postgres?sslmode=require';
+
+if (!dbUrl) {
+  console.error('❌ FATAL: No database URL available.');
   process.exit(1);
 }
 
 // Configure SSL for RDS
 const poolConfig = {
-  connectionString: process.env.DATABASE_URL,
+  connectionString: dbUrl,
   ssl: false // Start with no SSL, will enable below if needed
 };
 
-console.log('Pool config connectionString:', poolConfig.connectionString ? `${poolConfig.connectionString.substring(0, 40)}...` : 'UNDEFINED');
+console.log('Using database:', dbUrl.includes('heidi-voter-db-east2') ? 'us-east-2 RDS' : 'custom/env');
 
 // If DATABASE_URL contains sslmode parameter, use SSL
 if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('sslmode')) {
