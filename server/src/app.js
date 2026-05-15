@@ -4,6 +4,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 console.log('🚀 Starting app');
+console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
 if (!process.env.DATABASE_URL) {
   console.error('❌ ERROR: DATABASE_URL environment variable not set!');
   console.log('Available env vars:', Object.keys(process.env).filter(k => k.includes('DATABASE') || k.includes('NODE')));
@@ -86,6 +87,16 @@ app.get('/health', (req, res) => {
       status: 'ok',
       database: err ? `error: ${err.message}` : 'connected'
     });
+  });
+});
+
+app.get('/debug/env', (req, res) => {
+  res.json({
+    NODE_ENV: process.env.NODE_ENV,
+    DATABASE_URL: process.env.DATABASE_URL ? '***SET***' : 'NOT SET',
+    AWS_SES_REGION: process.env.AWS_SES_REGION,
+    PORT: process.env.PORT,
+    allDbVars: Object.keys(process.env).filter(k => k.includes('DATABASE')).map(k => `${k}: ***`)
   });
 });
 
