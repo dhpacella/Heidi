@@ -30,7 +30,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Test endpoint - MUST be before static handler
-app.get('/test-db', (req, res) => {
+app.get('/api/test-db', (req, res) => {
   res.json({
     node_env: process.env.NODE_ENV,
     database_url_set: !!process.env.DATABASE_URL,
