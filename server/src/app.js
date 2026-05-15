@@ -1,8 +1,13 @@
-require('dotenv').config();
+// Load .env only in development (not deployed to EB)
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
+
 console.log('🚀 Starting app');
-console.log('   NODE_ENV:', process.env.NODE_ENV);
-console.log('   DATABASE_URL:', process.env.DATABASE_URL ? `SET (${process.env.DATABASE_URL.substring(0, 50)}...)` : 'NOT SET');
-console.log('   Available env keys:', Object.keys(process.env).filter(k => !k.includes('SECRET')).slice(0, 15).join(', '));
+if (!process.env.DATABASE_URL) {
+  console.error('❌ ERROR: DATABASE_URL environment variable not set!');
+  console.log('Available env vars:', Object.keys(process.env).filter(k => k.includes('DATABASE') || k.includes('NODE')));
+}
 
 const express = require('express');
 const cors = require('cors');
