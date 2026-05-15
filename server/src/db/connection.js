@@ -11,6 +11,8 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 console.log('📦 Initializing database pool...');
+console.log('DATABASE_URL env var:', process.env.DATABASE_URL ? `${process.env.DATABASE_URL.substring(0, 40)}...` : 'UNDEFINED');
+
 if (!process.env.DATABASE_URL) {
   console.error('❌ FATAL: DATABASE_URL not set. Cannot connect to database.');
   process.exit(1);
@@ -21,6 +23,8 @@ const poolConfig = {
   connectionString: process.env.DATABASE_URL,
   ssl: false // Start with no SSL, will enable below if needed
 };
+
+console.log('Pool config connectionString:', poolConfig.connectionString ? `${poolConfig.connectionString.substring(0, 40)}...` : 'UNDEFINED');
 
 // If DATABASE_URL contains sslmode parameter, use SSL
 if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('sslmode')) {
