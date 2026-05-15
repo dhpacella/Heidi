@@ -29,14 +29,6 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Test endpoint - MUST be before static handler
-app.get('/api/test-db', (req, res) => {
-  res.json({
-    node_env: process.env.NODE_ENV,
-    database_url_set: !!process.env.DATABASE_URL,
-    database_url_preview: process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 60) : 'NOT SET'
-  });
-});
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
