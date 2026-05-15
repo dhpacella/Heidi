@@ -84,6 +84,25 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+app.get('/test-db-connection', (req, res) => {
+  pool.query('SELECT NOW() as current_time, user, database', (err, result) => {
+    if (err) {
+      res.status(500).json({
+        error: err.message,
+        code: err.code,
+        errno: err.errno
+      });
+    } else {
+      res.json({
+        success: true,
+        time: result.rows[0].current_time,
+        user: result.rows[0].user,
+        database: result.rows[0].database
+      });
+    }
+  });
+});
+
 
 // Debug endpoint to check admin user and database status
 app.get('/debug/admin-status', async (req, res) => {
