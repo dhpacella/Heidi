@@ -34,14 +34,22 @@ console.log('PoolConfig:', {
   connectionString: poolConfig.connectionString ? '***SET***' : undefined
 });
 
+console.log('Creating pool with poolConfig...');
+console.log('Actual poolConfig object:', JSON.stringify(poolConfig, null, 2));
+
 const pool = new Pool(poolConfig);
 
 pool.on('error', (err) => {
   console.error('❌ Unexpected error on idle client', err);
+  console.error('Error details:', {
+    address: err.address,
+    port: err.port,
+    code: err.code
+  });
 });
 
 pool.on('connect', () => {
-  console.log('✅ Database connected');
+  console.log('✅ Database connected successfully');
 });
 
 module.exports = pool;
