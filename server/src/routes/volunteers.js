@@ -83,12 +83,13 @@ router.post('/', requireRole('admin', 'campaign_manager'), async (req, res) => {
       await client.query('COMMIT');
 
       // Send welcome email with temp password
+      const portalUrl = `${process.env.APP_BASE_URL || 'http://localhost:8081'}/volunteer-portal`;
       const emailHtml = `
         <h2>Welcome to Heidi's Campaign!</h2>
         <p>You've been added as a volunteer. Here are your login credentials:</p>
         <p><strong>Email:</strong> ${email}</p>
         <p><strong>Temporary Password:</strong> ${tempPassword}</p>
-        <p><a href="http://localhost:5000/volunteer-portal">Click here to access the volunteer portal</a></p>
+        <p><a href="${portalUrl}">Click here to access the volunteer portal</a></p>
         <p>Please change your password after first login.</p>
       `;
 
