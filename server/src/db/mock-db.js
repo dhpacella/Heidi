@@ -6,7 +6,7 @@ const mockData = {
       id: 1,
       email: 'admin@test.com',
       name: 'Admin User',
-      password_hash: '$2a$06$hBGC8STuPcV25myd4a8Od.5bKMMaGyHfiO9WlPqFwzKj5LQ.HUE0m',
+      password_hash: '$2a$12$itGdR66PruLCz0EGeVQWK.ZH3s2.m5el.GiafivNZA0JsinA1R9vq',
       role: 'admin',
       created_at: new Date().toISOString()
     }
@@ -15,7 +15,9 @@ const mockData = {
   email_blasts: [],
   sms_blasts: [],
   email_lists: [],
-  email_subscribers: []
+  email_subscribers: [],
+  email_templates: [],
+  email_recipients: []
 };
 
 const pool = {
@@ -81,9 +83,27 @@ const pool = {
       return { rows: [{ id: blast.id }], rowCount: 1 };
     }
 
-    // SELECT FROM email_blasts
+    // SELECT FROM email_blasts (with recipient aggregates for /api/email/blasts)
     if (sql.includes('SELECT') && sql.includes('email_blasts')) {
-      return { rows: mockData.email_blasts.slice(0, params[0] || 50) };
+      const blasts = mockData.email_blasts.slice(0, params[0] || 50);
+      // If query has COUNT aggregates (JOIN with email_recipients), calculate them
+      if (sql.includes('COUNT') && sql.includes('email_recipients')) {
+        return {
+          rows: blasts.map(blast => {
+            const recipients = mockData.email_recipients.filter(r => r.blast_id === blast.id);
+            return {
+              ...blast,
+              opened_count: recipients.filter(r => r.opened_at).length,
+              clicked_count: recipients.filter(r => r.clicked_at).length,
+              bounced_count: recipients.filter(r => r.bounced_at).length,
+              complained_count: recipients.filter(r => r.complained_at).length,
+              unsubscribed_count: recipients.filter(r => r.unsubscribed_at).length,
+              delivered_count: recipients.filter(r => r.delivered_at).length
+            };
+          })
+        };
+      }
+      return { rows: blasts };
     }
 
     // INSERT INTO sms_blasts
@@ -98,7 +118,90 @@ const pool = {
       return { rows: mockData.sms_blasts.slice(0, params[0] || 50) };
     }
 
-    // UPDATE
+    // INSERT INTO email_templates
+    if (sql.includes('INSERT INTO email_templates')) {
+      const template = {
+        id: mockData.email_templates.length + 1,
+        user_id: params[0],
+        name: params[1],
+        subject: params[2],
+        html_body: params[3],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      mockData.email_templates.push(template);
+      const returningMatch = sql.match(/RETURNING\s+(.*?)(?:;|$)/i);
+      const returning = returningMatch ? returningMatch[1].split(',').map(c => c.trim()) : [];
+      const returnRow = {};
+      returning.forEach(col => {
+        returnRow[col] = template[col];
+      });
+      return { rows: returning.length > 0 ? [returnRow] : [{ id: template.id }], rowCount: 1 };
+    }
+
+    // SELECT FROM email_templates
+    if (sql.includes('SELECT') && sql.includes('email_templates') && sql.includes('WHERE')) {
+      return { rows: mockData.email_templates.filter(t => t.user_id === params[0]) };
+    }
+
+    // DELETE FROM email_templates
+    if (sql.includes('DELETE FROM email_templates')) {
+      const initialLength = mockData.email_templates.length;
+      mockData.email_templates = mockData.email_templates.filter(t => !(t.id === parseInt(params[0]) && t.user_id === params[1]));
+      return { rowCount: initialLength - mockData.email_templates.length };
+    }
+
+    // INSERT INTO email_recipients (with UNNEST for bulk insert)
+    if (sql.includes('INSERT INTO email_recipients')) {
+      const blastId = params[0];
+      const emails = Array.isArray(params[1]) ? params[1] : [params[1]];
+      const firstNames = Array.isArray(params[2]) ? params[2] : [params[2]];
+      const lastNames = Array.isArray(params[3]) ? params[3] : [params[3]];
+
+      for (let i = 0; i < emails.length; i++) {
+        mockData.email_recipients.push({
+          id: mockData.email_recipients.length + 1,
+          blast_id: blastId,
+          email: emails[i],
+          first_name: firstNames[i] || '',
+          last_name: lastNames[i] || '',
+          status: 'pending',
+          created_at: new Date().toISOString()
+        });
+      }
+      return { rowCount: emails.length };
+    }
+
+    // SELECT FROM email_recipients (with LIMIT/OFFSET for pagination)
+    if (sql.includes('SELECT') && sql.includes('email_recipients')) {
+      let results = mockData.email_recipients.filter(r => r.blast_id === params[0]);
+
+      // Handle paginated queries: WHERE blast_id = $1 AND status = $2 LIMIT $3 OFFSET $4
+      if (sql.includes('LIMIT') && sql.includes('OFFSET') && params.length >= 4) {
+        const limit = params[2];
+        const offset = params[3];
+        results = results.slice(offset, offset + limit);
+      }
+      // Handle status filter: WHERE blast_id = $1 AND status = $2
+      else if (sql.includes('AND status') && params.length >= 2) {
+        results = results.filter(r => r.status === params[1]);
+      }
+
+      return { rows: results };
+    }
+
+    // UPDATE email_recipients SET ses_message_id = $1, status = $2 WHERE id = $3
+    if (sql.includes('UPDATE email_recipients') && sql.includes('ses_message_id')) {
+      const recipientId = params[2];
+      const recipient = mockData.email_recipients.find(r => r.id === recipientId);
+      if (recipient) {
+        recipient.ses_message_id = params[0];
+        recipient.status = params[1];
+      }
+      return { rowCount: recipient ? 1 : 0 };
+    }
+
+    // Generic UPDATE
     if (sql.includes('UPDATE')) {
       return { rowCount: 1 };
     }

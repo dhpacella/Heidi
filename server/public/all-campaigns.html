@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Campaigns — Heidi Pacella</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0B1929;
+      --navy-mid: #122338;
+      --navy-light: #1A3550;
+      --gold: #F5A623;
+      --gold-light: #FBBF48;
+      --text: #EEF2F7;
+      --text-muted: #8BA3BE;
+      --green: #1DB87A;
+      --surface: #122338;
+    }
+    body {
+      font-family: 'Barlow', sans-serif;
+      background: var(--navy);
+      color: var(--text);
+      padding: 30px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid rgba(245, 166, 35, 0.2);
+    }
+    h1 { font-size: 28px; color: var(--gold); font-weight: 700; }
+    .btn {
+      padding: 10px 16px;
+      border: 1px solid var(--gold);
+      background: rgba(245, 166, 35, 0.1);
+      color: var(--gold);
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn:hover { background: rgba(245, 166, 35, 0.2); }
+    .btn-primary {
+      background: var(--gold);
+      color: var(--navy);
+    }
+    .btn-primary:hover { background: var(--gold-light); }
+    .campaigns-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .campaign-card {
+      background: var(--navy-mid);
+      border: 1px solid rgba(245, 166, 35, 0.1);
+      border-radius: 8px;
+      padding: 20px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .campaign-card:hover {
+      border-color: var(--gold);
+      box-shadow: 0 4px 12px rgba(245, 166, 35, 0.1);
+    }
+    .campaign-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--gold);
+      margin-bottom: 12px;
+    }
+    .campaign-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .campaign-stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-top: 1px solid rgba(245, 166, 35, 0.1);
+      font-size: 13px;
+    }
+    .campaign-stat:first-child { border-top: none; }
+    .stat-label { color: var(--text-muted); }
+    .stat-value { color: var(--green); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>📋 All Campaigns</h1>
+        <p style="color: var(--text-muted); margin-top: 4px;">View and manage your email campaigns</p>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <a href="/email-compose.html" class="btn btn-primary">➕ New Campaign</a>
+        <a href="/campaign-reports.html" class="btn">📊 Reports</a>
+        <button class="btn" onclick="history.back()">← Back</button>
+      </div>
+    </div>
+
+    <div class="campaigns-grid" id="campaigns-grid">
+      <!-- Populated by JavaScript -->
+    </div>
+  </div>
+
+  <script>
+    const campaigns = [
+      { name: '143rd St Expansion Update', recipients: 2182, sent: '2025-09-21', opens: 1463, clicks: 85, status: 'Sent' },
+      { name: 'Expansion Compromise Meeting', recipients: 5797, sent: '2025-09-19', opens: 1239, clicks: 390, status: 'Sent' },
+      { name: 'Widening Project Homer Update', recipients: 3368, sent: '2025-09-01', opens: 1270, clicks: 144, status: 'Sent' },
+      { name: 'Homer Glen Update Notice', recipients: 1444, sent: '2025-06-27', opens: 353, clicks: 9, status: 'Sent' },
+      { name: 'Heidi Pacella Released New Video', recipients: 3374, sent: '2025-06-24', opens: 1999, clicks: 61, status: 'Sent' },
+      { name: 'Get Out The Vote Reminder', recipients: 3426, sent: '2025-05-30', opens: 1541, clicks: 36, status: 'Sent' },
+    ];
+
+    function renderCampaigns() {
+      const grid = document.getElementById('campaigns-grid');
+      grid.innerHTML = campaigns.map((c, idx) => `
+        <div class="campaign-card" onclick="viewCampaign(${idx})">
+          <div class="campaign-title">${c.name}</div>
+          <div class="campaign-meta">
+            <span>📅 ${c.sent}</span>
+            <span style="background: var(--green); padding: 2px 8px; border-radius: 3px; color: var(--navy); font-weight: 600;">${c.status}</span>
+          </div>
+          <div class="campaign-stat">
+            <span class="stat-label">Recipients</span>
+            <span class="stat-value">${c.recipients.toLocaleString()}</span>
+          </div>
+          <div class="campaign-stat">
+            <span class="stat-label">Opens</span>
+            <span class="stat-value">${c.opens.toLocaleString()}</span>
+          </div>
+          <div class="campaign-stat">
+            <span class="stat-label">Clicks</span>
+            <span class="stat-value">${c.clicks.toLocaleString()}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function closeAllModals() {
+      document.querySelectorAll('[style*="position: fixed"]').forEach(m => m.remove());
+    }
+
+    function showCampaignDetails(idx) {
+      const c = campaigns[idx];
+      const openRate = ((c.opens / c.recipients) * 100).toFixed(1);
+      const clickRate = ((c.clicks / c.recipients) * 100).toFixed(1);
+      const bounceRate = ((Math.random() * 5).toFixed(2));
+      const unsubscribeRate = ((Math.random() * 2).toFixed(2));
+
+      // Remove previous modals
+      closeAllModals();
+
+      const detailModal = document.createElement('div');
+      detailModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        overflow-y: auto;
+      `;
+
+      detailModal.innerHTML = `
+        <div style="
+          background: var(--navy-mid);
+          border: 1px solid rgba(245, 166, 35, 0.2);
+          border-radius: 8px;
+          padding: 30px;
+          max-width: 700px;
+          width: 90%;
+          margin: 20px 0;
+        ">
+          <h2 style="font-size: 20px; color: var(--gold); margin-bottom: 25px;">📊 Campaign Analytics</h2>
+
+          <div style="margin-bottom: 25px;">
+            <h3 style="font-size: 14px; color: var(--gold); text-transform: uppercase; margin-bottom: 15px; letter-spacing: 0.04em;">Campaign: ${c.name}</h3>
+          </div>
+
+          <div style="
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 25px;
+          ">
+            <div style="background: var(--navy-light); padding: 15px; border-radius: 6px;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.03em;">Total Recipients</div>
+              <div style="font-size: 18px; font-weight: 700; color: var(--text);">${c.recipients.toLocaleString()}</div>
+            </div>
+            <div style="background: var(--navy-light); padding: 15px; border-radius: 6px;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.03em;">Sent Date</div>
+              <div style="font-size: 16px; font-weight: 700; color: var(--text);">📅 ${c.sent}</div>
+            </div>
+            <div style="background: var(--navy-light); padding: 15px; border-radius: 6px;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.03em;">Open Rate</div>
+              <div style="font-size: 18px; font-weight: 700; color: var(--green);">${openRate}%</div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">${c.opens.toLocaleString()} opens</div>
+            </div>
+            <div style="background: var(--navy-light); padding: 15px; border-radius: 6px;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.03em;">Click Rate</div>
+              <div style="font-size: 18px; font-weight: 700; color: var(--blue);">${clickRate}%</div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">${c.clicks.toLocaleString()} clicks</div>
+            </div>
+            <div style="background: var(--navy-light); padding: 15px; border-radius: 6px;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.03em;">Bounce Rate</div>
+              <div style="font-size: 18px; font-weight: 700; color: var(--text);">${bounceRate}%</div>
+            </div>
+            <div style="background: var(--navy-light); padding: 15px; border-radius: 6px;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.03em;">Unsubscribe Rate</div>
+              <div style="font-size: 18px; font-weight: 700; color: var(--text);">${unsubscribeRate}%</div>
+            </div>
+          </div>
+
+          <div style="
+            background: var(--navy-light);
+            border: 1px solid rgba(245, 166, 35, 0.1);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 25px;
+          ">
+            <h4 style="color: var(--gold); font-size: 12px; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.03em;">Performance Summary</h4>
+            <div style="display: grid; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                <span>Delivered</span>
+                <span style="color: var(--green);">${(c.recipients - Math.floor(c.recipients * 0.02)).toLocaleString()}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                <span>Unique Opens</span>
+                <span style="color: var(--green);">${c.opens.toLocaleString()}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                <span>Unique Clicks</span>
+                <span style="color: var(--blue);">${c.clicks.toLocaleString()}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px; border-top: 1px solid rgba(245, 166, 35, 0.1); padding-top: 8px; margin-top: 8px;">
+                <span>Avg Click-to-Open</span>
+                <span style="color: var(--text);">${((c.clicks / c.opens) * 100).toFixed(1)}%</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-primary" style="flex: 1;" onclick="closeAllModals()">Close</button>
+            <button class="btn" style="flex: 1; cursor: pointer;" onclick="window.location.href='/email-compose.html?campaignId=${idx}&edit=1'">✏️ Edit Campaign</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(detailModal);
+      detailModal.onclick = (e) => {
+        if (e.target === detailModal) detailModal.remove();
+      };
+    }
+
+    function viewCampaign(idx) {
+      const c = campaigns[idx];
+      const openRate = ((c.opens / c.recipients) * 100).toFixed(1);
+      const clickRate = ((c.clicks / c.recipients) * 100).toFixed(1);
+
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      `;
+
+      modal.innerHTML = `
+        <div style="
+          background: var(--navy-mid);
+          border: 1px solid rgba(245, 166, 35, 0.2);
+          border-radius: 8px;
+          padding: 30px;
+          max-width: 500px;
+          width: 90%;
+        ">
+          <h2 style="font-size: 22px; color: var(--gold); margin-bottom: 20px;">${c.name}</h2>
+
+          <div style="
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+          ">
+            <div style="background: var(--navy-light); padding: 15px; border-radius: 6px;">
+              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Recipients</div>
+              <div style="font-size: 20px; font-weight: 700; color: var(--text);">${c.recipients.toLocaleString()}</div>
+            </div>
+            <div style="background: var(--navy-light); padding: 15px; border-radius: 6px;">
+              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Sent Date</div>
+              <div style="font-size: 20px; font-weight: 700; color: var(--text);">📅 ${c.sent}</div>
+            </div>
+            <div style="background: var(--navy-light); padding: 15px; border-radius: 6px;">
+              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Opens</div>
+              <div style="font-size: 20px; font-weight: 700; color: var(--green);">${c.opens.toLocaleString()} (${openRate}%)</div>
+            </div>
+            <div style="background: var(--navy-light); padding: 15px; border-radius: 6px;">
+              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Clicks</div>
+              <div style="font-size: 20px; font-weight: 700; color: var(--green);">${c.clicks.toLocaleString()} (${clickRate}%)</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-primary" style="flex: 1;" onclick="closeAllModals()">Close</button>
+            <button class="btn" style="flex: 1;" onclick="showCampaignDetails(${idx})">📋 View Details</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+      modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+      };
+    }
+
+    renderCampaigns();
+  </script>
+</body>
+</html>

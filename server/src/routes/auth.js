@@ -1,17 +1,26 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const rateLimit = require('express-rate-limit');
 const pool = require('../db/connection');
 const { signToken, requireApiAuth } = require('../middleware/auth');
+const { putMetric } = require('../lib/cloudwatchClient');
 
 const router = express.Router();
 
 const BCRYPT_ROUNDS = 12;
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 function isValidEmail(email) {
   return typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body || {};
     if (!email || !password) {
@@ -24,10 +33,12 @@ router.post('/login', async (req, res) => {
     );
     const user = rows[0];
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+      await putMetric('LoginFailure', 1);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     const token = signToken(user);
+    await putMetric('LoginSuccess', 1);
     res.json({
       token,
       user: { id: user.id, email: user.email, name: user.name, role: user.role }

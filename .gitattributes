@@ -1,0 +1,7 @@
+# Protect critical HTML dashboard from being overwritten during merges
+heidi_voter_dashboard_final_27.html merge=ours
+
+# Preserve line endings across platforms
+*.js text eol=lf
+*.json text eol=lf
+*.html text eol=lf

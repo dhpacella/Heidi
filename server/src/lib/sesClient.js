@@ -9,6 +9,24 @@ function normalizeEmail(raw) {
   return emailRegex.test(trimmed) ? trimmed : null;
 }
 
+async function sendWithRetry(command, retries = 3) {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await client.send(command);
+    } catch (err) {
+      const isThrottle = err.name === 'ThrottlingException' ||
+                         err.$metadata?.httpStatusCode === 429;
+      if (isThrottle && attempt < retries - 1) {
+        const backoffMs = Math.pow(2, attempt) * 1000;
+        console.warn(`⚠️ SES throttled, retrying in ${backoffMs}ms (attempt ${attempt + 1}/${retries})`);
+        await new Promise(r => setTimeout(r, backoffMs));
+      } else {
+        throw err;
+      }
+    }
+  }
+}
+
 async function sendEmail(toAddress, subject, htmlBody, textBody, fromAddress) {
   try {
     const command = new SendEmailCommand({
@@ -34,7 +52,7 @@ async function sendEmail(toAddress, subject, htmlBody, textBody, fromAddress) {
       },
     });
 
-    const response = await client.send(command);
+    const response = await sendWithRetry(command);
     return {
       success: true,
       messageId: response.MessageId,

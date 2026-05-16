@@ -1,10 +1,31 @@
 const express = require('express');
+const multer = require('multer');
+const { parse } = require('csv-parse/sync');
+const XLSX = require('xlsx');
 const pool = require('../db/connection');
+const { requireRole } = require('../middleware/auth');
 const { publishVoterRegistered } = require('../lib/eventBridgeClient');
+const { uploadFile } = require('../lib/s3Client');
+const { putMetric } = require('../lib/cloudwatchClient');
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const MAX_LIMIT = 50000;
+
+function findColumns(headers) {
+  const result = { firstName: null, lastName: null, email: null, phone: null, precinctId: null, party: null };
+  for (let h of headers) {
+    const lc = h.toLowerCase();
+    if (!result.firstName && (lc === 'first_name' || lc === 'firstname' || lc === 'first')) result.firstName = h;
+    if (!result.lastName && (lc === 'last_name' || lc === 'lastname' || lc === 'last')) result.lastName = h;
+    if (!result.email && (lc === 'email' || lc === 'e-mail' || lc === 'email_address')) result.email = h;
+    if (!result.phone && (lc === 'phone' || lc === 'phone_number' || lc === 'phonenumber')) result.phone = h;
+    if (!result.precinctId && (lc === 'precinct_id' || lc === 'precinct' || lc === 'precinctid')) result.precinctId = h;
+    if (!result.party && (lc === 'party' || lc === 'party_affiliation' || lc === 'partyaffiliation')) result.party = h;
+  }
+  return result;
+}
 
 function parsePagination(query) {
   const page = Math.max(1, parseInt(query.page, 10) || 1);
@@ -173,6 +194,112 @@ router.post('/', async (req, res) => {
     res.status(500).json({ error: 'Failed to create voter' });
   } finally {
     client.release();
+  }
+});
+
+router.post('/import', requireRole('admin', 'campaign_manager'), upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'file is required' });
+  }
+
+  try {
+    let records = [];
+    const mimeType = req.file.mimetype;
+    const filename = req.file.originalname.toLowerCase();
+
+    if (mimeType === 'text/csv' || filename.endsWith('.csv')) {
+      records = parse(req.file.buffer.toString('utf8'), { columns: true, skip_empty_lines: true });
+    } else if (mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || filename.endsWith('.xlsx')) {
+      const workbook = XLSX.read(req.file.buffer);
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      records = XLSX.utils.sheet_to_json(sheet);
+    } else {
+      return res.status(400).json({ error: 'File must be CSV or Excel (.xlsx)' });
+    }
+
+    if (records.length === 0) {
+      return res.status(400).json({ error: 'File contains no records' });
+    }
+
+    const headers = Object.keys(records[0]);
+    const columns = findColumns(headers);
+
+    if (!columns.firstName || !columns.lastName) {
+      return res.status(400).json({ error: 'File must contain first_name and last_name columns' });
+    }
+
+    let validRecords = [];
+    let skippedCount = 0;
+
+    records.forEach((record) => {
+      const firstName = record[columns.firstName];
+      const lastName = record[columns.lastName];
+
+      if (firstName && lastName) {
+        validRecords.push({
+          firstName: String(firstName).trim(),
+          lastName: String(lastName).trim(),
+          email: record[columns.email] ? String(record[columns.email]).trim().toLowerCase() : null,
+          phone: record[columns.phone] ? String(record[columns.phone]).trim() : null,
+          precinctId: record[columns.precinctId] ? parseInt(record[columns.precinctId], 10) : null,
+          party: record[columns.party] ? String(record[columns.party]).trim() : null
+        });
+      } else {
+        skippedCount++;
+      }
+    });
+
+    if (validRecords.length === 0) {
+      return res.status(400).json({ error: 'No valid records in file (need first_name and last_name)' });
+    }
+
+    const client = await pool.connect();
+    let importedCount = 0;
+    try {
+      await client.query('BEGIN');
+
+      for (const record of validRecords) {
+        try {
+          await client.query(
+            `INSERT INTO voters (first_name, last_name, email, phone, precinct_id, party_affiliation)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (email) DO NOTHING`,
+            [record.firstName, record.lastName, record.email, record.phone, record.precinctId, record.party]
+          );
+          importedCount++;
+        } catch (err) {
+          console.warn(`⚠️ Failed to import voter ${record.firstName} ${record.lastName}:`, err.message);
+        }
+      }
+
+      await client.query('COMMIT');
+
+      // Archive file to S3 (async, non-blocking)
+      try {
+        const fileKey = `voter-uploads/${Date.now()}-${req.file.originalname}`;
+        await uploadFile(fileKey, req.file.buffer, req.file.mimetype);
+        console.log(`✅ Archived voter CSV to S3: ${fileKey}`);
+      } catch (err) {
+        console.warn(`⚠️ Failed to archive file to S3: ${err.message}`);
+      }
+
+      await putMetric('VoterImportCount', importedCount);
+
+      res.json({
+        success: true,
+        imported: importedCount,
+        skipped: skippedCount,
+        total: validRecords.length
+      });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('Voter import error:', err);
+    res.status(500).json({ error: `Import failed: ${err.message}` });
   }
 });
 

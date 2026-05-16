@@ -1,4 +1,5 @@
 const path = require('path');
+const { wrapPool } = require('./queryWrapper');
 
 // Load .env only in development
 if (process.env.NODE_ENV !== 'production') {
@@ -84,6 +85,7 @@ if (dbUrl.startsWith('sqlite:')) {
     end: () => db.close()
   };
 
+  wrapPool(pool);
   module.exports = pool;
 } else {
   // PostgreSQL for production/RDS, or mock DB for local development
@@ -176,6 +178,7 @@ if (dbUrl.startsWith('sqlite:')) {
       }
     };
 
+    wrapPool(pool);
     module.exports = pool;
   }
 }

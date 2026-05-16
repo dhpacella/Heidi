@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Outreach</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #0B1929;
+      --navy-mid: #122338;
+      --navy-light: #1A3550;
+      --gold: #F5A623;
+      --gold-light: #FBBF48;
+      --text: #EEF2F7;
+      --text-muted: #8BA3BE;
+      --surface: #122338;
+      --surface-2: #1A3550;
+      --border: rgba(245, 166, 35, 0.2);
+    }
+
+    body.light-mode {
+      --navy: #F5F5F5;
+      --navy-mid: #FFFFFF;
+      --navy-light: #F0F0F0;
+      --text: #1A1A1A;
+      --text-muted: #666666;
+      --surface: #FFFFFF;
+      --surface-2: #F9F9F9;
+      --border: rgba(245, 166, 35, 0.15);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      font-family: 'Barlow', sans-serif;
+      background: var(--navy);
+      color: var(--text);
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: var(--navy-mid);
+      border-bottom: 3px solid var(--gold);
+      padding: 20px 32px;
+      border-radius: 0;
+      margin: -20px -20px 30px -20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+      position: relative;
+    }
+
+    header h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--gold);
+      flex: 1;
+      min-width: 250px;
+    }
+
+    .header-left, .header-right {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border: 1px solid var(--gold);
+      border-radius: 6px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: var(--gold);
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn:hover {
+      background: rgba(245, 166, 35, 0.1);
+      border-color: var(--gold-light);
+    }
+
+    .btn-primary {
+      background: var(--gold);
+      color: var(--navy);
+      border-color: var(--gold);
+    }
+
+    .btn-primary:hover {
+      background: var(--gold-light);
+      border-color: var(--gold-light);
+    }
+
+    .btn-primary:disabled {
+      background: var(--text-muted);
+      color: var(--navy);
+      border-color: var(--text-muted);
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .btn-dark-toggle {
+      background: rgba(245, 166, 35, 0.1);
+      border-color: var(--gold);
+    }
+
+    .btn-logout {
+      background: rgba(255, 77, 109, 0.15);
+      color: #FF4D6D;
+      border-color: #FF4D6D;
+    }
+
+    .btn-logout:hover {
+      background: rgba(255, 77, 109, 0.25);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .card h2 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+
+    .upload-area {
+      border: 2px dashed var(--gold);
+      border-radius: 8px;
+      padding: 48px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: rgba(245, 166, 35, 0.05);
+    }
+
+    .upload-area:hover {
+      background: rgba(245, 166, 35, 0.1);
+      border-color: var(--gold-light);
+    }
+
+    .upload-area.drag-over {
+      background: rgba(245, 166, 35, 0.15);
+      border-color: var(--gold-light);
+    }
+
+    .upload-input {
+      display: none;
+    }
+
+    .file-info {
+      background: rgba(245, 166, 35, 0.08);
+      border-left: 3px solid var(--gold);
+      padding: 16px;
+      margin: 16px 0;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .preview-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 13px;
+    }
+
+    .preview-table th {
+      background: var(--surface-2);
+      color: var(--gold);
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .preview-table td {
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+    }
+
+    .preview-table tbody tr:hover {
+      background: rgba(245, 166, 35, 0.05);
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 13px;
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 16px;
+      height: 40px;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 12px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 13px;
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 12px;
+      resize: vertical;
+      min-height: 220px;
+    }
+
+    textarea:focus, input:focus {
+      outline: none;
+      border-color: var(--gold);
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-btn {
+      padding: 8px 12px;
+      background: rgba(245, 166, 35, 0.1);
+      color: var(--gold);
+      border: 1px solid var(--gold);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .toolbar-btn:hover {
+      background: rgba(245, 166, 35, 0.2);
+      border-color: var(--gold-light);
+    }
+
+    .template-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .template-btn {
+      padding: 12px;
+      background: rgba(245, 166, 35, 0.1);
+      color: var(--gold);
+      border: 1px solid var(--gold);
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+
+    .template-btn:hover {
+      background: rgba(245, 166, 35, 0.2);
+      border-color: var(--gold-light);
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal h2 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+
+    .modal p {
+      font-size: 13px;
+      margin: 12px 0;
+      color: var(--text);
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      justify-content: flex-end;
+    }
+
+    .recipients-preview {
+      background: rgba(245, 166, 35, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+      font-size: 13px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 768px) {
+      header {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      header h1 {
+        flex: none;
+        min-width: auto;
+      }
+
+      .upload-area {
+        padding: 30px 15px;
+      }
+
+      .template-buttons {
+        grid-template-columns: 1fr;
+      }
+
+      .modal-content {
+        width: 95%;
+        padding: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-left">
+        <a href="/dashboard" class="btn">← Dashboard</a>
+        <a href="/email-history" class="btn">📜 History</a>
+        <a href="/subscribers.html" class="btn">👥 Subscribers</a>
+        <a href="/campaign-reports.html" class="btn">📊 Reports</a>
+      </div>
+      <h1>📧 Email Outreach</h1>
+      <div class="header-right">
+        <button class="btn btn-dark-toggle" onclick="toggleTheme()">🌙 Dark</button>
+        <button class="btn btn-logout" onclick="logout()">Logout</button>
+      </div>
+    </header>
+
+    <!-- Upload Card -->
+    <div class="card">
+      <h2>📎 Email Recipients</h2>
+      <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border);">
+        <button onclick="switchTab('upload')" id="tab-upload" style="padding: 12px 16px; border: none; background: transparent; color: var(--gold); font-weight: 600; border-bottom: 3px solid var(--gold); cursor: pointer;">📁 Upload CSV</button>
+        <button onclick="switchTab('list')" id="tab-list" style="padding: 12px 16px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; border-bottom: 3px solid transparent; cursor: pointer;">📊 Choose List</button>
+        <button onclick="switchTab('test')" id="tab-test" style="padding: 12px 16px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; border-bottom: 3px solid transparent; cursor: pointer;">🧪 Manual Test</button>
+      </div>
+
+      <div id="tab-upload-content">
+      <div class="upload-area" id="uploadArea">
+        <p style="margin-bottom: 8px; font-size: 16px;">📁 Drag and drop CSV or Excel file</p>
+        <p style="font-size: 13px; color: var(--text-muted);">or click to select</p>
+        <input type="file" id="fileInput" class="upload-input" accept=".csv,.xlsx">
+      </div>
+      <div id="fileInfo" style="display: none;">
+        <div class="file-info">
+          <strong>✅ File uploaded:</strong> <span id="fileName"></span> — <span id="rowCount"></span> rows
+          <button class="btn" id="dedupeBtn" onclick="removeDuplicates()" style="margin-left: 12px; padding: 6px 14px; font-size: 12px;">🧹 Remove Duplicates</button>
+          <span id="dedupeInfo" style="margin-left: 12px; color: var(--gold); display: none;"></span>
+        </div>
+        <table class="preview-table">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+            </tr>
+          </thead>
+          <tbody id="previewBody"></tbody>
+        </table>
+      </div>
+      </div>
+
+      <div id="tab-list-content" style="display: none;">
+        <label style="display: block; margin-bottom: 12px; font-weight: 600;">Select a List</label>
+        <select id="listSelect" onchange="loadListSegments()" style="width: 100%; padding: 10px; margin-bottom: 16px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px;">
+          <option value="">-- Loading lists --</option>
+        </select>
+
+        <div id="segmentContainer" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 12px; font-weight: 600;">Select a Segment (Optional)</label>
+          <select id="segmentSelect" onchange="loadSegmentCount()" style="width: 100%; padding: 10px; margin-bottom: 16px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px;">
+            <option value="">-- All subscribers --</option>
+          </select>
+        </div>
+
+        <div id="listPreview" style="background: rgba(245, 166, 35, 0.08); border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: none;">
+          <div style="color: var(--gold); font-weight: 600; margin-bottom: 8px;"><span id="listCount">0</span> subscribers</div>
+          <button class="btn btn-primary" onclick="confirmListSelection()" style="width: 100%;">✓ Use This Selection</button>
+        </div>
+      </div>
+
+      <div id="tab-test-content" style="display: none;">
+        <label style="display: block; margin-bottom: 12px; font-weight: 600;">Test With Manual Entry</label>
+        <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+          <div style="flex: 1;">
+            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">Email Address</label>
+            <input type="email" id="testEmail" placeholder="test@example.com" style="width: 100%; padding: 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px;">
+          </div>
+          <div style="flex: 1;">
+            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">First Name</label>
+            <input type="text" id="testFirstName" placeholder="John" style="width: 100%; padding: 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px;">
+          </div>
+          <div style="flex: 1;">
+            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">Last Name</label>
+            <input type="text" id="testLastName" placeholder="Doe" style="width: 100%; padding: 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px;">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="addTestRecipient()" style="width: 100%;">✓ Use for Testing</button>
+        <div id="testRecipientInfo" style="background: rgba(245, 166, 35, 0.08); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-top: 16px; display: none;">
+          <div style="color: var(--gold); font-weight: 600; margin-bottom: 8px;">1 test recipient</div>
+          <table class="preview-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span id="testEmailDisplay">-</span></td>
+                <td><span id="testFirstNameDisplay">-</span></td>
+                <td><span id="testLastNameDisplay">-</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compose Card -->
+    <div class="card">
+      <h2>✏️ Compose Email</h2>
+
+      <div style="display: flex; gap: 12px; margin-bottom: 16px; align-items: flex-end;">
+        <div style="flex: 1;">
+          <label for="senderName" style="font-size: 12px;">Sender Name</label>
+          <input type="text" id="senderName" placeholder="e.g., Heidi Campaign" style="margin-bottom: 0;">
+        </div>
+        <div style="flex: 1;">
+          <label for="senderEmail" style="font-size: 12px;">Sender Email</label>
+          <input type="email" id="senderEmail" placeholder="e.g., hello@example.com" style="margin-bottom: 0;">
+        </div>
+        <button class="btn btn-primary" onclick="saveSenderInfo()" style="padding: 10px 20px;">💾 Save</button>
+      </div>
+
+      <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+        <select id="templateSelect" onchange="loadTemplate()" style="flex: 1; padding: 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-family: 'Barlow', sans-serif; font-size: 13px;">
+          <option value="">-- Load saved template --</option>
+        </select>
+      </div>
+
+      <label for="subject">Subject Line</label>
+      <input type="text" id="subject" placeholder="Email subject">
+
+      <label for="htmlBody" style="margin-top: 16px;">Message Body (HTML)</label>
+
+      <div class="toolbar">
+        <button class="toolbar-btn" onclick="insertTag('{first_name}')">👤 {first_name}</button>
+        <button class="toolbar-btn" onclick="insertTag('{last_name}')">👤 {last_name}</button>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="margin-bottom: 10px;">Message Templates</label>
+        <div class="template-buttons">
+          <button class="template-btn" onclick="applyTemplate('election')">🗳️ Election Day</button>
+          <button class="template-btn" onclick="applyTemplate('volunteer')">🤝 Volunteer</button>
+          <button class="template-btn" onclick="applyTemplate('event')">📅 Event</button>
+          <button class="template-btn" onclick="applyTemplate('gotv')">📢 GOTV</button>
+          <button class="template-btn" onclick="applyTemplate('donate')">💰 Donate</button>
+        </div>
+      </div>
+
+      <!-- AI Email Assistant -->
+      <div style="margin-bottom: 16px; padding: 16px; background: rgba(123, 184, 245, 0.08); border: 1px solid rgba(123, 184, 245, 0.3); border-radius: 6px;">
+        <label style="margin-bottom: 10px; color: #7BB8F5; font-weight: 600;">✨ AI Email Assistant</label>
+        <div class="template-buttons" style="margin-bottom: 8px;">
+          <button class="template-btn" onclick="generateEmailWithAI()" style="border-color: rgba(123, 184, 245, 0.4); color: #7BB8F5;">🤖 Generate Email</button>
+          <button class="template-btn" onclick="suggestSubjectsWithAI()" style="border-color: rgba(123, 184, 245, 0.4); color: #7BB8F5;">💡 Suggest Subjects</button>
+          <button class="template-btn" onclick="improveEmailWithAI()" style="border-color: rgba(123, 184, 245, 0.4); color: #7BB8F5;">✨ Improve Email</button>
+        </div>
+        <input type="text" id="aiIdea" placeholder="Describe your email idea (e.g., 'Get out the vote reminder')" style="margin-bottom: 8px;">
+        <div id="aiStatus" style="font-size: 12px; color: #7BB8F5; display: none; margin-top: 8px;"></div>
+      </div>
+
+      <!-- HTML vs Text Toggle -->
+      <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--surface-2); border-radius: 6px;">
+        <label style="font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin: 0;">Compose Mode:</label>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="mode-btn active" id="htmlModeBtn" onclick="switchMode('html')" style="padding: 6px 16px; font-size: 12px; font-weight: 600; background: var(--gold); color: var(--navy); border: none; border-radius: 4px; cursor: pointer; transition: all 0.2s;">
+            📄 HTML
+          </button>
+          <button class="mode-btn" id="textModeBtn" onclick="switchMode('text')" style="padding: 6px 16px; font-size: 12px; font-weight: 600; background: transparent; color: var(--text-muted); border: 1px solid var(--text-muted); border-radius: 4px; cursor: pointer; transition: all 0.2s;">
+            📝 Plain Text
+          </button>
+        </div>
+      </div>
+
+      <textarea id="htmlBody" placeholder="<p>Your email message here...</p>&#10;<p>Hello {first_name}!</p>" style="display: block;"></textarea>
+      <textarea id="textBody" placeholder="Your email message here...&#10;Hello {first_name}!" style="display: none;"></textarea>
+
+      <div style="display: flex; gap: 12px; margin-top: 12px;">
+        <button class="btn" onclick="previewEmail()">👁️ Preview</button>
+        <button class="btn" onclick="saveAsTemplate()">💾 Save as Template</button>
+      </div>
+    </div>
+
+    <!-- Recipients & Cost Card -->
+    <div class="card">
+      <h2>👥 Recipients & Cost</h2>
+      <div id="recipientInfo" class="recipients-preview">
+        <p style="color: var(--text-muted);">Upload a CSV or Excel file to see recipient count</p>
+      </div>
+      <div style="background: rgba(93, 224, 176, 0.08); border: 1px solid rgba(93, 224, 176, 0.3); border-left: 3px solid #5DE0B0; border-radius: 8px; padding: 16px; margin-top: 16px;">
+        <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px;">💰 Estimated Cost</div>
+        <div style="font-family: 'Barlow Condensed', sans-serif; font-size: 32px; font-weight: 700; color: #5DE0B0; line-height: 1;">
+          $<span id="costDisplay">0.00</span>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
+          <span id="costBreakdown">0 recipients × $0.0001 per email</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Send Button -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <button class="btn btn-primary" id="sendBtn" onclick="confirmSend()" style="padding: 12px 48px; font-size: 14px; font-weight: 700;" disabled>
+        📧 Send Email
+      </button>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirmModal" class="modal">
+    <div class="modal-content">
+      <h2>Confirm Send</h2>
+      <p><strong>Recipients:</strong> <span id="modalRecipients">0</span></p>
+      <p><strong>Subject:</strong> <span id="modalSubject"></span></p>
+      <p><strong>Cost:</strong> <span id="modalCost">$0.00</span></p>
+      <p style="font-size: 12px; color: var(--text-muted); margin-top: 16px;">This will send emails to all recipients in your file.</p>
+      <div class="modal-buttons">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="sendNow()">Send Now</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preview Modal -->
+  <div id="previewModal" class="modal">
+    <div class="modal-content">
+      <h2>Email Preview</h2>
+      <div id="previewContent" style="background: var(--surface-2); padding: 16px; border-radius: 8px; margin: 16px 0; max-height: 400px; overflow-y: auto; border: 1px solid var(--border);"></div>
+      <div class="modal-buttons">
+        <button class="btn btn-primary" onclick="closePreviewModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      document.body.classList.toggle('light-mode');
+      const isDark = document.body.classList.contains('light-mode');
+      localStorage.setItem('theme', isDark ? 'light' : 'dark');
+      document.querySelector('.btn-dark-toggle').textContent = isDark ? '☀️ Light' : '🌙 Dark';
+    }
+
+    function initTheme() {
+      const saved = localStorage.getItem('theme') || 'dark';
+      if (saved === 'light') document.body.classList.add('light-mode');
+      document.querySelector('.btn-dark-toggle').textContent = saved === 'light' ? '☀️ Light' : '🌙 Dark';
+    }
+
+    function logout() {
+      fetch('/logout', { method: 'POST' }).then(() => window.location.href = '/login');
+    }
+
+    let uploadedData = null;
+    let fullData = null;
+    let deduped = false;
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+
+    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
+    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+    uploadArea.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadArea.classList.remove('drag-over');
+      if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        handleFileUpload();
+      }
+    });
+
+    fileInput.addEventListener('change', handleFileUpload);
+
+    async function handleFileUpload() {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          let data = [];
+          if (file.name.endsWith('.csv')) {
+            const text = e.target.result;
+            const lines = text.split('\n').filter(l => l.trim());
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+            for (let i = 1; i < lines.length; i++) {
+              const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+              const obj = {};
+              headers.forEach((h, idx) => obj[h] = values[idx] || '');
+              data.push(obj);
+            }
+          }
+          fullData = data;
+          uploadedData = data.slice(0, 5);
+          deduped = false;
+          document.getElementById('dedupeInfo').style.display = 'none';
+          document.getElementById('dedupeBtn').style.display = 'inline-block';
+          showFileInfo(file.name, data.length);
+          updateRecipientCount(data.length);
+          updateSendButton();
+        } catch (err) {
+          alert('Error parsing file: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function showFileInfo(filename, rowCount) {
+      const info = document.getElementById('fileInfo');
+      info.style.display = 'block';
+      document.getElementById('fileName').textContent = filename;
+      document.getElementById('rowCount').textContent = rowCount;
+
+      const tbody = document.getElementById('previewBody');
+      tbody.innerHTML = '';
+      uploadedData.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${row.email || row.Email || ''}</td>
+          <td>${row.first_name || row.firstName || row.First_Name || ''}</td>
+          <td>${row.last_name || row.lastName || row.Last_Name || ''}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function removeDuplicates() {
+      if (!fullData || fullData.length === 0) return;
+
+      const emailColumn = findEmailColumn(Object.keys(fullData[0]));
+      if (!emailColumn) {
+        alert('Could not find email column');
+        return;
+      }
+
+      const seenEmails = new Set();
+      const deduped = [];
+      let dupCount = 0;
+
+      fullData.forEach(row => {
+        const email = (row[emailColumn] || '').toLowerCase().trim();
+        if (email && !seenEmails.has(email)) {
+          seenEmails.add(email);
+          deduped.push(row);
+        } else if (email) {
+          dupCount++;
+        }
+      });
+
+      fullData = deduped;
+      uploadedData = deduped.slice(0, 5);
+      deduped = true;
+
+      const info = document.getElementById('dedupeInfo');
+      info.textContent = `✅ Removed ${dupCount} duplicate${dupCount !== 1 ? 's' : ''}`;
+      info.style.display = 'inline';
+      document.getElementById('dedupeBtn').style.display = 'none';
+
+      showFileInfo(document.getElementById('fileName').textContent, fullData.length);
+      updateRecipientCount(fullData.length);
+      updateSendButton();
+    }
+
+    function findEmailColumn(headers) {
+      for (let h of headers) {
+        const lc = h.toLowerCase();
+        if (lc === 'email' || lc === 'e-mail' || lc === 'email_address') return h;
+      }
+      return null;
+    }
+
+    function updateRecipientCount(count) {
+      document.getElementById('recipientInfo').innerHTML = `<p style="color: var(--text);"><strong>✅ Recipients:</strong> ${count.toLocaleString()} valid email addresses</p>`;
+      const cost = (count * 0.0001).toFixed(2);
+      document.getElementById('costDisplay').textContent = cost;
+      document.getElementById('costBreakdown').textContent = `${count.toLocaleString()} recipients × $0.0001 per email`;
+    }
+
+    function updateSendButton() {
+      const sendBtn = document.getElementById('sendBtn');
+      const subject = document.getElementById('subject').value.trim();
+      const htmlBody = document.getElementById('htmlBody');
+      const textBody = document.getElementById('textBody');
+      const isHtmlMode = htmlBody.style.display !== 'none';
+      const body = isHtmlMode ? htmlBody.value.trim() : textBody.value.trim();
+      const hasFile = fileInput.files.length > 0;
+      const hasUploadedData = uploadedData && uploadedData.length > 0;
+      const hasListSelected = selectedListId != null;
+      const hasRecipients = hasFile || hasUploadedData || hasListSelected;
+      sendBtn.disabled = !hasRecipients || !subject || !body;
+    }
+
+    document.getElementById('subject').addEventListener('input', updateSendButton);
+    document.getElementById('htmlBody').addEventListener('input', updateSendButton);
+    document.getElementById('textBody').addEventListener('input', updateSendButton);
+
+    function switchMode(mode) {
+      const htmlBody = document.getElementById('htmlBody');
+      const textBody = document.getElementById('textBody');
+      const htmlBtn = document.getElementById('htmlModeBtn');
+      const textBtn = document.getElementById('textModeBtn');
+
+      if (mode === 'html') {
+        htmlBody.style.display = 'block';
+        textBody.style.display = 'none';
+        htmlBtn.style.background = 'var(--gold)';
+        htmlBtn.style.color = 'var(--navy)';
+        htmlBtn.style.borderColor = 'var(--gold)';
+        textBtn.style.background = 'transparent';
+        textBtn.style.color = 'var(--text-muted)';
+        textBtn.style.borderColor = 'var(--text-muted)';
+        htmlBtn.classList.add('active');
+        textBtn.classList.remove('active');
+      } else {
+        htmlBody.style.display = 'none';
+        textBody.style.display = 'block';
+        textBtn.style.background = 'var(--gold)';
+        textBtn.style.color = 'var(--navy)';
+        textBtn.style.borderColor = 'var(--gold)';
+        htmlBtn.style.background = 'transparent';
+        htmlBtn.style.color = 'var(--text-muted)';
+        htmlBtn.style.borderColor = 'var(--text-muted)';
+        textBtn.classList.add('active');
+        htmlBtn.classList.remove('active');
+      }
+      updateSendButton();
+    }
+
+    function applyTemplate(type) {
+      const templates = {
+        election: '<p>Hello {first_name},</p>\n<p>Election Day is coming! Make sure to vote. Your polling location is [LOCATION].</p>\n<p>Questions? Contact us at [PHONE].</p>',
+        volunteer: '<p>Hello {first_name},</p>\n<p>We\'re looking for volunteers! Interested in helping?</p>\n<p><a href="[SIGNUP_LINK]">Sign up to volunteer</a></p>',
+        event: '<p>Hello {first_name},</p>\n<p>You\'re invited to our upcoming event!</p>\n<p><strong>Date:</strong> [DATE]<br><strong>Time:</strong> [TIME]<br><strong>Location:</strong> [LOCATION]</p>\n<p><a href="[RSVP_LINK]">RSVP here</a></p>',
+        gotv: '<p>Hello {first_name},</p>\n<p>Have you voted yet? Every vote matters! <a href="[LOCATION_LINK]">Find your polling location</a></p>',
+        donate: '<p>Hello {first_name},</p>\n<p>Support our campaign with a donation.</p>\n<p><a href="[DONATE_LINK]">Donate now</a></p>'
+      };
+      document.getElementById('htmlBody').value = templates[type] || '';
+      updateSendButton();
+    }
+
+    function insertTag(tag) {
+      const htmlBody = document.getElementById('htmlBody');
+      const isHtmlMode = htmlBody.style.display !== 'none';
+      const textarea = isHtmlMode ? htmlBody : document.getElementById('textBody');
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const before = textarea.value.substring(0, start);
+      const after = textarea.value.substring(end);
+      textarea.value = before + tag + after;
+      updateSendButton();
+    }
+
+    function previewEmail() {
+      const htmlBody = document.getElementById('htmlBody');
+      const textBody = document.getElementById('textBody');
+      const isHtmlMode = htmlBody.style.display !== 'none';
+      const content = isHtmlMode ? htmlBody.value : '<p>' + textBody.value.replace(/\n/g, '</p><p>') + '</p>';
+      document.getElementById('previewContent').innerHTML = content;
+      document.getElementById('previewModal').classList.add('show');
+    }
+
+    function closePreviewModal() {
+      document.getElementById('previewModal').classList.remove('show');
+    }
+
+    function confirmSend() {
+      const subject = document.getElementById('subject').value;
+      const recipientCount = uploadedData ? uploadedData.length : 0;
+      const cost = (recipientCount * 0.0001).toFixed(4);
+      document.getElementById('modalSubject').textContent = subject;
+      document.getElementById('modalRecipients').textContent = recipientCount.toLocaleString();
+      document.getElementById('modalCost').textContent = '$' + cost;
+      document.getElementById('confirmModal').classList.add('show');
+    }
+
+    function closeModal() {
+      document.getElementById('confirmModal').classList.remove('show');
+    }
+
+    async function sendNow() {
+      closeModal();
+      const subject = document.getElementById('subject').value;
+      const htmlBodyElem = document.getElementById('htmlBody');
+      const textBodyElem = document.getElementById('textBody');
+      const isHtmlMode = htmlBodyElem.style.display !== 'none';
+      const body = isHtmlMode ? htmlBodyElem.value : textBodyElem.value;
+      const senderName = document.getElementById('senderName').value.trim();
+      const senderEmail = document.getElementById('senderEmail').value.trim();
+
+      const isListTab = document.getElementById('tab-list-content').style.display === 'block' &&
+                        document.getElementById('tab-upload-content').style.display === 'none';
+      const isTestTab = document.getElementById('tab-test-content').style.display === 'block';
+      const isUploadTab = document.getElementById('tab-upload-content').style.display === 'block';
+
+      const formData = new FormData();
+      formData.append('subject', subject);
+      formData.append('htmlBody', isHtmlMode ? body : '');
+      formData.append('plainTextBody', isHtmlMode ? '' : body);
+      formData.append('fromAddress', senderEmail);
+      formData.append('fromName', senderName);
+
+      if (isListTab && selectedListId) {
+        // List mode: send to list
+        formData.append('list_id', selectedListId);
+        if (selectedSegmentId) {
+          formData.append('segment_id', selectedSegmentId);
+        }
+      } else if (isTestTab && uploadedData && uploadedData.length > 0) {
+        // Test mode: send to test recipients (pass as JSON array)
+        formData.append('recipientEmails', JSON.stringify(uploadedData.map(r => r.email)));
+      } else if (isUploadTab) {
+        // Upload mode: send to uploaded file
+        const file = fileInput.files[0];
+        if (!file) {
+          alert('❌ No file selected');
+          return;
+        }
+        formData.append('file', file);
+      } else {
+        alert('❌ Please select recipients (upload file, choose list, or add test data)');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/email/send', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          alert(`✅ Email sent to ${result.sent} recipients`);
+          if (!isListTab) {
+            fileInput.value = '';
+            document.getElementById('fileInfo').style.display = 'none';
+          }
+          document.getElementById('subject').value = '';
+          document.getElementById('htmlBody').value = '';
+          document.getElementById('textBody').value = '';
+          updateSendButton();
+        } else {
+          alert('❌ Error: ' + (result.error || result.message));
+        }
+      } catch (err) {
+        alert('❌ Send failed: ' + err.message);
+      }
+    }
+
+    // Tab switching
+    function switchTab(tab) {
+      document.getElementById('tab-upload-content').style.display = tab === 'upload' ? 'block' : 'none';
+      document.getElementById('tab-list-content').style.display = tab === 'list' ? 'block' : 'none';
+      document.getElementById('tab-test-content').style.display = tab === 'test' ? 'block' : 'none';
+      document.getElementById('tab-upload').style.color = tab === 'upload' ? 'var(--gold)' : 'var(--text-muted)';
+      document.getElementById('tab-upload').style.borderBottomColor = tab === 'upload' ? 'var(--gold)' : 'transparent';
+      document.getElementById('tab-list').style.color = tab === 'list' ? 'var(--gold)' : 'var(--text-muted)';
+      document.getElementById('tab-list').style.borderBottomColor = tab === 'list' ? 'var(--gold)' : 'transparent';
+      document.getElementById('tab-test').style.color = tab === 'test' ? 'var(--gold)' : 'var(--text-muted)';
+      document.getElementById('tab-test').style.borderBottomColor = tab === 'test' ? 'var(--gold)' : 'transparent';
+      if (tab === 'list') loadLists();
+    }
+
+    function addTestRecipient() {
+      const email = document.getElementById('testEmail').value.trim();
+      const firstName = document.getElementById('testFirstName').value.trim();
+      const lastName = document.getElementById('testLastName').value.trim();
+
+      if (!email) {
+        alert('❌ Email address is required');
+        return;
+      }
+
+      fullData = [{ email, first_name: firstName, last_name: lastName }];
+      uploadedData = fullData;
+      deduped = false;
+
+      document.getElementById('testEmailDisplay').textContent = email;
+      document.getElementById('testFirstNameDisplay').textContent = firstName || '(empty)';
+      document.getElementById('testLastNameDisplay').textContent = lastName || '(empty)';
+      document.getElementById('testRecipientInfo').style.display = 'block';
+
+      updateRecipientCount(1);
+      updateSendButton();
+    }
+
+    async function loadLists() {
+      try {
+        const res = await fetch('/api/lists');
+        const data = await res.json();
+        const select = document.getElementById('listSelect');
+        select.innerHTML = '<option value="">-- Select a list --</option>';
+        if (data.lists) {
+          data.lists.forEach(list => {
+            select.innerHTML += `<option value="${list.id}:${list.subscriber_count}">${list.name} (${list.subscriber_count})</option>`;
+          });
+        }
+      } catch (err) {
+        console.error('Error loading lists:', err);
+      }
+    }
+
+    let selectedListId = null;
+    let selectedSegmentId = null;
+
+    async function loadListSegments() {
+      const val = document.getElementById('listSelect').value;
+      if (!val) {
+        document.getElementById('segmentContainer').style.display = 'none';
+        document.getElementById('listPreview').style.display = 'none';
+        return;
+      }
+
+      const [listId, count] = val.split(':');
+      selectedListId = listId;
+      selectedSegmentId = null;
+
+      document.getElementById('segmentContainer').style.display = 'block';
+      document.getElementById('listCount').textContent = count;
+      document.getElementById('listPreview').style.display = 'block';
+      document.getElementById('listPreview').style.backgroundColor = 'rgba(245, 166, 35, 0.08)';
+
+      try {
+        const res = await fetch(`/api/lists/${listId}/segments`);
+        const data = await res.json();
+        const segmentSelect = document.getElementById('segmentSelect');
+        segmentSelect.innerHTML = '<option value="">-- All subscribers --</option>';
+        if (data.segments && data.segments.length > 0) {
+          data.segments.forEach(seg => {
+            segmentSelect.innerHTML += `<option value="${seg.id}">${seg.name}</option>`;
+          });
+        }
+      } catch (err) {
+        console.error('Error loading segments:', err);
+      }
+
+      fullData = Array(parseInt(count)).fill({email: 'subscriber@example.com'});
+      uploadedData = fullData.slice(0, 5);
+      updateRecipientCount(parseInt(count));
+      updateSendButton();
+    }
+
+    async function loadSegmentCount() {
+      const segmentId = document.getElementById('segmentSelect').value;
+      selectedSegmentId = segmentId || null;
+
+      if (!segmentId) {
+        const [, count] = document.getElementById('listSelect').value.split(':');
+        document.getElementById('listCount').textContent = count;
+        fullData = Array(parseInt(count)).fill({email: 'subscriber@example.com'});
+        uploadedData = fullData.slice(0, 5);
+        updateRecipientCount(parseInt(count));
+        updateSendButton();
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/lists/${selectedListId}/segments/${segmentId}/subscribers`);
+        const data = await res.json();
+        const count = data.count || 0;
+        document.getElementById('listCount').textContent = count;
+        fullData = (data.subscribers || []).map(s => ({email: s.email, first_name: s.first_name, last_name: s.last_name}));
+        uploadedData = fullData.slice(0, 5);
+        updateRecipientCount(count);
+        updateSendButton();
+      } catch (err) {
+        console.error('Error loading segment:', err);
+      }
+    }
+
+    function confirmListSelection() {
+      // Recipient count already set, proceed to compose
+      alert('Selection confirmed! Now compose your email.');
+    }
+
+    async function loadTemplates() {
+      try {
+        const res = await fetch('/api/email/templates');
+        const data = await res.json();
+        const select = document.getElementById('templateSelect');
+        select.innerHTML = '<option value="">-- Load saved template --</option>';
+        if (data.templates && data.templates.length > 0) {
+          data.templates.forEach(template => {
+            select.innerHTML += `<option value="${template.id}">${template.name}</option>`;
+          });
+        }
+      } catch (err) {
+        console.error('Error loading templates:', err);
+      }
+    }
+
+    async function loadTemplate() {
+      const templateId = document.getElementById('templateSelect').value;
+      if (!templateId) return;
+
+      try {
+        const res = await fetch(`/api/email/templates`);
+        const data = await res.json();
+        const template = data.templates.find(t => t.id == templateId);
+        if (template) {
+          document.getElementById('subject').value = template.subject;
+          document.getElementById('htmlBody').value = template.html_body;
+          document.getElementById('templateSelect').value = '';
+        }
+      } catch (err) {
+        alert('Error loading template: ' + err.message);
+      }
+    }
+
+    async function saveAsTemplate() {
+      const subject = document.getElementById('subject').value.trim();
+      const htmlBody = document.getElementById('htmlBody').value.trim();
+
+      if (!subject) {
+        alert('Enter a subject line first');
+        return;
+      }
+      if (!htmlBody) {
+        alert('Enter a message body first');
+        return;
+      }
+
+      const name = prompt('Template name (e.g., "Election Day Message"):');
+      if (!name) return;
+
+      try {
+        const res = await fetch('/api/email/templates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, subject, htmlBody })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          alert('✅ Template saved!');
+          loadTemplates();
+        } else {
+          alert('❌ Error: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Error saving template: ' + err.message);
+      }
+    }
+
+    function saveSenderInfo() {
+      const senderName = document.getElementById('senderName').value.trim();
+      const senderEmail = document.getElementById('senderEmail').value.trim();
+
+      if (!senderName) {
+        alert('Please enter a sender name');
+        return;
+      }
+      if (!senderEmail) {
+        alert('Please enter a sender email');
+        return;
+      }
+
+      localStorage.setItem('emailSenderName', senderName);
+      localStorage.setItem('emailSenderEmail', senderEmail);
+      alert('✅ Sender info saved:\n' + senderName + ' <' + senderEmail + '>');
+    }
+
+    function loadSenderInfo() {
+      const savedName = localStorage.getItem('emailSenderName');
+      const savedEmail = localStorage.getItem('emailSenderEmail');
+      if (savedName) {
+        document.getElementById('senderName').value = savedName;
+      }
+      if (savedEmail) {
+        document.getElementById('senderEmail').value = savedEmail;
+      }
+    }
+
+    function showAiStatus(message, isError = false) {
+      const status = document.getElementById('aiStatus');
+      status.textContent = message;
+      status.style.color = isError ? '#FF6B6B' : '#7BB8F5';
+      status.style.display = 'block';
+      setTimeout(() => { status.style.display = 'none'; }, 5000);
+    }
+
+    async function generateEmailWithAI() {
+      const idea = document.getElementById('aiIdea').value.trim();
+      if (!idea) {
+        showAiStatus('❌ Enter your email idea first', true);
+        return;
+      }
+
+      showAiStatus('🤖 Generating email with AI...');
+      try {
+        const res = await fetch('/api/ai/generate-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idea, campaignName: document.getElementById('subject').value || 'Campaign' })
+        });
+        const data = await res.json();
+        if (data.html) {
+          document.getElementById('htmlBody').value = data.html;
+          switchMode('html');
+          updateSendButton();
+          showAiStatus('✅ Email generated! Review and edit as needed.');
+        } else {
+          showAiStatus('❌ ' + (data.error || 'Failed to generate'), true);
+        }
+      } catch (err) {
+        showAiStatus('❌ ' + err.message, true);
+      }
+    }
+
+    async function suggestSubjectsWithAI() {
+      const htmlBody = document.getElementById('htmlBody').value.trim();
+      const textBody = document.getElementById('textBody').value.trim();
+      const body = htmlBody || textBody;
+
+      if (!body) {
+        showAiStatus('❌ Write an email first', true);
+        return;
+      }
+
+      showAiStatus('💡 Generating subject suggestions...');
+      try {
+        const res = await fetch('/api/ai/suggest-subjects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ htmlBody: body })
+        });
+        const data = await res.json();
+        if (data.subjects && data.subjects.length > 0) {
+          const choice = prompt(`AI Suggested 3 subject lines:\n\n1. ${data.subjects[0]}\n\n2. ${data.subjects[1]}\n\n3. ${data.subjects[2]}\n\nEnter 1, 2, or 3 to use, or 0 to cancel:`);
+          if (choice === '1' || choice === '2' || choice === '3') {
+            document.getElementById('subject').value = data.subjects[parseInt(choice) - 1];
+            updateSendButton();
+            showAiStatus('✅ Subject line updated!');
+          }
+        } else {
+          showAiStatus('❌ ' + (data.error || 'Failed to suggest subjects'), true);
+        }
+      } catch (err) {
+        showAiStatus('❌ ' + err.message, true);
+      }
+    }
+
+    async function improveEmailWithAI() {
+      const htmlBody = document.getElementById('htmlBody').value.trim();
+      const textBody = document.getElementById('textBody').value.trim();
+      const body = htmlBody || textBody;
+
+      if (!body) {
+        showAiStatus('❌ Write an email first', true);
+        return;
+      }
+
+      showAiStatus('✨ Improving email with AI...');
+      try {
+        const res = await fetch('/api/ai/improve-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ htmlBody: body, instructions: 'Improve for clarity, engagement, and conversions' })
+        });
+        const data = await res.json();
+        if (data.html) {
+          if (htmlBody) {
+            document.getElementById('htmlBody').value = data.html;
+            switchMode('html');
+          } else {
+            document.getElementById('textBody').value = data.html;
+            switchMode('text');
+          }
+          updateSendButton();
+          showAiStatus('✅ Email improved! Review the changes.');
+        } else {
+          showAiStatus('❌ ' + (data.error || 'Failed to improve'), true);
+        }
+      } catch (err) {
+        showAiStatus('❌ ' + err.message, true);
+      }
+    }
+
+    initTheme();
+    loadSenderInfo();
+    loadTemplates();
+  </script>
+</body>
+</html>

@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subscribers — Heidi Pacella Campaign</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #0B1929;
+      --navy-mid: #122338;
+      --navy-light: #1A3550;
+      --gold: #F5A623;
+      --gold-light: #FBBF48;
+      --text: #EEF2F7;
+      --text-muted: #8BA3BE;
+      --green: #1DB87A;
+      --red: #E03434;
+      --orange: #FF9800;
+    }
+
+    body {
+      font-family: 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--navy);
+      color: var(--text);
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header {
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 20px;
+      color: var(--gold);
+    }
+
+    .action-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: 1px solid var(--gold);
+      background: rgba(245, 166, 35, 0.1);
+      color: var(--gold);
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: rgba(245, 166, 35, 0.2);
+      box-shadow: 0 4px 12px rgba(245, 166, 35, 0.2);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+      padding: 10px 16px;
+      border: 1px solid rgba(245, 166, 35, 0.3);
+      background: var(--navy-mid);
+      color: var(--text);
+      border-radius: 6px;
+      font-family: inherit;
+    }
+
+    .search-box::placeholder {
+      color: var(--text-muted);
+    }
+
+    .list-selector {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: var(--navy-mid);
+      border-radius: 8px;
+      border-left: 3px solid var(--gold);
+    }
+
+    .list-selector label {
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .list-selector select {
+      padding: 8px 12px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      color: var(--navy);
+      border: none;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .list-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid var(--navy-light);
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .list-tabs button {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      padding: 12px 20px;
+      border-radius: 0;
+      font-weight: 600;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .list-tabs button:hover {
+      color: var(--gold);
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .list-tabs button.active {
+      color: var(--gold);
+      border-bottom-color: var(--gold);
+      background: transparent;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: var(--navy-mid);
+      padding: 20px;
+      border-radius: 8px;
+      border-left: 3px solid var(--gold);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    .stat-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+
+    .badge-active { background: rgba(29, 184, 122, 0.2); color: var(--green); }
+    .badge-inactive { background: rgba(224, 52, 52, 0.2); color: var(--red); }
+    .badge-unconfirmed { background: rgba(255, 152, 0, 0.2); color: var(--orange); }
+    .badge-bounced { background: rgba(100, 100, 100, 0.2); color: #999; }
+
+    .chart-container {
+      background: var(--navy-mid);
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      border: 1px solid rgba(245, 166, 35, 0.1);
+    }
+
+    .chart-container h3 {
+      color: var(--gold);
+      margin-bottom: 20px;
+      font-size: 16px;
+    }
+
+    .status-breakdown {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+
+    .status-pill {
+      background: var(--navy-mid);
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid rgba(245, 166, 35, 0.2);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .status-pill:hover {
+      border-color: var(--gold);
+      box-shadow: 0 4px 12px rgba(245, 166, 35, 0.15);
+    }
+
+    .status-pill.active {
+      border-color: var(--gold);
+      background: rgba(245, 166, 35, 0.1);
+      color: var(--gold);
+    }
+
+    .table-container {
+      background: var(--navy-mid);
+      border-radius: 8px;
+      border: 1px solid rgba(245, 166, 35, 0.1);
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th {
+      background: var(--navy-light);
+      padding: 16px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-size: 11px;
+      border-bottom: 1px solid rgba(245, 166, 35, 0.1);
+    }
+
+    td {
+      padding: 16px;
+      border-bottom: 1px solid rgba(245, 166, 35, 0.05);
+    }
+
+    tr:hover {
+      background: rgba(245, 166, 35, 0.03);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+      min-width: 80px;
+    }
+
+    .status-subscribed { background: var(--green); color: white; }
+    .status-unsubscribed { background: var(--red); color: white; }
+    .status-bounced { background: #444; color: white; }
+    .status-spam { background: #666; color: white; }
+
+    .action-icons {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .action-icons button {
+      padding: 6px 10px;
+      min-width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+
+    .delete-btn {
+      border-color: var(--red);
+      color: var(--red);
+      background: rgba(224, 52, 52, 0.1);
+    }
+
+    .delete-btn:hover {
+      background: rgba(224, 52, 52, 0.2);
+    }
+
+    @media (max-width: 768px) {
+      .action-bar { flex-direction: column; }
+      .search-box { min-width: 100%; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      table { font-size: 11px; }
+      th, td { padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>📧 Email Subscribers</h1>
+    </div>
+
+    <!-- List Selector -->
+    <div class="list-selector">
+      <label for="list-select">List:</label>
+      <select id="list-select">
+        <option selected>📋 10,000 test list</option>
+        <option>📋 Active Campaign</option>
+        <option>📋 Newsletter</option>
+        <option>📋 VIP List</option>
+      </select>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="action-bar">
+      <button onclick="addSubscribers()">➕ Add subscribers</button>
+      <button onclick="deleteMultiple()">🗑️ Delete subscribers</button>
+      <button onclick="massUnsubscribe()">✋ Mass unsubscribe</button>
+      <button onclick="exportSubscribers()">📥 Export all subscribers</button>
+      <input type="text" class="search-box" id="search-input" placeholder="Search subscribers...">
+      <button onclick="performSearch()">🔍 Search</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="list-tabs">
+      <button class="active" onclick="switchTab(this, 'subscribers')">← Back to lists</button>
+      <button onclick="switchTab(this, 'custom')">🏷️ Custom fields</button>
+      <button onclick="switchTab(this, 'auto')">🤖 Autoresponders</button>
+      <button onclick="switchTab(this, 'segments')">📊 Segments</button>
+      <button onclick="switchTab(this, 'form')">📝 Subscribe form</button>
+      <button onclick="switchTab(this, 'settings')">⚙️ List settings</button>
+    </div>
+
+    <!-- Activity Chart -->
+    <div class="chart-container">
+      <h3>📈 Subscribers activity chart</h3>
+      <canvas id="activityChart" height="80"></canvas>
+    </div>
+
+    <!-- Status Breakdown -->
+    <div style="margin-bottom: 20px;">
+      <div class="status-breakdown" id="status-breakdown">
+        <div class="status-pill active" onclick="filterStatus('all')">All <strong style="margin-left: 8px;">10,002</strong></div>
+        <div class="status-pill" onclick="filterStatus('active')">Active <strong style="margin-left: 8px; background: var(--green); padding: 2px 6px; border-radius: 3px;">9,999</strong></div>
+        <div class="status-pill" onclick="filterStatus('unconfirmed')">Unconfirmed <strong style="margin-left: 8px;">0</strong></div>
+        <div class="status-pill" onclick="filterStatus('unsubscribed')">Unsubscribed <strong style="margin-left: 8px; background: var(--red); padding: 2px 6px; border-radius: 3px;">1</strong></div>
+        <div class="status-pill" onclick="filterStatus('bounced')">Bounced <strong style="margin-left: 8px;">1</strong></div>
+        <div class="status-pill" onclick="filterStatus('spam')">Marked as spam <strong style="margin-left: 8px;">1</strong></div>
+      </div>
+    </div>
+
+    <!-- Subscribers Table -->
+    <div class="table-container">
+      <table id="subscribers-table">
+        <thead>
+          <tr>
+            <th style="cursor: pointer;" onclick="sortTable('name')">📝 Name</th>
+            <th style="cursor: pointer;" onclick="sortTable('email')">✉️ Email</th>
+            <th style="cursor: pointer;" onclick="sortTable('activity')">🕐 Last Activity</th>
+            <th>Status</th>
+            <th>Unsubscribe</th>
+            <th>Delete</th>
+          </tr>
+        </thead>
+        <tbody id="subscribers-body">
+          <!-- Populated by JavaScript -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // Sample subscriber data
+    const subscribers = [
+      { name: 'Name 9999', email: 'success+label9999@simulator.amazonses.com', activity: '10 secs ago', status: 'subscribed' },
+      { name: 'Name 1', email: 'success+label1@simulator.amazonses.com', activity: '1 min ago', status: 'unsubscribed' },
+      { name: 'Ben', email: 'ben@hex.sg', activity: '2 days ago', status: 'subscribed' },
+      { name: 'Black Star', email: 'throwyouremails@gmail.com', activity: '2 days ago', status: 'subscribed' },
+      { name: 'Name 10000', email: 'success+label10000@simulator.amazonses.com', activity: '2 days ago', status: 'bounced' },
+      { name: 'Name 9998', email: 'success+label9998@simulator.amazonses.com', activity: '2 days ago', status: 'spam' },
+      { name: 'Name 9997', email: 'success+label9997@simulator.amazonses.com', activity: '3 days ago', status: 'subscribed' },
+      { name: 'Name 9996', email: 'success+label9996@simulator.amazonses.com', activity: '4 days ago', status: 'subscribed' },
+      { name: 'Name 9995', email: 'success+label9995@simulator.amazonses.com', activity: '5 days ago', status: 'unconfirmed' },
+      { name: 'John Doe', email: 'john.doe@example.com', activity: '6 days ago', status: 'subscribed' },
+    ];
+
+    let displayedSubscribers = [...subscribers];
+    let currentFilter = 'all';
+
+    // Initialize table
+    function renderTable() {
+      const tbody = document.getElementById('subscribers-body');
+      tbody.innerHTML = displayedSubscribers.map(sub => `
+        <tr>
+          <td>${sub.name}</td>
+          <td>${sub.email}</td>
+          <td>${sub.activity}</td>
+          <td>
+            <span class="status-badge status-${sub.status}">
+              ${sub.status.charAt(0).toUpperCase() + sub.status.slice(1)}
+            </span>
+          </td>
+          <td>
+            <button style="padding: 4px 8px; font-size: 12px;" onclick="unsubscribeOne('${sub.email}')">◯</button>
+          </td>
+          <td>
+            <button class="delete-btn" style="padding: 4px 8px; font-size: 14px;" onclick="deleteSubscriber('${sub.email}')">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterStatus(status) {
+      currentFilter = status;
+      // Update active pill
+      document.querySelectorAll('.status-pill').forEach(pill => {
+        pill.classList.remove('active');
+      });
+      event.target.closest('.status-pill').classList.add('active');
+
+      if (status === 'all') {
+        displayedSubscribers = [...subscribers];
+      } else {
+        displayedSubscribers = subscribers.filter(s => s.status === status);
+      }
+      renderTable();
+    }
+
+    function sortTable(column) {
+      displayedSubscribers.sort((a, b) => {
+        let aVal = a[column]?.toLowerCase() || '';
+        let bVal = b[column]?.toLowerCase() || '';
+        return aVal.localeCompare(bVal);
+      });
+      renderTable();
+    }
+
+    function performSearch() {
+      const query = document.getElementById('search-input').value.toLowerCase();
+      displayedSubscribers = subscribers.filter(s =>
+        s.name.toLowerCase().includes(query) ||
+        s.email.toLowerCase().includes(query)
+      );
+      renderTable();
+    }
+
+    function deleteSubscriber(email) {
+      if (confirm(`Delete ${email}?`)) {
+        subscribers.splice(subscribers.findIndex(s => s.email === email), 1);
+        displayedSubscribers = [...subscribers];
+        renderTable();
+        alert('Subscriber deleted');
+      }
+    }
+
+    function exportSubscribers() {
+      const csv = ['Name,Email,Status,Activity'].concat(
+        displayedSubscribers.map(s => `${s.name},${s.email},${s.status},${s.activity}`)
+      ).join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `subscribers-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+    }
+
+    function switchTab(btn, tab) {
+      document.querySelectorAll('.list-tabs button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      // Tab switching is now silent - tabs are active/inactive based on styling
+    }
+
+    function addSubscribers() {
+      const email = prompt('Enter email address:');
+      if (email && email.includes('@')) {
+        const name = prompt('Enter name:') || email.split('@')[0];
+        subscribers.push({ name, email, activity: 'just now', status: 'unconfirmed' });
+        displayedSubscribers = [...subscribers];
+        renderTable();
+        console.log('Subscriber added:', email);
+      }
+    }
+
+    function deleteMultiple() {
+      if (confirm('Delete all displayed subscribers? This cannot be undone.')) {
+        subscribers.splice(0, subscribers.length, ...displayedSubscribers.filter(s => !subscribers.includes(s)));
+        displayedSubscribers = [];
+        renderTable();
+        console.log('Subscribers deleted');
+      }
+    }
+
+    function massUnsubscribe() {
+      if (confirm('Unsubscribe all displayed subscribers?')) {
+        displayedSubscribers.forEach(s => s.status = 'unsubscribed');
+        renderTable();
+        console.log('Subscribers unsubscribed');
+      }
+    }
+
+    function unsubscribeOne(email) {
+      const sub = subscribers.find(s => s.email === email);
+      if (sub) {
+        sub.status = 'unsubscribed';
+        renderTable();
+        console.log('Unsubscribed:', email);
+      }
+    }
+
+    // Chart
+    const ctx = document.getElementById('activityChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['Jun 25', 'Jul 25', 'Aug 25', 'Sep 25', 'Oct 25', 'Nov 25', 'Dec 25', 'Jan 26', 'Feb 26', 'Mar 26', 'Apr 26', 'May 26'],
+        datasets: [{
+          label: 'Subscribers',
+          data: [100, 150, 200, 300, 400, 500, 600, 700, 800, 4000, 8000, 10000],
+          borderColor: '#F5A623',
+          backgroundColor: 'rgba(245, 166, 35, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#F5A623',
+          pointBorderColor: '#FBBF48',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(245, 166, 35, 0.05)',
+              drawBorder: false
+            },
+            ticks: {
+              color: '#8BA3BE',
+              callback: function(value) {
+                return (value / 1000) + 'k';
+              }
+            }
+          },
+          x: {
+            grid: {
+              display: false,
+              drawBorder: false
+            },
+            ticks: {
+              color: '#8BA3BE'
+            }
+          }
+        }
+      }
+    });
+
+    // Initialize
+    renderTable();
+  </script>
+</body>
+</html>

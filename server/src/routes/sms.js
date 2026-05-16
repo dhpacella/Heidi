@@ -1,12 +1,16 @@
 const express = require('express');
+const multer = require('multer');
+const { parse } = require('csv-parse/sync');
+const XLSX = require('xlsx');
 const pool = require('../db/connection');
 const { requireRole } = require('../middleware/auth');
 const { normalizePhone, sendSMS } = require('../lib/snsClient');
 const { enqueue } = require('../lib/sqsClient');
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
-router.post('/send', requireRole('admin', 'campaign_manager'), async (req, res) => {
+router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('phoneFile'), async (req, res) => {
   try {
     const { message, recipientPhones } = req.body;
     const user_id = req.user.id;
@@ -16,12 +20,36 @@ router.post('/send', requireRole('admin', 'campaign_manager'), async (req, res) 
     }
 
     let phones = [];
+
+    // Parse phones from JSON array
     if (recipientPhones) {
-      phones = JSON.parse(recipientPhones).filter(p => normalizePhone(p));
+      try {
+        const parsed = typeof recipientPhones === 'string' ? JSON.parse(recipientPhones) : recipientPhones;
+        phones = Array.isArray(parsed) ? parsed : [];
+      } catch (_) {}
     }
 
+    // Parse phones from file upload
+    if (req.file) {
+      let rows;
+      if (req.file.mimetype === 'text/csv' || req.file.originalname.endsWith('.csv')) {
+        rows = parse(req.file.buffer, { columns: true, skip_empty_lines: true, trim: true });
+      } else {
+        const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
+        rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+      }
+      const keys = rows.length ? Object.keys(rows[0]) : [];
+      const phoneKey = keys.find(k => k.toLowerCase() === 'phone') || keys.find(k => k.toLowerCase().includes('phone'));
+      if (phoneKey) {
+        phones = phones.concat(rows.map(r => String(r[phoneKey] || '').trim()).filter(Boolean));
+      }
+    }
+
+    // Normalize and deduplicate
+    phones = [...new Set(phones.map(p => normalizePhone(p)).filter(Boolean))];
+
     if (phones.length === 0) {
-      return res.status(400).json({ error: 'No valid phone numbers' });
+      return res.status(400).json({ error: 'No valid phone numbers found' });
     }
 
     // Calculate cost: $0.0075 per SMS (standard US rate)

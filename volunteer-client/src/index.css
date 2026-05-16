@@ -1,0 +1,43 @@
+﻿* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --navy: #0B1929;
+  --navy-light: #122338;
+  --navy-lighter: #1A3550;
+  --gray-dark: #243D56;
+  --gray: #8BA3BE;
+  --white: #EEF2F7;
+  --gold: #F5A623;
+  --red: #FF4D6D;
+  --green: #22C55E;
+}
+
+body {
+  font-family: 'Barlow', sans-serif;
+  background: var(--navy);
+  color: var(--white);
+  line-height: 1.5;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: 'Barlow', sans-serif;
+  cursor: pointer;
+}
+
+input, select, textarea {
+  font-family: 'Barlow', sans-serif;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}

@@ -396,7 +396,9 @@
       <div class="header-left">
         <a href="/dashboard" class="btn">← Dashboard</a>
         <a href="/email-history" class="btn">📜 History</a>
-        <a href="/email-campaigns" class="btn">📊 Campaigns</a>
+        <a href="/subscribers.html" class="btn">👥 Subscribers</a>
+        <a href="/campaign-reports.html" class="btn">📊 Reports</a>
+        <a href="/volunteers-manager.html" class="btn">🙋 Volunteers</a>
       </div>
       <h1>📧 Email Outreach</h1>
       <div class="header-right">
@@ -410,8 +412,8 @@
       <h2>📎 Email Recipients</h2>
       <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border);">
         <button onclick="switchTab('upload')" id="tab-upload" style="padding: 12px 16px; border: none; background: transparent; color: var(--gold); font-weight: 600; border-bottom: 3px solid var(--gold); cursor: pointer;">📁 Upload CSV</button>
-        <button onclick="switchTab('manual')" id="tab-manual" style="padding: 12px 16px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; border-bottom: 3px solid transparent; cursor: pointer;">✉️ Manual Email</button>
         <button onclick="switchTab('list')" id="tab-list" style="padding: 12px 16px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; border-bottom: 3px solid transparent; cursor: pointer;">📊 Choose List</button>
+        <button onclick="switchTab('test')" id="tab-test" style="padding: 12px 16px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; border-bottom: 3px solid transparent; cursor: pointer;">🧪 Manual Test</button>
       </div>
 
       <div id="tab-upload-content">
@@ -439,24 +441,6 @@
       </div>
       </div>
 
-      <div id="tab-manual-content" style="display: none;">
-        <label style="display: block; margin-bottom: 12px; font-weight: 600;">Email Address (for testing)</label>
-        <input type="email" id="manualEmail" placeholder="your-email@gmail.com" style="width: 100%; padding: 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-family: 'Barlow', sans-serif; margin-bottom: 12px;">
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-          <div>
-            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">First Name</label>
-            <input type="text" id="manualFirstName" placeholder="e.g., John" style="width: 100%; padding: 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-family: 'Barlow', sans-serif;">
-          </div>
-          <div>
-            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Last Name</label>
-            <input type="text" id="manualLastName" placeholder="e.g., Voter" style="width: 100%; padding: 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-family: 'Barlow', sans-serif;">
-          </div>
-        </div>
-
-        <button class="btn btn-primary" onclick="confirmManualEmail()" style="width: 100%;">✓ Use This Email</button>
-      </div>
-
       <div id="tab-list-content" style="display: none;">
         <label style="display: block; margin-bottom: 12px; font-weight: 600;">Select a List</label>
         <select id="listSelect" onchange="loadListSegments()" style="width: 100%; padding: 10px; margin-bottom: 16px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px;">
@@ -475,11 +459,61 @@
           <button class="btn btn-primary" onclick="confirmListSelection()" style="width: 100%;">✓ Use This Selection</button>
         </div>
       </div>
+
+      <div id="tab-test-content" style="display: none;">
+        <label style="display: block; margin-bottom: 12px; font-weight: 600;">Test With Manual Entry</label>
+        <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+          <div style="flex: 1;">
+            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">Email Address</label>
+            <input type="email" id="testEmail" placeholder="test@example.com" style="width: 100%; padding: 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px;">
+          </div>
+          <div style="flex: 1;">
+            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">First Name</label>
+            <input type="text" id="testFirstName" placeholder="John" style="width: 100%; padding: 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px;">
+          </div>
+          <div style="flex: 1;">
+            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">Last Name</label>
+            <input type="text" id="testLastName" placeholder="Doe" style="width: 100%; padding: 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px;">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="addTestRecipient()" style="width: 100%;">✓ Use for Testing</button>
+        <div id="testRecipientInfo" style="background: rgba(245, 166, 35, 0.08); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-top: 16px; display: none;">
+          <div style="color: var(--gold); font-weight: 600; margin-bottom: 8px;">1 test recipient</div>
+          <table class="preview-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span id="testEmailDisplay">-</span></td>
+                <td><span id="testFirstNameDisplay">-</span></td>
+                <td><span id="testLastNameDisplay">-</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- Compose Card -->
     <div class="card">
       <h2>✏️ Compose Email</h2>
+
+      <div style="display: flex; gap: 12px; margin-bottom: 16px; align-items: flex-end;">
+        <div style="flex: 1;">
+          <label for="senderName" style="font-size: 12px;">Sender Name</label>
+          <input type="text" id="senderName" placeholder="e.g., Heidi Campaign" style="margin-bottom: 0;">
+        </div>
+        <div style="flex: 1;">
+          <label for="senderEmail" style="font-size: 12px;">Sender Email</label>
+          <input type="email" id="senderEmail" placeholder="e.g., hello@example.com" style="margin-bottom: 0;">
+        </div>
+        <button class="btn btn-primary" onclick="saveSenderInfo()" style="padding: 10px 20px;">💾 Save</button>
+      </div>
 
       <div style="display: flex; gap: 12px; margin-bottom: 16px;">
         <select id="templateSelect" onchange="loadTemplate()" style="flex: 1; padding: 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-family: 'Barlow', sans-serif; font-size: 13px;">
@@ -487,33 +521,14 @@
         </select>
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-        <div>
-          <label for="senderName">From Name</label>
-          <div style="display: flex; gap: 8px; align-items: flex-end;">
-            <input type="text" id="senderName" placeholder="e.g., Heidi Campaign" value="Heidi" style="flex: 1;">
-            <button onclick="saveSenderName()" style="padding: 8px 12px; font-size: 12px; background: var(--gold); color: var(--navy); border: none; border-radius: 4px; cursor: pointer; font-weight: 600; white-space: nowrap; transition: all 0.2s;" onmouseover="this.style.background='var(--gold-light)'" onmouseout="this.style.background='var(--gold)'">Save</button>
-          </div>
-        </div>
-        <div>
-          <label for="senderEmail">From Email</label>
-          <input type="email" id="senderEmail" placeholder="heidi@hadleytrees.com" value="heidi@hadleytrees.com">
-        </div>
-      </div>
+      <label for="subject">Subject Line</label>
+      <input type="text" id="subject" placeholder="Email subject">
 
-      <label for="subject">Subject Line <span style="color: #FF4D6D;">*</span></label>
-      <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-        <input type="text" id="subject" placeholder="Email subject" required style="flex: 1;">
-        <button class="btn" onclick="suggestSubjects()" style="white-space: nowrap;">💡 Suggest</button>
-      </div>
-
-      <label for="htmlBody" style="margin-top: 16px;">Message Body (HTML) <span style="color: #FF4D6D;">*</span></label>
+      <label for="htmlBody" style="margin-top: 16px;">Message Body (HTML)</label>
 
       <div class="toolbar">
         <button class="toolbar-btn" onclick="insertTag('{first_name}')">👤 {first_name}</button>
         <button class="toolbar-btn" onclick="insertTag('{last_name}')">👤 {last_name}</button>
-        <button class="toolbar-btn" onclick="openGenerateModal()">✨ Generate Email</button>
-        <button class="toolbar-btn" onclick="improveEmail()">🤖 Improve Email</button>
       </div>
 
       <div style="margin-bottom: 16px;">
@@ -527,7 +542,33 @@
         </div>
       </div>
 
-      <textarea id="htmlBody" placeholder="<p>Your email message here...</p>&#10;<p>Hello {first_name}!</p>" required></textarea>
+      <!-- AI Email Assistant -->
+      <div style="margin-bottom: 16px; padding: 16px; background: rgba(123, 184, 245, 0.08); border: 1px solid rgba(123, 184, 245, 0.3); border-radius: 6px;">
+        <label style="margin-bottom: 10px; color: #7BB8F5; font-weight: 600;">✨ AI Email Assistant</label>
+        <div class="template-buttons" style="margin-bottom: 8px;">
+          <button class="template-btn" onclick="generateEmailWithAI()" style="border-color: rgba(123, 184, 245, 0.4); color: #7BB8F5;">🤖 Generate Email</button>
+          <button class="template-btn" onclick="suggestSubjectsWithAI()" style="border-color: rgba(123, 184, 245, 0.4); color: #7BB8F5;">💡 Suggest Subjects</button>
+          <button class="template-btn" onclick="improveEmailWithAI()" style="border-color: rgba(123, 184, 245, 0.4); color: #7BB8F5;">✨ Improve Email</button>
+        </div>
+        <input type="text" id="aiIdea" placeholder="Describe your email idea (e.g., 'Get out the vote reminder')" style="margin-bottom: 8px;">
+        <div id="aiStatus" style="font-size: 12px; color: #7BB8F5; display: none; margin-top: 8px;"></div>
+      </div>
+
+      <!-- HTML vs Text Toggle -->
+      <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--surface-2); border-radius: 6px;">
+        <label style="font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin: 0;">Compose Mode:</label>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="mode-btn active" id="htmlModeBtn" onclick="switchMode('html')" style="padding: 6px 16px; font-size: 12px; font-weight: 600; background: var(--gold); color: var(--navy); border: none; border-radius: 4px; cursor: pointer; transition: all 0.2s;">
+            📄 HTML
+          </button>
+          <button class="mode-btn" id="textModeBtn" onclick="switchMode('text')" style="padding: 6px 16px; font-size: 12px; font-weight: 600; background: transparent; color: var(--text-muted); border: 1px solid var(--text-muted); border-radius: 4px; cursor: pointer; transition: all 0.2s;">
+            📝 Plain Text
+          </button>
+        </div>
+      </div>
+
+      <textarea id="htmlBody" placeholder="<p>Your email message here...</p>&#10;<p>Hello {first_name}!</p>" style="display: block;"></textarea>
+      <textarea id="textBody" placeholder="Your email message here...&#10;Hello {first_name}!" style="display: none;"></textarea>
 
       <div style="display: flex; gap: 12px; margin-top: 12px;">
         <button class="btn" onclick="previewEmail()">👁️ Preview</button>
@@ -552,35 +593,77 @@
       </div>
     </div>
 
-    <!-- Schedule Section -->
-    <div id="scheduleSection" style="margin-bottom: 24px; padding: 16px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--border);">
-      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 12px;">
-        <input type="checkbox" id="scheduleToggle" onchange="toggleSchedule()" />
-        <span style="font-weight: 600;">Schedule for later</span>
-      </label>
-      <div id="scheduleInputs" style="display: none;">
-        <input type="datetime-local" id="scheduledAt"
-               style="width: 100%; padding: 10px; background: var(--surface-1); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-family: 'Barlow', sans-serif;" />
-        <p id="scheduleHint" style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
-          ⏰ Email will be queued and sent automatically at the selected time.
-        </p>
-      </div>
-    </div>
+    <!-- Advanced Options Card -->
+    <div class="card">
+      <h2>⚙️ Advanced Options</h2>
 
-    <!-- A/B Test Section -->
-    <div id="abSection" style="margin-bottom: 24px; padding: 16px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--border);">
-      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 12px;">
-        <input type="checkbox" id="abToggle" onchange="toggleAbTest()" />
-        <span style="font-weight: 600;">📊 A/B Test (two variants)</span>
-      </label>
-      <div id="abInputs" style="display: none;">
-        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
-          Recipients will be split 50/50. The fields above are <strong>Variant A</strong>. Enter <strong>Variant B</strong> below:
-        </p>
-        <input type="text" id="variantBSubject" placeholder="Variant B — Subject line"
-               style="width: 100%; padding: 10px; margin-bottom: 12px; background: var(--surface-1); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-family: 'Barlow', sans-serif; font-size: 13px;" />
-        <textarea id="variantBHtmlBody" placeholder="Variant B — HTML body" rows="8"
-                  style="width: 100%; padding: 10px; background: var(--surface-1); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-family: monospace; font-size: 12px; resize: vertical;"></textarea>
+      <!-- Plain Text Version -->
+      <label for="plainTextVersion">Plain Text Version</label>
+      <textarea id="plainTextVersion" placeholder="Plain text version of this email" style="min-height: 100px; margin-bottom: 16px;"></textarea>
+
+      <!-- Query String & Web Language -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+        <div>
+          <label for="queryString" style="font-size: 12px;">Query String</label>
+          <input type="text" id="queryString" placeholder="eg. utm_source=newsletter&utm_medium=sendy&utm_ca" style="margin-bottom: 0; font-size: 11px;">
+        </div>
+        <div>
+          <label for="webLanguage" style="font-size: 12px;">Web Version Language</label>
+          <select id="webLanguage" style="margin-bottom: 0; padding: 8px;">
+            <option value="none">Don't translate</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+            <option value="de">Deutsch</option>
+            <option value="it">Italiano</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Attachments -->
+      <div style="margin-bottom: 16px;">
+        <label for="attachments">Attachments</label>
+        <input type="file" id="attachments" multiple style="padding: 8px; background: var(--surface-2); border: 1px dashed var(--border); border-radius: 6px; width: 100%; cursor: pointer;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Allowed: jpeg, jpg, gif, png, pdf, zip</div>
+      </div>
+
+      <!-- Tracking Options -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; padding: 12px; background: var(--surface-2); border-radius: 6px;">
+        <div>
+          <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 8px;">📖 Track Opens:</label>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="tracking-btn active" data-tracking="opens" data-value="yes" onclick="setTracking('opens', 'yes')" style="padding: 6px 12px; border: 1px solid var(--gold); background: var(--gold); color: var(--navy); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">Yes</button>
+            <button class="tracking-btn" data-tracking="opens" data-value="no" onclick="setTracking('opens', 'no')" style="padding: 6px 12px; border: 1px solid var(--border); background: transparent; color: var(--text); border-radius: 4px; cursor: pointer; font-size: 12px;">No</button>
+            <button class="tracking-btn" data-tracking="opens" data-value="anonymous" onclick="setTracking('opens', 'anonymous')" style="padding: 6px 12px; border: 1px solid var(--border); background: transparent; color: var(--text); border-radius: 4px; cursor: pointer; font-size: 12px;">Anonymously</button>
+          </div>
+        </div>
+        <div>
+          <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 8px;">🔗 Track Clicks:</label>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="tracking-btn active" data-tracking="clicks" data-value="yes" onclick="setTracking('clicks', 'yes')" style="padding: 6px 12px; border: 1px solid var(--gold); background: var(--gold); color: var(--navy); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">Yes</button>
+            <button class="tracking-btn" data-tracking="clicks" data-value="no" onclick="setTracking('clicks', 'no')" style="padding: 6px 12px; border: 1px solid var(--border); background: transparent; color: var(--text); border-radius: 4px; cursor: pointer; font-size: 12px;">No</button>
+            <button class="tracking-btn" data-tracking="clicks" data-value="anonymous" onclick="setTracking('clicks', 'anonymous')" style="padding: 6px 12px; border: 1px solid var(--border); background: transparent; color: var(--text); border-radius: 4px; cursor: pointer; font-size: 12px;">Anonymously</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Checkboxes -->
+      <div style="display: flex; flex-direction: column; gap: 12px; padding: 12px; background: var(--surface-2); border-radius: 6px;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+          <input type="checkbox" id="saveTemplate" checked>
+          <span>✅ Save this email as a template</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+          <input type="checkbox" id="checkLinks" checked>
+          <span>🔍 Check for broken links</span>
+        </label>
+      </div>
+
+      <!-- GDPR Info -->
+      <div style="margin-top: 16px; padding: 12px; background: rgba(255, 152, 0, 0.08); border: 1px solid rgba(255, 152, 0, 0.3); border-left: 3px solid #FF9800; border-radius: 6px;">
+        <div style="font-size: 12px; font-weight: 600; color: #FF9800; margin-bottom: 8px;">⚖️ GDPR Re-Consent Log</div>
+        <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6;">
+          When requesting re-consent from subscribers, use the <code style="background: var(--navy); padding: 2px 6px; border-radius: 3px;">[gdpr]</code> tag in your brand settings. If you turn on the 'GDPR safe switch', future campaigns and autoresponders will only be sent to subscribers tagged with <code style="background: var(--navy); padding: 2px 6px; border-radius: 3px;">[gdpr]</code>.
+        </div>
       </div>
     </div>
 
@@ -595,17 +678,14 @@
   <!-- Confirmation Modal -->
   <div id="confirmModal" class="modal">
     <div class="modal-content">
-      <h2 id="confirmTitle">Confirm Send</h2>
+      <h2>Confirm Send</h2>
       <p><strong>Recipients:</strong> <span id="modalRecipients">0</span></p>
       <p><strong>Subject:</strong> <span id="modalSubject"></span></p>
       <p><strong>Cost:</strong> <span id="modalCost">$0.00</span></p>
-      <p id="scheduleConfirmLine" style="display:none; margin-top: 12px;">
-        <strong>⏰ Scheduled for:</strong> <span id="scheduleConfirmTime"></span>
-      </p>
-      <p style="font-size: 12px; color: var(--text-muted); margin-top: 16px;" id="confirmDesc">This will send emails to all recipients in your file.</p>
+      <p style="font-size: 12px; color: var(--text-muted); margin-top: 16px;">This will send emails to all recipients in your file.</p>
       <div class="modal-buttons">
         <button class="btn" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" id="confirmBtn" onclick="sendNow()">Send Now</button>
+        <button class="btn btn-primary" onclick="sendNow()">Send Now</button>
       </div>
     </div>
   </div>
@@ -617,38 +697,6 @@
       <div id="previewContent" style="background: var(--surface-2); padding: 16px; border-radius: 8px; margin: 16px 0; max-height: 400px; overflow-y: auto; border: 1px solid var(--border);"></div>
       <div class="modal-buttons">
         <button class="btn btn-primary" onclick="closePreviewModal()">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Generate Email Modal -->
-  <div id="generateModal" class="modal">
-    <div class="modal-content" style="max-width: 600px;">
-      <h2>✨ Generate Email</h2>
-      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Describe your email idea and AI will generate HTML for you.</p>
-      <label style="display: block; margin-bottom: 8px;">Campaign Name (optional)</label>
-      <input type="text" id="genCampaignName" placeholder="e.g., Get Out The Vote" style="width: 100%; margin-bottom: 12px;">
-      <label style="display: block; margin-bottom: 8px;">Email Idea <span style="color: #FF4D6D;">*</span></label>
-      <textarea id="genIdea" placeholder="Describe what you want the email to say..." style="width: 100%; min-height: 120px; margin-bottom: 12px;"></textarea>
-      <div class="modal-buttons">
-        <button class="btn" onclick="closeGenerateModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="generateEmail()">Generate</button>
-      </div>
-      <div id="genStatus" style="display: none; margin-top: 12px; color: var(--text-muted); font-size: 12px;"></div>
-    </div>
-  </div>
-
-  <!-- Suggest Subjects Modal -->
-  <div id="suggestModal" class="modal">
-    <div class="modal-content" style="max-width: 600px;">
-      <h2>💡 Suggest Subject Lines</h2>
-      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">AI will generate 3 compelling subject line options based on your email body.</p>
-      <div id="suggestStatus" style="display: none; color: var(--text-muted); font-size: 12px; margin-bottom: 12px;">Generating suggestions...</div>
-      <div id="suggestList" style="display: none; margin-bottom: 16px;">
-        <div style="display: flex; flex-direction: column; gap: 8px;" id="suggestOptions"></div>
-      </div>
-      <div class="modal-buttons">
-        <button class="btn" onclick="closeSuggestModal()">Close</button>
       </div>
     </div>
   </div>
@@ -670,22 +718,6 @@
     function logout() {
       fetch('/logout', { method: 'POST' }).then(() => window.location.href = '/login');
     }
-
-    function saveSenderName() {
-      const senderName = document.getElementById('senderName').value.trim();
-      if (!senderName) {
-        alert('Please enter a sender name');
-        return;
-      }
-      localStorage.setItem('senderName', senderName);
-      alert('Sender name saved: ' + senderName);
-    }
-
-    // Load saved sender name on page load
-    window.addEventListener('load', () => {
-      const saved = localStorage.getItem('senderName');
-      if (saved) document.getElementById('senderName').value = saved;
-    });
 
     let uploadedData = null;
     let fullData = null;
@@ -815,13 +847,52 @@
     function updateSendButton() {
       const sendBtn = document.getElementById('sendBtn');
       const subject = document.getElementById('subject').value.trim();
-      const htmlBody = document.getElementById('htmlBody').value.trim();
-      const hasRecipients = uploadedData && uploadedData.length > 0;
-      sendBtn.disabled = !hasRecipients || !subject || !htmlBody;
+      const htmlBody = document.getElementById('htmlBody');
+      const textBody = document.getElementById('textBody');
+      const isHtmlMode = htmlBody.style.display !== 'none';
+      const body = isHtmlMode ? htmlBody.value.trim() : textBody.value.trim();
+      const hasFile = fileInput.files.length > 0;
+      const hasUploadedData = uploadedData && uploadedData.length > 0;
+      const hasListSelected = selectedListId != null;
+      const hasRecipients = hasFile || hasUploadedData || hasListSelected;
+      sendBtn.disabled = !hasRecipients || !subject || !body;
     }
 
     document.getElementById('subject').addEventListener('input', updateSendButton);
     document.getElementById('htmlBody').addEventListener('input', updateSendButton);
+    document.getElementById('textBody').addEventListener('input', updateSendButton);
+
+    function switchMode(mode) {
+      const htmlBody = document.getElementById('htmlBody');
+      const textBody = document.getElementById('textBody');
+      const htmlBtn = document.getElementById('htmlModeBtn');
+      const textBtn = document.getElementById('textModeBtn');
+
+      if (mode === 'html') {
+        htmlBody.style.display = 'block';
+        textBody.style.display = 'none';
+        htmlBtn.style.background = 'var(--gold)';
+        htmlBtn.style.color = 'var(--navy)';
+        htmlBtn.style.borderColor = 'var(--gold)';
+        textBtn.style.background = 'transparent';
+        textBtn.style.color = 'var(--text-muted)';
+        textBtn.style.borderColor = 'var(--text-muted)';
+        htmlBtn.classList.add('active');
+        textBtn.classList.remove('active');
+      } else {
+        htmlBody.style.display = 'none';
+        textBody.style.display = 'block';
+        textBtn.style.background = 'var(--gold)';
+        textBtn.style.color = 'var(--navy)';
+        textBtn.style.borderColor = 'var(--gold)';
+        htmlBtn.style.background = 'transparent';
+        htmlBtn.style.color = 'var(--text-muted)';
+        htmlBtn.style.borderColor = 'var(--text-muted)';
+        textBtn.classList.add('active');
+        htmlBtn.classList.remove('active');
+      }
+      updateSendButton();
+    }
 
     function applyTemplate(type) {
       const templates = {
@@ -836,7 +907,9 @@
     }
 
     function insertTag(tag) {
-      const textarea = document.getElementById('htmlBody');
+      const htmlBody = document.getElementById('htmlBody');
+      const isHtmlMode = htmlBody.style.display !== 'none';
+      const textarea = isHtmlMode ? htmlBody : document.getElementById('textBody');
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
       const before = textarea.value.substring(0, start);
@@ -846,7 +919,11 @@
     }
 
     function previewEmail() {
-      document.getElementById('previewContent').innerHTML = document.getElementById('htmlBody').value;
+      const htmlBody = document.getElementById('htmlBody');
+      const textBody = document.getElementById('textBody');
+      const isHtmlMode = htmlBody.style.display !== 'none';
+      const content = isHtmlMode ? htmlBody.value : '<p>' + textBody.value.replace(/\n/g, '</p><p>') + '</p>';
+      document.getElementById('previewContent').innerHTML = content;
       document.getElementById('previewModal').classList.add('show');
     }
 
@@ -858,26 +935,9 @@
       const subject = document.getElementById('subject').value;
       const recipientCount = uploadedData ? uploadedData.length : 0;
       const cost = (recipientCount * 0.0001).toFixed(4);
-      const isScheduled = document.getElementById('scheduleToggle')?.checked;
-      const scheduledAt = document.getElementById('scheduledAt')?.value;
-
       document.getElementById('modalSubject').textContent = subject;
       document.getElementById('modalRecipients').textContent = recipientCount.toLocaleString();
       document.getElementById('modalCost').textContent = '$' + cost;
-
-      // Show scheduled time if applicable
-      if (isScheduled && scheduledAt) {
-        const scheduledTime = new Date(scheduledAt).toLocaleString();
-        document.getElementById('scheduleConfirmLine').style.display = 'block';
-        document.getElementById('scheduleConfirmTime').textContent = scheduledTime;
-        document.getElementById('confirmBtn').textContent = 'Schedule Email';
-        document.getElementById('confirmDesc').textContent = 'Email will be queued and sent at the scheduled time.';
-      } else {
-        document.getElementById('scheduleConfirmLine').style.display = 'none';
-        document.getElementById('confirmBtn').textContent = 'Send Now';
-        document.getElementById('confirmDesc').textContent = 'This will send emails to all recipients in your file.';
-      }
-
       document.getElementById('confirmModal').classList.add('show');
     }
 
@@ -888,77 +948,45 @@
     async function sendNow() {
       closeModal();
       const subject = document.getElementById('subject').value;
-      const htmlBody = document.getElementById('htmlBody').value;
-      const textBody = '';
-
-      console.log('📝 Form values:', { subject: subject.substring(0, 50), htmlBody: htmlBody.substring(0, 50) });
+      const htmlBodyElem = document.getElementById('htmlBody');
+      const textBodyElem = document.getElementById('textBody');
+      const isHtmlMode = htmlBodyElem.style.display !== 'none';
+      const body = isHtmlMode ? htmlBodyElem.value : textBodyElem.value;
+      const senderName = document.getElementById('senderName').value.trim();
+      const senderEmail = document.getElementById('senderEmail').value.trim();
 
       const isListTab = document.getElementById('tab-list-content').style.display === 'block' &&
                         document.getElementById('tab-upload-content').style.display === 'none';
+      const isTestTab = document.getElementById('tab-test-content').style.display === 'block';
+      const isUploadTab = document.getElementById('tab-upload-content').style.display === 'block';
 
       const formData = new FormData();
       formData.append('subject', subject);
-      formData.append('htmlBody', htmlBody);
-      formData.append('textBody', textBody);
-      formData.append('senderName', document.getElementById('senderName').value);
-      formData.append('senderEmail', document.getElementById('senderEmail').value);
-
-      // Add scheduled_at if scheduling is enabled
-      const isScheduled = document.getElementById('scheduleToggle')?.checked;
-      const scheduledAt = document.getElementById('scheduledAt')?.value;
-      if (isScheduled && scheduledAt) {
-        formData.append('scheduled_at', scheduledAt);
-      }
-
-      // Add A/B test params if enabled
-      const isAbTest = document.getElementById('abToggle')?.checked;
-      if (isAbTest) {
-        const variantBSubject = document.getElementById('variantBSubject')?.value || '';
-        const variantBHtmlBody = document.getElementById('variantBHtmlBody')?.value || '';
-        if (!variantBSubject.trim() || !variantBHtmlBody.trim()) {
-          alert('❌ Variant B subject and body are required for A/B testing');
-          return;
-        }
-        formData.append('variant_b_subject', variantBSubject);
-        formData.append('variant_b_html_body', variantBHtmlBody);
-      }
+      formData.append('htmlBody', isHtmlMode ? body : '');
+      formData.append('plainTextBody', isHtmlMode ? '' : body);
+      formData.append('fromAddress', senderEmail);
+      formData.append('fromName', senderName);
 
       if (isListTab && selectedListId) {
+        // List mode: send to list
         formData.append('list_id', selectedListId);
         if (selectedSegmentId) {
           formData.append('segment_id', selectedSegmentId);
         }
-      } else {
-        // Handle file upload or manual email
+      } else if (isTestTab && uploadedData && uploadedData.length > 0) {
+        // Test mode: send to test recipients (pass as JSON array)
+        formData.append('recipientEmails', JSON.stringify(uploadedData.map(r => r.email)));
+      } else if (isUploadTab) {
+        // Upload mode: send to uploaded file
         const file = fileInput.files[0];
-        const isManualTab = document.getElementById('tab-manual-content').style.display === 'block';
-
-        console.log('🔍 sendNow() debug:', {
-          isManualTab,
-          uploadedDataLength: uploadedData ? uploadedData.length : 0,
-          uploadedData,
-          fileSelected: !!file
-        });
-
-        if (isManualTab && uploadedData && uploadedData.length > 0) {
-          console.log('✅ Using manual email data');
-          // Convert manual email data to CSV blob
-          const csvHeader = 'email,first_name,last_name\n';
-          const csvRows = uploadedData.map(row =>
-            `${row.email},"${row.first_name || ''}","${row.last_name || ''}"`
-          ).join('\n');
-          const csvContent = csvHeader + csvRows;
-          console.log('📧 CSV content:', csvContent);
-          const blob = new Blob([csvContent], { type: 'text/csv' });
-          formData.append('file', blob, 'manual-email.csv');
-        } else if (file) {
-          console.log('✅ Using file upload');
-          formData.append('file', file);
-        } else {
-          console.log('❌ No recipients found');
-          alert('❌ No file selected and no manual email entered. Click "✓ Use This Email" first!');
+        if (!file) {
+          alert('❌ No file selected');
           return;
         }
+        formData.append('file', file);
+      } else {
+        alert('❌ Please select recipients (upload file, choose list, or add test data)');
+        return;
       }
 
       try {
@@ -969,32 +997,14 @@
 
         const result = await response.json();
         if (result.success) {
-          if (result.abTest) {
-            // A/B test send
-            alert(`✅ A/B test sent!\n\nVariant A: ${result.variantA.sent} sent\nVariant B: ${result.variantB.sent} sent\n\nView results at /email-ab-tests`);
-          } else if (response.status === 202) {
-            // Scheduled send
-            const scheduledTime = new Date(scheduledAt).toLocaleString();
-            alert(`✅ Email scheduled for ${scheduledTime}`);
-          } else {
-            // Immediate send
-            alert(`✅ Email sent to ${result.sent} recipients`);
-          }
-
-          // Clear form
+          alert(`✅ Email sent to ${result.sent} recipients`);
           if (!isListTab) {
             fileInput.value = '';
             document.getElementById('fileInfo').style.display = 'none';
           }
           document.getElementById('subject').value = '';
           document.getElementById('htmlBody').value = '';
-          document.getElementById('scheduleToggle').checked = false;
-          document.getElementById('scheduleInputs').style.display = 'none';
-          document.getElementById('scheduledAt').value = '';
-          document.getElementById('abToggle').checked = false;
-          document.getElementById('abInputs').style.display = 'none';
-          document.getElementById('variantBSubject').value = '';
-          document.getElementById('variantBHtmlBody').value = '';
+          document.getElementById('textBody').value = '';
           updateSendButton();
         } else {
           alert('❌ Error: ' + (result.error || result.message));
@@ -1004,62 +1014,41 @@
       }
     }
 
-    // Toggle schedule section
-    function toggleSchedule() {
-      const checked = document.getElementById('scheduleToggle').checked;
-      document.getElementById('scheduleInputs').style.display = checked ? 'block' : 'none';
-
-      if (checked) {
-        // Set minimum to 5 minutes from now
-        const now = new Date(Date.now() + 5 * 60 * 1000);
-        const isoString = now.toISOString().slice(0, 16);
-        document.getElementById('scheduledAt').min = isoString;
-        // Set default to 1 hour from now
-        const later = new Date(Date.now() + 60 * 60 * 1000);
-        document.getElementById('scheduledAt').value = later.toISOString().slice(0, 16);
-      }
-    }
-
-    // Toggle A/B test section
-    function toggleAbTest() {
-      const checked = document.getElementById('abToggle').checked;
-      document.getElementById('abInputs').style.display = checked ? 'block' : 'none';
-    }
-
     // Tab switching
     function switchTab(tab) {
       document.getElementById('tab-upload-content').style.display = tab === 'upload' ? 'block' : 'none';
-      document.getElementById('tab-manual-content').style.display = tab === 'manual' ? 'block' : 'none';
       document.getElementById('tab-list-content').style.display = tab === 'list' ? 'block' : 'none';
+      document.getElementById('tab-test-content').style.display = tab === 'test' ? 'block' : 'none';
       document.getElementById('tab-upload').style.color = tab === 'upload' ? 'var(--gold)' : 'var(--text-muted)';
       document.getElementById('tab-upload').style.borderBottomColor = tab === 'upload' ? 'var(--gold)' : 'transparent';
-      document.getElementById('tab-manual').style.color = tab === 'manual' ? 'var(--gold)' : 'var(--text-muted)';
-      document.getElementById('tab-manual').style.borderBottomColor = tab === 'manual' ? 'var(--gold)' : 'transparent';
       document.getElementById('tab-list').style.color = tab === 'list' ? 'var(--gold)' : 'var(--text-muted)';
       document.getElementById('tab-list').style.borderBottomColor = tab === 'list' ? 'var(--gold)' : 'transparent';
+      document.getElementById('tab-test').style.color = tab === 'test' ? 'var(--gold)' : 'var(--text-muted)';
+      document.getElementById('tab-test').style.borderBottomColor = tab === 'test' ? 'var(--gold)' : 'transparent';
       if (tab === 'list') loadLists();
     }
 
-    function confirmManualEmail() {
-      const email = document.getElementById('manualEmail').value.trim();
-      const firstName = document.getElementById('manualFirstName').value.trim() || 'Test';
-      const lastName = document.getElementById('manualLastName').value.trim() || 'User';
-      console.log('📧 confirmManualEmail() called with email:', email, 'name:', firstName, lastName);
+    function addTestRecipient() {
+      const email = document.getElementById('testEmail').value.trim();
+      const firstName = document.getElementById('testFirstName').value.trim();
+      const lastName = document.getElementById('testLastName').value.trim();
 
       if (!email) {
-        alert('Please enter an email address');
+        alert('❌ Email address is required');
         return;
       }
-      if (!email.includes('@')) {
-        alert('Please enter a valid email address');
-        return;
-      }
-      fullData = [{ email: email, first_name: firstName, last_name: lastName }];
+
+      fullData = [{ email, first_name: firstName, last_name: lastName }];
       uploadedData = fullData;
-      console.log('✅ uploadedData set to:', uploadedData);
+      deduped = false;
+
+      document.getElementById('testEmailDisplay').textContent = email;
+      document.getElementById('testFirstNameDisplay').textContent = firstName || '(empty)';
+      document.getElementById('testLastNameDisplay').textContent = lastName || '(empty)';
+      document.getElementById('testRecipientInfo').style.display = 'block';
+
       updateRecipientCount(1);
       updateSendButton();
-      confirmSend();
     }
 
     async function loadLists() {
@@ -1220,137 +1209,182 @@
       }
     }
 
-    initTheme();
-    loadTemplates();
+    function saveSenderInfo() {
+      const senderName = document.getElementById('senderName').value.trim();
+      const senderEmail = document.getElementById('senderEmail').value.trim();
 
-    // AI Features
-    function openGenerateModal() {
-      document.getElementById('generateModal').classList.add('show');
-      document.getElementById('genStatus').style.display = 'none';
-      document.getElementById('genIdea').value = '';
-      document.getElementById('genCampaignName').value = '';
-    }
-
-    function closeGenerateModal() {
-      document.getElementById('generateModal').classList.remove('show');
-    }
-
-    async function generateEmail() {
-      const idea = document.getElementById('genIdea').value.trim();
-      const campaignName = document.getElementById('genCampaignName').value.trim();
-
-      if (!idea) {
-        alert('Please describe your email idea');
+      if (!senderName) {
+        alert('Please enter a sender name');
+        return;
+      }
+      if (!senderEmail) {
+        alert('Please enter a sender email');
         return;
       }
 
-      const status = document.getElementById('genStatus');
-      status.textContent = '✨ Generating email...';
+      localStorage.setItem('emailSenderName', senderName);
+      localStorage.setItem('emailSenderEmail', senderEmail);
+      alert('✅ Sender info saved:\n' + senderName + ' <' + senderEmail + '>');
+    }
+
+    function loadSenderInfo() {
+      const savedName = localStorage.getItem('emailSenderName');
+      const savedEmail = localStorage.getItem('emailSenderEmail');
+      if (savedName) {
+        document.getElementById('senderName').value = savedName;
+      }
+      if (savedEmail) {
+        document.getElementById('senderEmail').value = savedEmail;
+      }
+    }
+
+    function showAiStatus(message, isError = false) {
+      const status = document.getElementById('aiStatus');
+      status.textContent = message;
+      status.style.color = isError ? '#FF6B6B' : '#7BB8F5';
       status.style.display = 'block';
-
-      try {
-        const response = await fetch('/api/ai/generate-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idea, campaignName })
-        });
-
-        const result = await response.json();
-        if (result.html) {
-          document.getElementById('htmlBody').value = result.html;
-          status.textContent = '✅ Email generated!';
-          setTimeout(() => closeGenerateModal(), 1500);
-          updateSendButton();
-        } else {
-          status.textContent = '❌ ' + (result.error || 'Failed to generate email');
-        }
-      } catch (err) {
-        status.textContent = '❌ Error: ' + err.message;
-      }
+      setTimeout(() => { status.style.display = 'none'; }, 5000);
     }
 
-    function suggestSubjects() {
-      const htmlBody = document.getElementById('htmlBody').value.trim();
-      if (!htmlBody) {
-        alert('Please write or generate an email body first');
+    async function generateEmailWithAI() {
+      const idea = document.getElementById('aiIdea').value.trim();
+      if (!idea) {
+        showAiStatus('❌ Enter your email idea first', true);
         return;
       }
 
-      document.getElementById('suggestModal').classList.add('show');
-      document.getElementById('suggestStatus').style.display = 'block';
-      document.getElementById('suggestList').style.display = 'none';
-      document.getElementById('suggestStatus').textContent = '💡 Generating subject suggestions...';
+      showAiStatus('🤖 Generating email with AI...');
+      try {
+        const res = await fetch('/api/ai/generate-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idea, campaignName: document.getElementById('subject').value || 'Campaign' })
+        });
+        const data = await res.json();
+        if (data.html) {
+          document.getElementById('htmlBody').value = data.html;
+          switchMode('html');
+          updateSendButton();
+          showAiStatus('✅ Email generated! Review and edit as needed.');
+        } else {
+          showAiStatus('❌ ' + (data.error || 'Failed to generate'), true);
+        }
+      } catch (err) {
+        showAiStatus('❌ ' + err.message, true);
+      }
+    }
 
-      fetch('/api/ai/suggest-subjects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ htmlBody })
-      })
-        .then(res => res.json())
-        .then(result => {
-          if (result.subjects && result.subjects.length > 0) {
-            const options = document.getElementById('suggestOptions');
-            options.innerHTML = result.subjects.map((subject, idx) => `
-              <button onclick="setSubject('${subject.replace(/'/g, "\\'")}'); closeSuggestModal();" style="padding: 12px; background: rgba(245, 166, 35, 0.1); color: var(--gold); border: 1px solid var(--gold); border-radius: 6px; cursor: pointer; text-align: left; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='rgba(245, 166, 35, 0.2)'" onmouseout="this.style.background='rgba(245, 166, 35, 0.1)'">
-                <strong>Option ${idx + 1}:</strong><br>${subject}
-              </button>
-            `).join('');
-            document.getElementById('suggestStatus').style.display = 'none';
-            document.getElementById('suggestList').style.display = 'block';
-          } else {
-            document.getElementById('suggestStatus').textContent = '❌ ' + (result.error || 'Failed to generate subjects');
+    async function suggestSubjectsWithAI() {
+      const htmlBody = document.getElementById('htmlBody').value.trim();
+      const textBody = document.getElementById('textBody').value.trim();
+      const body = htmlBody || textBody;
+
+      if (!body) {
+        showAiStatus('❌ Write an email first', true);
+        return;
+      }
+
+      showAiStatus('💡 Generating subject suggestions...');
+      try {
+        const res = await fetch('/api/ai/suggest-subjects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ htmlBody: body })
+        });
+        const data = await res.json();
+        if (data.subjects && data.subjects.length > 0) {
+          const choice = prompt(`AI Suggested 3 subject lines:\n\n1. ${data.subjects[0]}\n\n2. ${data.subjects[1]}\n\n3. ${data.subjects[2]}\n\nEnter 1, 2, or 3 to use, or 0 to cancel:`);
+          if (choice === '1' || choice === '2' || choice === '3') {
+            document.getElementById('subject').value = data.subjects[parseInt(choice) - 1];
+            updateSendButton();
+            showAiStatus('✅ Subject line updated!');
           }
-        })
-        .catch(err => {
-          document.getElementById('suggestStatus').textContent = '❌ Error: ' + err.message;
-        });
+        } else {
+          showAiStatus('❌ ' + (data.error || 'Failed to suggest subjects'), true);
+        }
+      } catch (err) {
+        showAiStatus('❌ ' + err.message, true);
+      }
     }
 
-    function setSubject(subject) {
-      document.getElementById('subject').value = subject;
-      updateSendButton();
-    }
-
-    function closeSuggestModal() {
-      document.getElementById('suggestModal').classList.remove('show');
-    }
-
-    async function improveEmail() {
+    async function improveEmailWithAI() {
       const htmlBody = document.getElementById('htmlBody').value.trim();
-      if (!htmlBody) {
-        alert('Please write or generate an email body first');
+      const textBody = document.getElementById('textBody').value.trim();
+      const body = htmlBody || textBody;
+
+      if (!body) {
+        showAiStatus('❌ Write an email first', true);
         return;
       }
 
-      const instructions = prompt('How should we improve the email? (optional)', 'Improve for engagement and clarity');
-      if (instructions === null) return;
-
-      const btn = event.target;
-      btn.disabled = true;
-      btn.textContent = '⏳ Improving...';
-
+      showAiStatus('✨ Improving email with AI...');
       try {
-        const response = await fetch('/api/ai/improve-email', {
+        const res = await fetch('/api/ai/improve-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ htmlBody, instructions })
+          body: JSON.stringify({ htmlBody: body, instructions: 'Improve for clarity, engagement, and conversions' })
         });
-
-        const result = await response.json();
-        if (result.html) {
-          document.getElementById('htmlBody').value = result.html;
-          alert('✅ Email improved!');
+        const data = await res.json();
+        if (data.html) {
+          if (htmlBody) {
+            document.getElementById('htmlBody').value = data.html;
+            switchMode('html');
+          } else {
+            document.getElementById('textBody').value = data.html;
+            switchMode('text');
+          }
           updateSendButton();
+          showAiStatus('✅ Email improved! Review the changes.');
         } else {
-          alert('❌ ' + (result.error || 'Failed to improve email'));
+          showAiStatus('❌ ' + (data.error || 'Failed to improve'), true);
         }
       } catch (err) {
-        alert('❌ Error: ' + err.message);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '🤖 Improve Email';
+        showAiStatus('❌ ' + err.message, true);
       }
     }
+
+    function setTracking(type, value) {
+      // Update button styles
+      document.querySelectorAll(`.tracking-btn[data-tracking="${type}"]`).forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.background = 'transparent';
+        btn.style.border = '1px solid var(--border)';
+        btn.style.color = 'var(--text)';
+      });
+
+      const activeBtn = document.querySelector(`.tracking-btn[data-tracking="${type}"][data-value="${value}"]`);
+      if (activeBtn) {
+        activeBtn.classList.add('active');
+        activeBtn.style.background = 'var(--gold)';
+        activeBtn.style.border = '1px solid var(--gold)';
+        activeBtn.style.color = 'var(--navy)';
+        activeBtn.style.fontWeight = '600';
+      }
+
+      // Store tracking preference
+      const trackingData = {
+        opens: document.querySelector('.tracking-btn[data-tracking="opens"].active')?.dataset.value || 'yes',
+        clicks: document.querySelector('.tracking-btn[data-tracking="clicks"].active')?.dataset.value || 'yes'
+      };
+      localStorage.setItem('emailTracking', JSON.stringify(trackingData));
+      console.log('Tracking preferences set:', trackingData);
+    }
+
+    // Load tracking preferences on page load
+    function loadTrackingPreferences() {
+      const saved = localStorage.getItem('emailTracking');
+      if (saved) {
+        const prefs = JSON.parse(saved);
+        Object.entries(prefs).forEach(([type, value]) => {
+          setTracking(type, value);
+        });
+      }
+    }
+
+    initTheme();
+    loadSenderInfo();
+    loadTemplates();
+    loadTrackingPreferences();
   </script>
 </body>
 </html>

@@ -332,11 +332,6 @@
       color: #667eea;
     }
 
-    .badge-volunteer {
-      background: rgba(29, 184, 122, 0.2);
-      color: #1DB87A;
-    }
-
     .text-muted {
       color: var(--text-muted);
       font-size: 13px;
@@ -587,10 +582,8 @@
         let roleClass = 'badge-staff';
         if (user.role === 'admin') roleClass = 'badge-admin';
         else if (user.role === 'campaign_manager') roleClass = 'badge-campaign_manager';
-        else if (user.role === 'volunteer') roleClass = 'badge-volunteer';
 
-        let displayRole = user.role.charAt(0).toUpperCase() + user.role.slice(1);
-        if (user.role === 'campaign_manager') displayRole = 'Campaign Manager';
+        const displayRole = user.role === 'campaign_manager' ? 'Campaign Manager' : user.role.charAt(0).toUpperCase() + user.role.slice(1);
 
         html += `
           <tr>

@@ -18,4 +18,26 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle 401 Unauthorized responses
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Clear token and redirect to login
+      localStorage.removeItem('token');
+      // Dispatch logout action
+      try {
+        const store = require('../redux/store').default;
+        const { logout } = require('../redux/slices/authSlice');
+        store.dispatch(logout());
+      } catch (err) {
+        console.error('Failed to dispatch logout:', err);
+      }
+      // Redirect to login
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default apiClient;

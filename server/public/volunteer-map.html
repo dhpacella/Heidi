@@ -3,548 +3,230 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Volunteer Tracking - Heidi Voter Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <title>Live Volunteer GPS Map</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <style>
-    :root {
-      --navy: #0B1929;
-      --navy-mid: #122338;
-      --navy-light: #1A3550;
-      --gold: #F5A623;
-      --gold-light: #FBBF48;
-      --green: #1DB87A;
-      --red: #E03434;
-      --text: #EEF2F7;
-      --text-muted: #8BA3BE;
-      --border: #243D56;
-      --surface: #122338;
-      --surface-2: #1A3550;
-    }
-
-    body.light-theme {
-      --navy: #F5F5F5;
-      --navy-mid: #FFFFFF;
-      --navy-light: #F0F0F0;
-      --text: #1A1A1A;
-      --text-muted: #666666;
-      --border: #DDDDDD;
-      --surface: #FFFFFF;
-      --surface-2: #F9F9F9;
-    }
-
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     body {
       font-family: 'Barlow', sans-serif;
-      background: var(--navy);
-      color: var(--text);
-      height: 100vh;
-      overflow: hidden;
-      transition: background 0.3s ease, color 0.3s ease;
+      background: #0F1419;
+      color: #E8EBF0;
+      line-height: 1.6;
+      transition: background 0.3s, color 0.3s;
     }
-
-    .container {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
+    body.light-mode {
+      background: #F5F5F5;
+      color: #1A1A1A;
     }
-
-    /* ── Header ── */
-    .page-header {
-      background: linear-gradient(135deg, #0B1929 0%, #122338 40%, #1A3550 100%);
-      border-bottom: 1px solid var(--border);
+    header {
+      background: #1A3550;
+      border-bottom: 2px solid #F5A623;
       padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       position: relative;
-      overflow: hidden;
       z-index: 100;
     }
-
-    .page-header::after {
-      content: '';
-      position: absolute;
-      bottom: 0; left: 0; right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, var(--gold), #F5A62300);
+    body.light-mode header {
+      background: #E8F1F8;
+      border-bottom-color: #F5A623;
+      color: #1A3550;
     }
-
-    .header-nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .header-nav h1 {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-    }
-
-    .header-controls {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-    }
-
+    header h1 { font-size: 24px; font-weight: 700; color: #F5A623; }
+    .header-right { display: flex; gap: 12px; }
     .btn {
-      padding: 10px 16px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-family: 'Barlow', sans-serif;
-      font-size: 14px;
-      font-weight: 500;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
       cursor: pointer;
-      transition: all 0.2s ease;
-      background: var(--navy-light);
-      color: var(--text);
-    }
-
-    .btn:hover {
-      background: var(--gold);
-      color: var(--navy);
-      border-color: var(--gold);
-    }
-
-    /* ── Main Map Container ── */
-    .main-content {
-      display: flex;
-      flex: 1;
-      gap: 0;
-      overflow: hidden;
-    }
-
-    #map {
-      flex: 1;
-      z-index: 2;
-    }
-
-    /* ── Right Sidebar ── */
-    .sidebar {
-      width: 320px;
-      background: var(--surface);
-      border-left: 1px solid var(--border);
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      z-index: 3;
-    }
-
-    .sidebar-header {
-      padding: 16px;
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      background: var(--surface);
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 16px;
-      font-weight: 700;
-    }
-
-    .sidebar-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px;
-    }
-
-    .volunteer-card {
-      background: var(--navy-light);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 12px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .volunteer-card:hover {
-      background: var(--surface-2);
-      border-color: var(--gold);
-    }
-
-    .volunteer-card.selected {
-      background: var(--surface-2);
-      border-color: var(--gold);
-      box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.2);
-    }
-
-    .volunteer-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-
-    .status-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: var(--green);
-      animation: pulse 2s infinite;
-    }
-
-    .status-dot.inactive {
-      background: var(--text-muted);
-      animation: none;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    .volunteer-name {
-      font-weight: 600;
-      font-size: 14px;
-      flex: 1;
-    }
-
-    .precinct-badge {
-      background: rgba(245, 166, 35, 0.2);
-      color: var(--gold);
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-size: 10px;
-      font-weight: 600;
-    }
-
-    .volunteer-stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-
-    .stat {
-      background: var(--navy);
-      padding: 8px;
-      border-radius: 4px;
-      text-align: center;
-      border: 1px solid var(--border);
-    }
-
-    .stat-value {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--gold);
-    }
-
-    .stat-label {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-
-    .progress-bar {
-      background: var(--navy);
-      height: 6px;
-      border-radius: 3px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      margin-top: 8px;
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--gold), var(--green));
-      transition: width 0.3s ease;
-    }
-
-    .last-gps {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 6px;
-    }
-
-    /* ── Legend ── */
-    .legend {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px;
       font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-logout { background: #2A5070; color: #8BA3BE; }
+    .btn-logout:hover { background: #3A6080; }
+    body.light-mode .btn-logout { background: #D0E0EB; color: #1A3550; }
+    body.light-mode .btn-logout:hover { background: #B8D5E5; }
+    .btn-dark-toggle { background: transparent; color: #8BA3BE; border: 1px solid #8BA3BE; }
+    body.light-mode .btn-dark-toggle { color: #1A3550; border-color: #1A3550; }
+    #map {
+      width: 100%;
+      height: calc(100vh - 70px);
+      background: #1F2937;
+    }
+    body.light-mode #map {
+      background: #E8F1F8;
+    }
+    .info-panel {
       position: absolute;
-      bottom: 20px;
-      left: 20px;
-      max-width: 250px;
-      z-index: 10;
+      bottom: 24px;
+      left: 24px;
+      background: #1F2937;
+      border: 1px solid #2D3E52;
+      border-radius: 8px;
+      padding: 16px;
+      max-width: 300px;
+      z-index: 1000;
+      color: #E8EBF0;
     }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
+    body.light-mode .info-panel {
+      background: #FFFFFF;
+      border-color: #E0E0E0;
+      color: #1A1A1A;
     }
-
-    .legend-item:last-child {
-      margin-bottom: 0;
+    .info-panel h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #F5A623;
+      margin-bottom: 12px;
     }
-
-    .legend-color {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      flex-shrink: 0;
+    .info-stat { font-size: 13px; margin-bottom: 8px; }
+    .info-stat strong { color: #F5A623; }
+    .refresh-status {
+      font-size: 11px;
+      color: #888780;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #2D3E52;
     }
-
-    .empty-state {
-      padding: 20px;
-      text-align: center;
-      color: var(--text-muted);
+    body.light-mode .refresh-status {
+      border-top-color: #E0E0E0;
+      color: #999;
     }
-
-    @media (max-width: 768px) {
-      .sidebar {
-        position: absolute;
-        right: 0;
-        top: 0;
-        height: 100%;
-        box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
-      }
+    .leaflet-popup-content-wrapper {
+      background: #1F2937;
+      color: #E8EBF0;
+      border-radius: 6px;
+    }
+    body.light-mode .leaflet-popup-content-wrapper {
+      background: #FFFFFF;
+      color: #1A1A1A;
+    }
+    .leaflet-popup-content {
+      margin: 8px 12px;
+      font-size: 13px;
+    }
+    .leaflet-popup-tip {
+      background: #1F2937;
+    }
+    body.light-mode .leaflet-popup-tip {
+      background: #FFFFFF;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Header -->
-    <div class="page-header">
-      <div class="header-nav">
-        <h1>🗺️ Live Volunteer Tracking</h1>
-        <div class="header-controls">
-          <button class="btn" onclick="toggleTheme()">🌙</button>
-          <button class="btn" onclick="goBack()">← Back</button>
-        </div>
-      </div>
+  <header>
+    <h1>📍 Live Volunteer GPS Map</h1>
+    <div class="header-right">
+      <button class="btn btn-dark-toggle" onclick="toggleTheme()">🌙 Dark</button>
+      <button class="btn btn-logout" onclick="logout()">Logout</button>
     </div>
+  </header>
 
-    <!-- Main Content -->
-    <div class="main-content">
-      <div id="map"></div>
+  <div id="map"></div>
 
-      <!-- Legend -->
-      <div class="legend">
-        <div class="legend-item">
-          <div class="legend-color" style="background: #4CAF50;"></div>
-          <span>Visited</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background: #FF9800;"></div>
-          <span>In Progress</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background: #2196F3;"></div>
-          <span>Volunteer Location</span>
-        </div>
-      </div>
-
-      <!-- Sidebar -->
-      <div class="sidebar">
-        <div class="sidebar-header">👥 Volunteers</div>
-        <div class="sidebar-content" id="sidebarContent"></div>
-      </div>
-    </div>
+  <div class="info-panel">
+    <h3>🗺️ Map Status</h3>
+    <div class="info-stat">Active volunteers: <strong id="activeCount">0</strong></div>
+    <div class="info-stat">Last position: <strong id="lastUpdate">Never</strong></div>
+    <div class="info-stat">Tracking: <strong id="trackingStatus">Off</strong></div>
+    <div class="refresh-status">Auto-updating every 30 seconds</div>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    let map = null;
-    let volunteers = [];
-    let gpsPositions = {};
+    let map;
     let markers = {};
-    let pollingInterval = null;
-    const POLL_INTERVAL = 30000; // 30 seconds
+    let lastUpdateTime = null;
 
-    // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
-      loadTheme();
-      initMap();
-      loadVolunteers();
-      // Poll for updates every 30 seconds
-      pollingInterval = setInterval(updateGPSPositions, POLL_INTERVAL);
-    });
-
-    // Theme toggle
     function toggleTheme() {
-      document.body.classList.toggle('light-theme');
-      localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
-    }
-
-    function loadTheme() {
-      if (localStorage.getItem('theme') === 'light') {
-        document.body.classList.add('light-theme');
+      document.body.classList.toggle('light-mode');
+      const isDark = document.body.classList.contains('light-mode');
+      localStorage.setItem('theme', isDark ? 'light' : 'dark');
+      document.querySelector('.btn-dark-toggle').textContent = isDark ? '☀️ Light' : '🌙 Dark';
+      if (map) {
+        map.invalidateSize();
       }
     }
 
-    // Initialize map
+    function initTheme() {
+      const saved = localStorage.getItem('theme') || 'dark';
+      if (saved === 'light') document.body.classList.add('light-mode');
+      document.querySelector('.btn-dark-toggle').textContent = saved === 'light' ? '☀️ Light' : '🌙 Dark';
+    }
+
+    function logout() {
+      fetch('/logout', { method: 'POST' }).then(() => window.location.href = '/login');
+    }
+
     function initMap() {
-      map = L.map('map').setView([40.7128, -74.0060], 12);
+      // Homer Glen, IL coordinates
+      const centerLat = 41.6006;
+      const centerLng = -87.9390;
+
+      map = L.map('map').setView([centerLat, centerLng], 13);
+
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
         maxZoom: 19
       }).addTo(map);
     }
 
-    // Load volunteers
-    async function loadVolunteers() {
+    async function updatePositions() {
       try {
-        const res = await fetch('/api/volunteers', { credentials: 'include' });
+        const res = await fetch('/api/volunteers/gps/live');
         const data = await res.json();
-        volunteers = data.volunteers || [];
-        renderSidebar();
-        await updateGPSPositions();
-      } catch (err) {
-        console.error('Error loading volunteers:', err);
-      }
-    }
+        const positions = data.positions || [];
 
-    // Update GPS positions
-    async function updateGPSPositions() {
-      try {
-        const res = await fetch('/api/volunteers/gps/live', { credentials: 'include' });
-        const data = await res.json();
-        const liveVolunteers = data.volunteers || [];
+        // Clear old markers
+        Object.values(markers).forEach(marker => map.removeLayer(marker));
+        markers = {};
 
-        liveVolunteers.forEach(vol => {
-          gpsPositions[vol.id] = {
-            latitude: vol.latitude,
-            longitude: vol.longitude,
-            recorded_at: vol.recorded_at,
-            name: vol.name
-          };
+        if (positions.length === 0) {
+          document.getElementById('activeCount').textContent = '0';
+          document.getElementById('trackingStatus').textContent = 'No volunteers active';
+          return;
+        }
 
-          // Update or create marker
-          updateMarker(vol);
+        // Add new markers
+        positions.forEach(pos => {
+          if (pos.latitude && pos.longitude) {
+            const marker = L.circleMarker([pos.latitude, pos.longitude], {
+              radius: 8,
+              fillColor: '#F5A623',
+              color: '#F0A000',
+              weight: 2,
+              opacity: 1,
+              fillOpacity: 0.8
+            }).addTo(map);
+
+            const lastUpdate = pos.last_updated ? new Date(pos.last_updated).toLocaleTimeString() : 'unknown';
+            marker.bindPopup(`
+              <div><strong>${pos.volunteer_name || 'Unknown'}</strong></div>
+              <div style="font-size: 11px; color: #888;">Updated: ${lastUpdate}</div>
+            `);
+
+            markers[pos.volunteer_id] = marker;
+          }
         });
 
-        renderSidebar();
+        document.getElementById('activeCount').textContent = positions.length;
+        document.getElementById('trackingStatus').textContent = 'Active';
+
+        lastUpdateTime = new Date();
+        document.getElementById('lastUpdate').textContent = lastUpdateTime.toLocaleTimeString();
       } catch (err) {
-        console.error('Error updating GPS:', err);
+        console.error('Error updating positions:', err);
+        document.getElementById('trackingStatus').textContent = 'Error loading data';
       }
     }
 
-    // Update marker on map
-    function updateMarker(vol) {
-      const markerId = `volunteer-${vol.id}`;
-
-      if (markers[markerId]) {
-        // Update existing marker position
-        markers[markerId].setLatLng([vol.latitude, vol.longitude]);
-      } else {
-        // Create new marker
-        const html = `
-          <div style="
-            width: 32px;
-            height: 32px;
-            background: #2196F3;
-            border-radius: 50%;
-            border: 3px solid white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-          ">📍</div>
-        `;
-
-        const marker = L.marker([vol.latitude, vol.longitude], {
-          icon: L.divIcon({
-            html: html,
-            iconSize: [32, 32],
-            className: 'volunteer-marker'
-          })
-        }).bindPopup(`
-          <strong>${vol.name}</strong><br>
-          Precinct: ${vol.precinct_name || 'Unknown'}<br>
-          Last Update: ${new Date(vol.recorded_at).toLocaleTimeString()}
-        `).addTo(map);
-
-        markers[markerId] = marker;
-      }
-    }
-
-    // Render sidebar
-    function renderSidebar() {
-      const content = document.getElementById('sidebarContent');
-      content.innerHTML = '';
-
-      if (volunteers.length === 0) {
-        content.innerHTML = '<div class="empty-state">No volunteers yet</div>';
-        return;
-      }
-
-      volunteers.forEach(vol => {
-        const gps = gpsPositions[vol.id];
-        const lastUpdate = gps ? new Date(gps.recorded_at).toLocaleTimeString() : 'No GPS data';
-        const isActive = gps ? true : false;
-
-        const card = document.createElement('div');
-        card.className = 'volunteer-card';
-        card.onclick = () => focusVolunteer(vol);
-
-        const progressPct = vol.assigned_count > 0
-          ? Math.round((vol.visited_count / vol.assigned_count) * 100)
-          : 0;
-
-        card.innerHTML = `
-          <div class="volunteer-header">
-            <div class="status-dot ${isActive ? '' : 'inactive'}"></div>
-            <div class="volunteer-name">${vol.name}</div>
-            <div class="precinct-badge">${vol.precinct_name || 'N/A'}</div>
-          </div>
-
-          <div class="volunteer-stats">
-            <div class="stat">
-              <div class="stat-value">${vol.assigned_count || 0}</div>
-              <div class="stat-label">Assigned</div>
-            </div>
-            <div class="stat">
-              <div class="stat-value">${vol.visited_count || 0}</div>
-              <div class="stat-label">Visited</div>
-            </div>
-          </div>
-
-          <div class="progress-bar">
-            <div class="progress-fill" style="width: ${progressPct}%"></div>
-          </div>
-
-          <div class="last-gps">
-            ${isActive ? '🟢 Active • ' : '🔴 Inactive • '}${lastUpdate}
-          </div>
-        `;
-
-        content.appendChild(card);
-      });
-    }
-
-    // Focus volunteer on map
-    function focusVolunteer(vol) {
-      const gps = gpsPositions[vol.id];
-      if (gps) {
-        map.setView([gps.latitude, gps.longitude], 16);
-        const markerId = `volunteer-${vol.id}`;
-        if (markers[markerId]) {
-          markers[markerId].openPopup();
-        }
-      }
-    }
-
-    // Navigation
-    function goBack() {
-      window.location.href = '/dashboard';
-    }
-
-    // Cleanup
-    window.addEventListener('beforeunload', () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
-    });
+    initTheme();
+    initMap();
+    updatePositions();
+    setInterval(updatePositions, 30000);
   </script>
 </body>
 </html>

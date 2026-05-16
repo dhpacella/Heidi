@@ -329,7 +329,6 @@
       <div class="header-left">
         <a href="/dashboard" class="btn">← Dashboard</a>
         <a href="/email-compose" class="btn">📧 New Email</a>
-        <a href="/email-campaigns" class="btn">📊 Campaigns</a>
       </div>
       <h1>📧 Email History</h1>
       <div class="header-right">
@@ -393,6 +392,7 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const data = await response.json();
+        console.log('📧 Blasts data:', data.blasts?.[0]);
 
         if (!data.blasts || data.blasts.length === 0) {
           content.innerHTML = '<div class="empty-state"><p>No emails sent yet. <a href="/email-compose" style="color: var(--gold); text-decoration: underline;">Create one now</a></p></div>';
@@ -416,15 +416,35 @@
         `;
 
         data.blasts.forEach(blast => {
-          const date = new Date(blast.created_at).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-          const preview = (blast.subject || '').substring(0, 60) + (blast.subject.length > 60 ? '...' : '');
-          const cost = `$${parseFloat(blast.total_cost || 0).toFixed(4)}`;
+          let date = 'Unknown';
+          if (blast.created_at) {
+            const dateObj = new Date(blast.created_at);
+            if (!isNaN(dateObj.getTime())) {
+              date = dateObj.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+            }
+          } else if (blast.sent_at) {
+            const dateObj = new Date(blast.sent_at);
+            if (!isNaN(dateObj.getTime())) {
+              date = dateObj.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+            }
+          }
+          const subj = blast.subject || '';
+          const preview = subj.substring(0, 60) + (subj.length > 60 ? '...' : '');
+          const costPerRecipient = 0.0001; // $0.0001 per email
+          const totalCost = (blast.recipient_count || 0) * costPerRecipient;
+          const cost = `$${totalCost.toFixed(4)}`;
           const opens = `${blast.opened_count || 0} / ${blast.recipient_count}`;
           const clicks = `${blast.clicked_count || 0} / ${blast.recipient_count}`;
 
@@ -436,7 +456,7 @@
               <td>${opens}</td>
               <td>${clicks}</td>
               <td class="cost">${cost}</td>
-              <td>${blast.sender_name || 'Unknown'}</td>
+              <td>${blast.from_name || blast.from_address || 'Unknown'}</td>
             </tr>
           `;
         });

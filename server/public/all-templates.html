@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Templates — Heidi Pacella</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0B1929;
+      --navy-mid: #122338;
+      --navy-light: #1A3550;
+      --gold: #F5A623;
+      --gold-light: #FBBF48;
+      --text: #EEF2F7;
+      --text-muted: #8BA3BE;
+      --surface: #122338;
+    }
+    body {
+      font-family: 'Barlow', sans-serif;
+      background: var(--navy);
+      color: var(--text);
+      padding: 30px;
+    }
+    .container { max-width: 1000px; margin: 0 auto; }
+    .header {
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid rgba(245, 166, 35, 0.2);
+    }
+    h1 { font-size: 28px; color: var(--gold); font-weight: 700; margin-bottom: 10px; }
+    .header-buttons { display: flex; gap: 10px; margin-top: 15px; }
+    .btn {
+      padding: 10px 16px;
+      border: 1px solid var(--gold);
+      background: rgba(245, 166, 35, 0.1);
+      color: var(--gold);
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn:hover { background: rgba(245, 166, 35, 0.2); }
+    .btn-primary { background: var(--gold); color: var(--navy); }
+    .templates-list { display: grid; gap: 15px; }
+    .template-item {
+      background: var(--navy-mid);
+      border: 1px solid rgba(245, 166, 35, 0.1);
+      border-radius: 8px;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .template-item:hover { border-color: var(--gold); }
+    .template-info h3 { color: var(--gold); margin-bottom: 4px; }
+    .template-info p { font-size: 12px; color: var(--text-muted); }
+    .template-actions { display: flex; gap: 8px; }
+    .template-actions button { padding: 6px 12px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📋 Email Templates</h1>
+      <p style="color: var(--text-muted);">Save and reuse your email templates</p>
+      <div class="header-buttons">
+        <button class="btn btn-primary" onclick="createTemplate()">➕ New Template</button>
+        <button class="btn" onclick="history.back()">← Back</button>
+      </div>
+    </div>
+
+    <div class="templates-list" id="templates-list">
+      <!-- Populated by JavaScript -->
+    </div>
+  </div>
+
+  <script>
+    const templates = [
+      { name: 'Election Day Reminder', category: 'GOTV', created: '2025-05-10', uses: 12 },
+      { name: 'Volunteer Recruitment', category: 'Recruitment', created: '2025-04-15', uses: 8 },
+      { name: 'Event Announcement', category: 'Events', created: '2025-03-20', uses: 5 },
+      { name: 'Donation Request', category: 'Fundraising', created: '2025-02-28', uses: 15 },
+    ];
+
+    function renderTemplates() {
+      const list = document.getElementById('templates-list');
+      list.innerHTML = templates.map((t, idx) => `
+        <div class="template-item" onclick="viewTemplate('${t.name}')">
+          <div class="template-info">
+            <h3>${t.name}</h3>
+            <p>📁 ${t.category} • Created ${t.created} • Used ${t.uses} times</p>
+          </div>
+          <div class="template-actions">
+            <button class="btn" onclick="event.stopPropagation(); editTemplate('${t.name}')">✏️ Edit</button>
+            <button class="btn" onclick="event.stopPropagation(); duplicateTemplate('${t.name}')">📋 Duplicate</button>
+            <button class="btn" onclick="event.stopPropagation(); deleteTemplate(${idx})" style="border-color: #E03434; color: #E03434;">🗑️ Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function createTemplate() {
+      alert('Template creation coming soon!');
+    }
+
+    function viewTemplate(name) {
+      alert(`Template: ${name}\n\nView and edit template coming soon!`);
+    }
+
+    function editTemplate(name) {
+      alert(`Editing: ${name}`);
+    }
+
+    function duplicateTemplate(name) {
+      alert(`Duplicated: ${name}`);
+    }
+
+    function deleteTemplate(idx) {
+      if (confirm('Delete this template?')) {
+        templates.splice(idx, 1);
+        renderTemplates();
+      }
+    }
+
+    renderTemplates();
+  </script>
+</body>
+</html>

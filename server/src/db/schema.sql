@@ -234,6 +234,14 @@ ALTER TABLE email_blasts
 
 CREATE INDEX IF NOT EXISTS idx_email_blasts_scheduled ON email_blasts(scheduled_at) WHERE status = 'scheduled';
 
+-- Enhanced Email Composition Fields
+ALTER TABLE email_blasts
+  ADD COLUMN IF NOT EXISTS from_name VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS reply_to VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS plain_text_body TEXT,
+  ADD COLUMN IF NOT EXISTS query_string TEXT,
+  ADD COLUMN IF NOT EXISTS web_language VARCHAR(10) DEFAULT 'en';
+
 -- A/B Testing Support
 ALTER TABLE email_blasts
   ADD COLUMN IF NOT EXISTS ab_test_id INTEGER REFERENCES email_blasts(id) ON DELETE SET NULL,

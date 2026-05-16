@@ -8,47 +8,136 @@ const { normalizeEmail, sendEmail } = require('../lib/sesClient');
 const { uploadFile, getPresignedUrl } = require('../lib/s3Client');
 const { enqueue } = require('../lib/sqsClient');
 const { publishBlastQueued } = require('../lib/eventBridgeClient');
+const campaignEvents = require('../lib/campaignEvents');
+const { putMetric } = require('../lib/cloudwatchClient');
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
+
+function parseRecipientsFromBuffer(buffer, mimetype, originalname) {
+  let rows;
+  if (mimetype === 'text/csv' || originalname.endsWith('.csv')) {
+    rows = parse(buffer.toString('utf-8'), { columns: true, skip_empty_lines: true, trim: true });
+  } else {
+    const wb = XLSX.read(buffer, { type: 'buffer' });
+    rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+  }
+  return rows.map(row => {
+    const keys = Object.keys(row);
+    const find = (...names) => {
+      const k = keys.find(k => names.includes(k.toLowerCase()));
+      return k ? String(row[k] || '').trim() : '';
+    };
+    return {
+      email:      find('email', 'e-mail', 'email_address'),
+      first_name: find('first_name', 'firstname', 'first name', 'first'),
+      last_name:  find('last_name', 'lastname', 'last name', 'last'),
+    };
+  }).filter(r => r.email.includes('@'));
+}
+
+// Email template CRUD routes
+router.get('/templates', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, name, subject, html_body, created_at FROM email_templates WHERE user_id = $1 ORDER BY created_at DESC',
+      [req.user.id]
+    );
+    res.json({ templates: rows });
+  } catch (err) {
+    console.error('GET /templates error:', err);
+    res.status(500).json({ error: 'Failed to fetch templates' });
+  }
+});
+
+router.post('/templates', async (req, res) => {
+  const { name, subject, html_body } = req.body;
+  if (!name || !subject || !html_body) {
+    return res.status(400).json({ error: 'name, subject, and html_body are required' });
+  }
+  try {
+    const { rows } = await pool.query(
+      'INSERT INTO email_templates (user_id, name, subject, html_body, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW()) RETURNING id, name, subject, html_body, created_at',
+      [req.user.id, name, subject, html_body]
+    );
+    res.status(201).json({ template: rows[0] });
+  } catch (err) {
+    console.error('POST /templates error:', err);
+    res.status(500).json({ error: 'Failed to create template' });
+  }
+});
+
+router.delete('/templates/:id', async (req, res) => {
+  try {
+    const { rowCount } = await pool.query(
+      'DELETE FROM email_templates WHERE id = $1 AND user_id = $2',
+      [req.params.id, req.user.id]
+    );
+    if (rowCount === 0) return res.status(404).json({ error: 'Template not found' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('DELETE /templates/:id error:', err);
+    res.status(500).json({ error: 'Failed to delete template' });
+  }
+});
 
 router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('file'), async (req, res) => {
   try {
-    const { subject, htmlBody, fromAddress, recipientEmails } = req.body;
+    const { subject, htmlBody, fromAddress, recipientEmails, scheduledAt, fromName, replyTo, plainTextBody, queryString, webLanguage } = req.body;
     const user_id = req.user.id;
 
-    if (!subject || !htmlBody || !fromAddress) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    // Validate: need subject, from address, and at least one body (HTML or plain text)
+    if (!subject || !fromAddress || (!htmlBody && !plainTextBody)) {
+      return res.status(400).json({ error: 'Missing required fields: subject, from address, and message body' });
     }
 
-    let emails = [];
+    if (!req.file && !recipientEmails) {
+      return res.status(400).json({ error: 'Upload a CSV file or provide email addresses' });
+    }
+
+    // Parse scheduled send time
+    const parsedScheduledAt = scheduledAt ? new Date(scheduledAt) : null;
+    const isScheduled = parsedScheduledAt && parsedScheduledAt > new Date();
+
+    let recipients = [];
     if (req.file) {
-      // Parse CSV or Excel
-      const fileExt = req.file.originalname.split('.').pop().toLowerCase();
-      if (fileExt === 'csv') {
-        const text = req.file.buffer.toString('utf-8');
-        const records = parse(text, { columns: true });
-        emails = records.map(r => r.email || r.Email || r.EMAIL).filter(e => normalizeEmail(e));
-      } else if (fileExt === 'xlsx' || fileExt === 'xls') {
-        const workbook = XLSX.read(req.file.buffer);
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const records = XLSX.utils.sheet_to_json(sheet);
-        emails = records.map(r => r.email || r.Email || r.EMAIL).filter(e => normalizeEmail(e));
-      }
+      recipients = parseRecipientsFromBuffer(req.file.buffer, req.file.mimetype, req.file.originalname);
     } else if (recipientEmails) {
-      emails = JSON.parse(recipientEmails).filter(e => normalizeEmail(e));
+      try {
+        recipients = JSON.parse(recipientEmails).map(e => ({
+          email: String(e).trim(),
+          first_name: '',
+          last_name: ''
+        })).filter(r => r.email.includes('@'));
+      } catch (err) {
+        return res.status(400).json({ error: 'Invalid email format' });
+      }
     }
 
-    if (emails.length === 0) {
+    if (recipients.length === 0) {
       return res.status(400).json({ error: 'No valid emails found' });
     }
 
     // Create blast record
+    // Use htmlBody if provided, otherwise use plainTextBody for html_body column
+    const finalHtmlBody = htmlBody || plainTextBody;
+    const now = new Date().toISOString();
     const blastResult = await pool.query(
-      'INSERT INTO email_blasts (sender_id, subject, html_body, from_address, recipient_count, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-      [user_id, subject, htmlBody, fromAddress, emails.length, 'queued']
+      'INSERT INTO email_blasts (sender_id, subject, html_body, from_address, from_name, reply_to, plain_text_body, query_string, web_language, recipient_count, status, scheduled_at, created_at, sent_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id',
+      [user_id, subject, finalHtmlBody, fromAddress, fromName || null, replyTo || null, plainTextBody || null, queryString || null, webLanguage || 'en', recipients.length, isScheduled ? 'scheduled' : 'queued', isScheduled ? parsedScheduledAt : null, now, null]
     );
     const blastId = blastResult.rows[0].id;
+
+    // Insert recipients in 1000-row chunks to avoid hitting Postgres parameter limit (65535)
+    const INSERT_CHUNK = 1000;
+    for (let i = 0; i < recipients.length; i += INSERT_CHUNK) {
+      const chunk = recipients.slice(i, i + INSERT_CHUNK);
+      await pool.query(
+        `INSERT INTO email_recipients (blast_id, email, first_name, last_name, status)
+         SELECT $1, UNNEST($2::text[]), UNNEST($3::text[]), UNNEST($4::text[]), 'pending'`,
+        [blastId, chunk.map(r => r.email), chunk.map(r => r.first_name), chunk.map(r => r.last_name)]
+      );
+    }
 
     // Archive uploaded file to S3 (if file was provided)
     if (req.file) {
@@ -61,23 +150,41 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
       }
     }
 
-    // Enqueue blast for async processing
+    // If scheduled, skip enqueue and respond with scheduled status
+    if (isScheduled) {
+      res.json({
+        success: true,
+        blastId,
+        scheduled: true,
+        scheduledAt: parsedScheduledAt.toISOString(),
+        recipientCount: recipients.length
+      });
+      return;
+    }
+
+    // Enqueue blast in 500-recipient chunks for parallel processing
     try {
-      await enqueue({ type: 'email_blast', blastId });
-      console.log(`✅ Queued email blast ${blastId} (${emails.length} recipients)`);
+      const SQS_CHUNK = 500;
+      const chunkCount = Math.ceil(recipients.length / SQS_CHUNK);
+      for (let offset = 0; offset < recipients.length; offset += SQS_CHUNK) {
+        await enqueue({ type: 'email_blast_chunk', blastId, offset, limit: SQS_CHUNK });
+      }
+      console.log(`✅ Queued email blast ${blastId} (${recipients.length} recipients, ${chunkCount} chunks)`);
 
       // Publish blast.queued event (async, non-blocking)
       try {
-        await publishBlastQueued(blastId, 'email', emails.length);
+        await publishBlastQueued(blastId, 'email', recipients.length);
       } catch (err) {
         console.warn('⚠️ Failed to publish blast.queued event:', err.message);
       }
 
+      await putMetric('BlastSent', 1);
+
       res.json({
         success: true,
         blastId,
-        status: 'queued',
-        message: `Email blast queued for delivery to ${emails.length} recipients`
+        scheduled: false,
+        recipientCount: recipients.length
       });
     } catch (err) {
       // If SQS enqueue fails, fall back to synchronous sending
@@ -86,14 +193,14 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
       const BATCH_SIZE = 10;
       const BATCH_DELAY_MS = 100;
 
-      for (let i = 0; i < emails.length; i += BATCH_SIZE) {
-        const batch = emails.slice(i, i + BATCH_SIZE);
+      for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
+        const batch = recipients.slice(i, i + BATCH_SIZE);
         const batchResults = await Promise.all(
-          batch.map(email => sendEmail(email, subject, htmlBody, '', fromAddress))
+          batch.map(r => sendEmail(r.email, subject, finalHtmlBody, plainTextBody || '', fromAddress))
         );
         results.push(...batchResults);
 
-        if (i + BATCH_SIZE < emails.length) {
+        if (i + BATCH_SIZE < recipients.length) {
           await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
         }
       }
@@ -107,10 +214,8 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
       res.json({
         success: true,
         blastId,
-        totalEmails: emails.length,
-        successCount,
-        failureCount: emails.length - successCount,
-        results,
+        scheduled: false,
+        recipientCount: recipients.length,
         fallback: true
       });
     }
@@ -140,7 +245,7 @@ router.get('/blasts', requireRole('admin', 'campaign_manager'), async (req, res)
   try {
     const { rows } = await pool.query(`
       SELECT
-        b.id, b.subject, b.from_address, b.recipient_count, b.status,
+        b.id, b.subject, b.from_address, b.from_name, b.recipient_count, b.status,
         b.created_at, b.sent_at,
         COUNT(CASE WHEN r.opened_at IS NOT NULL THEN 1 END)      AS opened_count,
         COUNT(CASE WHEN r.clicked_at IS NOT NULL THEN 1 END)     AS clicked_count,
@@ -150,10 +255,11 @@ router.get('/blasts', requireRole('admin', 'campaign_manager'), async (req, res)
         COUNT(CASE WHEN r.delivered_at IS NOT NULL THEN 1 END)   AS delivered_count
       FROM email_blasts b
       LEFT JOIN email_recipients r ON r.blast_id = b.id
-      GROUP BY b.id
+      GROUP BY b.id, b.subject, b.from_address, b.from_name, b.recipient_count, b.status, b.created_at, b.sent_at
       ORDER BY b.created_at DESC
       LIMIT 100
     `);
+    console.log('📧 First blast data:', rows[0]);
     res.json({ blasts: rows });
   } catch (err) {
     console.error('Error fetching blasts:', err);
@@ -191,7 +297,7 @@ router.get('/stats/overview', requireRole('admin', 'campaign_manager'), async (r
         COUNT(CASE WHEN r.unsubscribed_at IS NOT NULL THEN 1 END) AS unsubscribed_count
       FROM email_blasts b
       LEFT JOIN email_recipients r ON r.blast_id = b.id
-      GROUP BY b.id, b.recipient_count
+      GROUP BY b.id
     `);
 
     let totalCampaigns = blasts ? blasts.length : 0;
@@ -245,6 +351,37 @@ router.get('/stats/overview', requireRole('admin', 'campaign_manager'), async (r
     console.error('Error fetching stats overview:', err);
     res.status(500).json({ error: 'Failed to load stats: ' + err.message });
   }
+});
+
+router.get('/stream', requireRole('admin', 'campaign_manager'), (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  const eventHandler = (data) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  const handlers = {
+    'blast.progress': eventHandler,
+    'blast.complete': eventHandler,
+    'blast.error': eventHandler,
+    'blast.started': eventHandler
+  };
+
+  Object.entries(handlers).forEach(([event, handler]) => {
+    campaignEvents.on(event, handler);
+  });
+
+  res.on('close', () => {
+    Object.entries(handlers).forEach(([event, handler]) => {
+      campaignEvents.removeListener(event, handler);
+    });
+    res.end();
+  });
+
+  res.write(`:heartbeat\n\n`);
 });
 
 module.exports = router;

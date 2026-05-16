@@ -15,10 +15,17 @@
     "build:server": "cd server && npm run build",
     "build:client": "cd client && npm run build"
   },
-  "keywords": ["voter", "tracking", "election", "precinct", "prioritization"],
+  "keywords": [
+    "voter",
+    "tracking",
+    "election",
+    "precinct",
+    "prioritization"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "archiver": "^8.0.0",
     "concurrently": "^8.0.0"
   }
 }

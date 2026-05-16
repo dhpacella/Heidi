@@ -3,13 +3,15 @@ if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
 }
 
-console.log('🚀 Starting app');
-
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const path = require('path');
 const session = require('express-session');
 const PgSession = require('connect-pg-simple')(session);
+const morgan = require('morgan');
+const logger = require('./lib/logger');
+const requestId = require('./middleware/requestId');
 
 const pool = require('./db/connection');
 const { requireApiAuth } = require('./middleware/auth');
@@ -25,12 +27,16 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 app.use(cors({
-  origin: process.env.CLIENT_URL || true,
+  origin: process.env.CLIENT_URL || 'http://localhost:3000',
   credentials: true
 }));
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
+app.use(requestId);
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms', {
+  stream: { write: (msg) => logger.info(msg.trim()) },
+}));
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
@@ -47,12 +53,12 @@ app.use(session({
   cookie: {
     httpOnly: true,
     sameSite: 'lax',
-    secure: false,
+    secure: process.env.NODE_ENV === 'production',
     maxAge: 7 * 24 * 60 * 60 * 1000
   }
 }));
 
-// HTML auth + dashboard routes (sessions)
+// HTML auth routes (login/logout via session)
 app.use('/', require('./routes/htmlAuth'));
 
 // /api/auth — public endpoints (login) + protected (me, token)
@@ -79,140 +85,35 @@ app.post('/api/email/webhooks/ses', express.json({ type: '*/*' }), require('./ro
 app.use('/api/email/track', require('./routes/emailTracking'));
 
 app.use('/api/ai', requireApiAuth, require('./routes/ai'));
+app.use('/api/assistant', requireApiAuth, require('./routes/assistant'));
 app.use('/api/email', requireApiAuth, require('./routes/email'));
 app.use('/api/lists', requireApiAuth, require('./routes/lists'));
 app.use('/api/volunteers', requireApiAuth, require('./routes/volunteers'));
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
-
-
-// Debug endpoint to check admin user and database status
-app.get('/debug/admin-status', async (req, res) => {
+app.get('/health', async (req, res) => {
+  const start = Date.now();
+  let dbOk = false;
+  let dbLatencyMs = null;
   try {
-    const { rows } = await pool.query('SELECT COUNT(*) as count FROM users WHERE email = $1', ['admin@test.com']);
-    const adminExists = rows[0].count > 0;
-
-    if (adminExists) {
-      res.json({
-        status: 'admin_exists',
-        message: 'Admin user exists in database',
-        email: 'admin@test.com',
-        password: 'Admin123!'
-      });
-    } else {
-      res.json({
-        status: 'admin_missing',
-        message: 'Admin user NOT found in database - trying to create now...'
-      });
-
-      // Try to create admin now
-      const bcrypt = require('bcryptjs');
-      const hash = await bcrypt.hash('Admin123!', 10);
-      const createResult = await pool.query(
-        'INSERT INTO users (email, name, password_hash, role) VALUES ($1, $2, $3, $4) ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash RETURNING id',
-        ['admin@test.com', 'Admin', hash, 'admin']
-      );
-
-      res.json({
-        status: 'admin_created',
-        message: 'Admin user just created. Try logging in now with admin@test.com / Admin123!',
-        id: createResult.rows[0].id
-      });
-    }
+    await pool.query('SELECT 1');
+    dbOk = true;
+    dbLatencyMs = Date.now() - start;
   } catch (err) {
-    res.status(500).json({
-      status: 'error',
-      message: err.message,
-      error: err
-    });
+    logger.error('Health check DB failure', { message: err.message });
   }
+  res.status(dbOk ? 200 : 503).json({
+    status: dbOk ? 'ok' : 'degraded',
+    db: { connected: dbOk, latencyMs: dbLatencyMs },
+    uptime: Math.floor(process.uptime()),
+    memoryMB: Math.round(process.memoryUsage().rss / 1024 / 1024),
+    timestamp: new Date().toISOString(),
+  });
 });
-
-// Force reset admin user
-app.get('/debug/reset-admin', async (req, res) => {
-  try {
-    const bcrypt = require('bcryptjs');
-
-    // Delete existing
-    await pool.query('DELETE FROM users WHERE email = $1', ['admin@test.com']);
-
-    // Create with fresh hash using 10 rounds
-    const hash = await bcrypt.hash('Admin123!', 10);
-    const result = await pool.query(
-      'INSERT INTO users (email, name, password_hash, role, created_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id, email',
-      ['admin@test.com', 'Admin User', hash, 'admin']
-    );
-
-    res.json({
-      status: 'success',
-      message: '✅ Admin user reset successfully!',
-      email: 'admin@test.com',
-      password: 'Admin123!',
-      userId: result.rows[0].id,
-      instruction: 'Go back to /login and try again'
-    });
-  } catch (err) {
-    res.status(500).json({
-      status: 'error',
-      message: err.message
-    });
-  }
-});
-
-// TEMPORARY: Setup endpoint to create admin user (remove after initialization)
+// One-time setup endpoint - initializes database and creates admin user (dev only)
 app.post('/api/setup', async (req, res) => {
-  try {
-    const bcryptjs = require('bcryptjs');
-    const adminEmail = 'admin@test.com';
-    const adminPassword = 'Admin123!';
-
-    const hashedPassword = await bcryptjs.hash(adminPassword, 6);
-    await pool.query('DELETE FROM users WHERE email = $1', [adminEmail]);
-    const result = await pool.query(
-      'INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING id',
-      [adminEmail, hashedPassword, 'Test Admin', 'admin']
-    );
-
-    res.json({
-      success: true,
-      message: 'Admin user created',
-      email: adminEmail,
-      password: adminPassword,
-      userId: result.rows[0].id
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Setup endpoint disabled in production' });
   }
-});
-
-
-// Database migration endpoint - applies pending schema changes
-app.post('/api/migrate-db', async (req, res) => {
-  try {
-    const fs = require('fs');
-    const path = require('path');
-
-    const client = await pool.connect();
-    try {
-      const schemaPath = path.join(__dirname, 'db', 'schema.sql');
-      const schema = fs.readFileSync(schemaPath, 'utf8');
-      await client.query(schema);
-
-      console.log('✅ Database schema migration successful');
-      res.json({ success: true, message: 'Database schema migrated successfully' });
-    } finally {
-      client.release();
-    }
-  } catch (err) {
-    console.error('Migration error:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// One-time setup endpoint - initializes database and creates admin user
-app.post('/api/setup', async (req, res) => {
   try {
     const { adminPassword } = req.body;
     if (!adminPassword) {
@@ -255,9 +156,25 @@ app.post('/api/setup', async (req, res) => {
   }
 });
 
+// SPA Fallback Route - serve index.html for all non-API routes
+app.get('*', (req, res) => {
+  const indexPath = path.join(__dirname, '..', 'public', 'index.html');
+  if (require('fs').existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).json({ error: 'Not found' });
+  }
+});
+
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Internal server error' });
+  logger.error('Unhandled error', {
+    requestId: req.id,
+    method: req.method,
+    url: req.originalUrl,
+    message: err.message,
+    stack: err.stack,
+  });
+  res.status(err.status || 500).json({ error: 'Internal server error', requestId: req.id });
 });
 
 // X-Ray close segment (production only)
@@ -268,7 +185,7 @@ if (process.env.NODE_ENV === 'production') {
 const PORT = process.env.PORT || 5000;
 if (require.main === module) {
   app.listen(PORT, '0.0.0.0', async () => {
-    console.log(`🚀 Server running on port ${PORT}`);
+    logger.info('Server started', { port: PORT, env: process.env.NODE_ENV });
 
     // Initialize async pool (Secrets Manager, if needed)
     try {
@@ -306,7 +223,7 @@ if (require.main === module) {
       }
     }
 
-    // Initialize database schema and admin user on startup
+    // Initialize database schema and create admin user on first startup
     try {
       const fs = require('fs');
       const path = require('path');
@@ -319,26 +236,26 @@ if (require.main === module) {
       await pool.query(schema);
       console.log('✅ Database schema ready');
 
-      // Create admin user with optimized bcrypt rounds
-      // Use 6 rounds for faster password comparison
+      // Create admin user if it doesn't exist (only on first startup)
       const adminEmail = 'admin@test.com';
       const adminPassword = 'Admin123!';
 
       console.log('🔐 Hashing admin password...');
-      const hashedPassword = await bcryptjs.hash(adminPassword, 6);
+      const hashedPassword = await bcryptjs.hash(adminPassword, 12);
       console.log('✅ Password hashed, attempting to create user...');
 
-      // Delete existing admin user if present to ensure fresh hash
-      const deleteResult = await pool.query('DELETE FROM users WHERE email = $1', [adminEmail]);
-      console.log(`🗑️ Deleted ${deleteResult.rowCount} existing admin user(s)`);
-
-      // Create new admin user
+      // Create admin user if not already present
       const result = await pool.query(
-        'INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING id, email',
-        [adminEmail, hashedPassword, 'Test Admin', 'admin']
+        'INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) ON CONFLICT (email) DO NOTHING RETURNING id, email',
+        [adminEmail, hashedPassword, 'Admin', 'admin']
       );
-      console.log(`✅ Admin user created with ID: ${result.rows[0].id}`);
-      console.log('✅ Ready to login: admin@test.com / Admin123!');
+
+      if (result.rows.length > 0) {
+        console.log(`✅ Admin user created with ID: ${result.rows[0].id}`);
+        console.log('✅ Ready to login: admin@test.com / Admin123!');
+      } else {
+        console.log('✅ Admin user already exists');
+      }
     } catch (err) {
       console.error('❌ Database initialization error:', err.message);
       console.error('Stack:', err.stack);

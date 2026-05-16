@@ -120,10 +120,10 @@ router.get('/:id', requireRole('admin', 'campaign_manager', 'volunteer'), async 
     // Check if volunteer is viewing their own data
     if (req.user.role === 'volunteer') {
       const volRes = await pool.query(
-        'SELECT volunteer_id FROM volunteers WHERE user_id = $1',
+        'SELECT id FROM volunteers WHERE user_id = $1',
         [req.user.id]
       );
-      if (!volRes.rows.length || volRes.rows[0].volunteer_id != volunteerId) {
+      if (!volRes.rows.length || volRes.rows[0].id != volunteerId) {
         return res.status(403).json({ error: 'Cannot view other volunteers' });
       }
     }

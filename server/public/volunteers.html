@@ -3,1018 +3,452 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Volunteer Management - Heidi Voter Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <title>Volunteer Manager</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --navy: #0B1929;
-      --navy-mid: #122338;
-      --navy-light: #1A3550;
-      --gold: #F5A623;
-      --gold-light: #FBBF48;
-      --green: #1DB87A;
-      --red: #E03434;
-      --text: #EEF2F7;
-      --text-muted: #8BA3BE;
-      --border: #243D56;
-      --surface: #122338;
-      --surface-2: #1A3550;
-    }
-
-    body.light-theme {
-      --navy: #F5F5F5;
-      --navy-mid: #FFFFFF;
-      --navy-light: #F0F0F0;
-      --text: #1A1A1A;
-      --text-muted: #666666;
-      --border: #DDDDDD;
-      --surface: #FFFFFF;
-      --surface-2: #F9F9F9;
-    }
-
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     body {
       font-family: 'Barlow', sans-serif;
-      background: var(--navy);
-      color: var(--text);
-      min-height: 100vh;
-      padding: 20px;
-      transition: background 0.3s ease, color 0.3s ease;
+      background: #0F1419;
+      color: #E8EBF0;
+      line-height: 1.6;
+      transition: background 0.3s, color 0.3s;
     }
-
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 0;
-      opacity: 0.5;
+    body.light-mode {
+      background: #F5F5F5;
+      color: #1A1A1A;
     }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      position: relative;
-      z-index: 1;
-    }
-
-    /* ── Header ── */
-    .page-header {
-      background: linear-gradient(135deg, #0B1929 0%, #122338 40%, #1A3550 100%);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px 24px;
-      margin-bottom: 24px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .page-header::before {
-      content: '';
-      position: absolute;
-      top: -40px; right: -40px;
-      width: 280px; height: 280px;
-      background: radial-gradient(circle, rgba(245,166,35,.12) 0%, transparent 70%);
-      pointer-events: none;
-    }
-
-    .page-header::after {
-      content: '';
-      position: absolute;
-      bottom: 0; left: 0; right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, var(--gold), #F5A62300);
-    }
-
-    .header-nav {
+    header {
+      background: #1A3550;
+      border-bottom: 2px solid #F5A623;
+      padding: 16px 24px;
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      position: relative;
-      z-index: 1;
-      margin-bottom: 16px;
-    }
-
-    .header-nav h1 {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-    }
-
-    .header-controls {
-      display: flex;
-      gap: 12px;
       align-items: center;
     }
-
+    body.light-mode header {
+      background: #E8F1F8;
+      border-bottom-color: #F5A623;
+      color: #1A3550;
+    }
+    header h1 { font-size: 24px; font-weight: 700; color: #F5A623; }
+    .header-right { display: flex; gap: 12px; }
     .btn {
-      padding: 10px 16px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-family: 'Barlow', sans-serif;
-      font-size: 14px;
-      font-weight: 500;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
       cursor: pointer;
-      transition: all 0.2s ease;
-      background: var(--navy-light);
-      color: var(--text);
-    }
-
-    .btn:hover {
-      background: var(--gold);
-      color: var(--navy);
-      border-color: var(--gold);
-    }
-
-    .btn-primary {
-      background: var(--gold);
-      color: var(--navy);
-      border-color: var(--gold);
-    }
-
-    .btn-primary:hover {
-      background: var(--gold-light);
-    }
-
-    .btn-sm {
-      padding: 8px 12px;
       font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
     }
-
-    /* ── Main Layout ── */
-    .main-layout {
+    .btn-primary { background: #F5A623; color: #1A3550; }
+    .btn-primary:hover { background: #F0A000; }
+    .btn-logout { background: #2A5070; color: #8BA3BE; }
+    .btn-logout:hover { background: #3A6080; }
+    body.light-mode .btn-logout { background: #D0E0EB; color: #1A3550; }
+    body.light-mode .btn-logout:hover { background: #B8D5E5; }
+    .btn-dark-toggle { background: transparent; color: #8BA3BE; border: 1px solid #8BA3BE; }
+    body.light-mode .btn-dark-toggle { color: #1A3550; border-color: #1A3550; }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 2fr;
       gap: 24px;
     }
-
-    /* ── Left Panel: Volunteer List ── */
-    .volunteer-list-section {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      max-height: 70vh;
-      overflow-y: auto;
-    }
-
-    .section-title {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 18px;
-      font-weight: 700;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .filter-group {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .filter-group label {
-      font-size: 13px;
-      color: var(--text-muted);
-      align-self: center;
-    }
-
-    .filter-group select {
-      flex: 1;
-      padding: 8px 12px;
-      background: var(--navy-light);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      font-family: 'Barlow', sans-serif;
-      font-size: 14px;
-    }
-
-    .volunteer-item {
-      background: var(--navy-light);
-      border: 1px solid var(--border);
+    .card {
+      background: #1F2937;
+      border: 1px solid #2D3E52;
       border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 12px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .volunteer-item:hover {
-      background: var(--surface-2);
-      border-color: var(--gold);
-    }
-
-    .volunteer-item.selected {
-      background: var(--surface-2);
-      border-color: var(--gold);
-      box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.2);
-    }
-
-    .volunteer-item-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .volunteer-name {
-      font-weight: 600;
-      font-size: 14px;
-    }
-
-    .volunteer-badge {
-      background: var(--green);
-      color: white;
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-
-    .volunteer-meta {
-      font-size: 12px;
-      color: var(--text-muted);
-      display: flex;
-      gap: 12px;
-    }
-
-    .stat-item {
-      display: flex;
-      gap: 4px;
-    }
-
-    .stat-label {
-      color: var(--text-muted);
-    }
-
-    .stat-value {
-      color: var(--gold);
-      font-weight: 600;
-    }
-
-    /* ── Right Panel: Details & Forms ── */
-    .detail-section {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      max-height: 70vh;
-      overflow-y: auto;
-    }
-
-    .detail-section.hidden {
-      display: none;
-    }
-
-    .volunteer-detail {
-      margin-bottom: 24px;
-    }
-
-    .detail-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 16px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .detail-header h2 {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 20px;
-      font-weight: 700;
-    }
-
-    .info-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 12px;
-      font-size: 14px;
-    }
-
-    .info-label {
-      color: var(--text-muted);
-    }
-
-    .info-value {
-      font-weight: 500;
-    }
-
-    .assignments-list {
-      background: var(--navy-light);
-      border-radius: 8px;
-      overflow: hidden;
-      max-height: 300px;
-      overflow-y: auto;
-    }
-
-    .assignment-item {
-      padding: 12px;
-      border-bottom: 1px solid var(--border);
-      font-size: 13px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .assignment-item:last-child {
-      border-bottom: none;
-    }
-
-    .assignment-name {
-      flex: 1;
-    }
-
-    .assignment-status {
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 600;
-      white-space: nowrap;
-      margin-left: 8px;
-    }
-
-    .status-pending {
-      background: rgba(245, 166, 35, 0.2);
-      color: var(--gold);
-    }
-
-    .status-visited {
-      background: rgba(29, 184, 122, 0.2);
-      color: var(--green);
-    }
-
-    /* ── Add Volunteer Form ── */
-    .form-section {
-      margin-bottom: 24px;
-    }
-
-    .form-group {
-      margin-bottom: 16px;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 6px;
-      color: var(--text);
-    }
-
-    .required::after {
-      content: ' *';
-      color: var(--red);
-    }
-
-    .form-group input,
-    .form-group select {
-      width: 100%;
-      padding: 10px 12px;
-      background: var(--navy-light);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      font-family: 'Barlow', sans-serif;
-      font-size: 14px;
-      transition: border-color 0.2s;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus {
-      outline: none;
-      border-color: var(--gold);
-      box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.1);
-    }
-
-    .form-actions {
-      display: flex;
-      gap: 12px;
-      margin-top: 20px;
-    }
-
-    /* ── Modal ── */
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.7);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal.active {
-      display: flex;
-    }
-
-    .modal-content {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
       padding: 24px;
-      max-width: 500px;
-      max-height: 80vh;
-      overflow-y: auto;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
     }
-
-    .modal-header {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 20px;
+    body.light-mode .card {
+      background: #FFFFFF;
+      border-color: #E0E0E0;
+    }
+    .card h2 {
+      font-size: 16px;
       font-weight: 700;
-      margin-bottom: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .close-btn {
-      background: none;
-      border: none;
-      color: var(--text);
-      font-size: 24px;
-      cursor: pointer;
-      padding: 0;
-    }
-
-    .modal-filters {
-      display: grid;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .progress-stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-top: 16px;
-    }
-
-    .stat-card {
-      background: var(--navy-light);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px;
-      text-align: center;
-    }
-
-    .stat-card-value {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--gold);
-    }
-
-    .stat-card-label {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    .alert {
-      padding: 12px 16px;
-      border-radius: 8px;
       margin-bottom: 16px;
-      font-size: 14px;
+      color: #F5A623;
     }
-
-    .alert-success {
-      background: rgba(29, 184, 122, 0.2);
-      color: var(--green);
-      border: 1px solid rgba(29, 184, 122, 0.3);
+    .volunteer-card {
+      background: #252F3F;
+      border: 1px solid #2D3E52;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
     }
-
-    .alert-error {
-      background: rgba(224, 52, 52, 0.2);
-      color: var(--red);
-      border: 1px solid rgba(224, 52, 52, 0.3);
+    body.light-mode .volunteer-card {
+      background: #F9F9F9;
+      border-color: #E0E0E0;
     }
-
-    @media (max-width: 1024px) {
-      .main-layout {
-        grid-template-columns: 1fr;
-      }
-
-      .volunteer-list-section,
-      .detail-section {
-        max-height: none;
-      }
+    .volunteer-card:hover {
+      border-color: #F5A623;
+      background: #2D3E52;
     }
+    body.light-mode .volunteer-card:hover {
+      background: #F5F5F5;
+      border-color: #F5A623;
+    }
+    .volunteer-card.selected {
+      border-color: #F5A623;
+      background: #2D3E52;
+    }
+    body.light-mode .volunteer-card.selected {
+      background: #E8F1F8;
+      border-color: #F5A623;
+    }
+    .vol-name { font-weight: 600; margin-bottom: 4px; }
+    .vol-meta { font-size: 12px; color: #888780; margin-bottom: 8px; }
+    .progress-bar {
+      background: #1A2534;
+      border-radius: 4px;
+      height: 6px;
+      overflow: hidden;
+    }
+    body.light-mode .progress-bar {
+      background: #E0E0E0;
+    }
+    .progress-fill {
+      background: linear-gradient(90deg, #F5A623, #5DE0B0);
+      height: 100%;
+    }
+    .vol-stats { font-size: 11px; color: #888780; margin-top: 6px; }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      background: #252F3F;
+      color: #E8EBF0;
+      border: 1px solid #2D3E52;
+      border-radius: 6px;
+      font-family: 'Barlow', sans-serif;
+    }
+    body.light-mode input,
+    body.light-mode select {
+      background: #FFFFFF;
+      color: #1A1A1A;
+      border-color: #E0E0E0;
+    }
+    input::placeholder {
+      color: #888780;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #888780;
+      margin-bottom: 6px;
+    }
+    .empty { text-align: center; padding: 24px; color: #888780; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th {
+      text-align: left;
+      padding: 10px;
+      border-bottom: 2px solid #F5A623;
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #F5A623;
+    }
+    td {
+      padding: 10px;
+      border-bottom: 1px solid #2D3E52;
+    }
+    body.light-mode td {
+      border-bottom-color: #E0E0E0;
+    }
+    .status-pending { color: #F5A623; }
+    .status-visited { color: #5DE0B0; }
   </style>
 </head>
 <body>
+  <header>
+    <h1>👥 Volunteer Manager</h1>
+    <div class="header-right">
+      <button class="btn btn-dark-toggle" onclick="toggleTheme()">🌙 Dark</button>
+      <button class="btn btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
   <div class="container">
-    <!-- Header -->
-    <div class="page-header">
-      <div class="header-nav">
-        <h1>📋 Volunteer Management</h1>
-        <div class="header-controls">
-          <button class="btn btn-primary" onclick="showAddVolunteerForm()">+ Add Volunteer</button>
-          <button class="btn" onclick="toggleTheme()">🌙</button>
-          <button class="btn" onclick="goToDashboard()">← Back</button>
-        </div>
+    <!-- Left: Volunteer List -->
+    <div>
+      <div class="card">
+        <h2>Volunteers</h2>
+        <button class="btn btn-primary" onclick="showAddForm()" style="width: 100%; margin-bottom: 16px;">➕ Add Volunteer</button>
+        <div id="volunteerList" class="empty">Loading volunteers...</div>
       </div>
     </div>
 
-    <!-- Main Layout -->
-    <div class="main-layout">
-      <!-- Left: Volunteer List -->
-      <div class="volunteer-list-section">
-        <div class="section-title">📍 Volunteers</div>
+    <!-- Right: Selected Volunteer Detail -->
+    <div>
+      <div class="card">
+        <h2 id="detailTitle">Select a volunteer to manage</h2>
 
-        <div class="filter-group">
-          <label>Filter by Precinct:</label>
-          <select id="precinctFilter" onchange="filterVolunteers()">
-            <option value="">All Precincts</option>
-          </select>
+        <!-- Add Volunteer Form -->
+        <div id="addForm" style="display: none; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #2D3E52;">
+          <h3 style="color: #F5A623; margin-bottom: 12px;">New Volunteer</h3>
+          <label>Name</label>
+          <input type="text" id="newVolName" placeholder="Full name">
+          <label>Email</label>
+          <input type="email" id="newVolEmail" placeholder="email@example.com">
+          <label>Phone</label>
+          <input type="tel" id="newVolPhone" placeholder="(555) 123-4567">
+          <label>Precinct</label>
+          <input type="text" id="newVolPrecinct" placeholder="Precinct name or ID">
+          <div style="display: flex; gap: 12px;">
+            <button class="btn btn-primary" onclick="saveNewVolunteer()" style="flex: 1;">Save Volunteer</button>
+            <button class="btn" onclick="hideAddForm()" style="flex: 1; background: #2A5070; color: #8BA3BE;">Cancel</button>
+          </div>
         </div>
 
-        <div id="volunteerList"></div>
-      </div>
+        <!-- Volunteer Detail -->
+        <div id="detailContent" style="display: none;">
+          <div style="background: #252F3F; border-radius: 6px; padding: 16px; margin-bottom: 24px;">
+            <div id="detailName" style="font-size: 18px; font-weight: 700; margin-bottom: 8px;"></div>
+            <div id="detailMeta" style="font-size: 12px; color: #888780; margin-bottom: 12px;"></div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div>
+                <div style="font-size: 11px; color: #888780; text-transform: uppercase;">Assigned</div>
+                <div style="font-size: 24px; font-weight: 700; color: #F5A623;" id="detailAssigned">0</div>
+              </div>
+              <div>
+                <div style="font-size: 11px; color: #888780; text-transform: uppercase;">Visited</div>
+                <div style="font-size: 24px; font-weight: 700; color: #5DE0B0;" id="detailVisited">0</div>
+              </div>
+            </div>
+          </div>
 
-      <!-- Right: Detail View / Add Form -->
-      <div class="detail-section" id="addVolunteerSection">
-        <div class="section-title">➕ Add New Volunteer</div>
-        <form onsubmit="createVolunteer(event)" class="form-section">
-          <div class="form-group">
-            <label class="required">Name</label>
-            <input type="text" id="volName" required placeholder="Full name">
-          </div>
-          <div class="form-group">
-            <label class="required">Email</label>
-            <input type="email" id="volEmail" required placeholder="Email address">
-          </div>
-          <div class="form-group">
-            <label>Phone</label>
-            <input type="tel" id="volPhone" placeholder="Phone number">
-          </div>
-          <div class="form-group">
+          <!-- Filter & Assign Section -->
+          <div style="background: #252F3F; border-radius: 6px; padding: 16px; margin-bottom: 24px;">
+            <h3 style="color: #F5A623; margin-bottom: 12px;">Filter & Assign Voters</h3>
             <label>Precinct</label>
-            <select id="volPrecinct">
-              <option value="">Select a precinct</option>
-            </select>
-          </div>
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Create Volunteer</button>
-            <button type="button" class="btn" onclick="resetForm()">Cancel</button>
-          </div>
-          <div id="formMessage"></div>
-        </form>
-      </div>
-
-      <div class="detail-section hidden" id="volunteerDetailSection">
-        <div id="volunteerDetailContent"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: Assign Voters -->
-  <div class="modal" id="assignModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <span>🎯 Assign Voters to <span id="assignVolName"></span></span>
-        <button class="close-btn" onclick="closeAssignModal()">×</button>
-      </div>
-
-      <form onsubmit="assignVoters(event)" id="assignForm">
-        <div class="modal-filters">
-          <div class="form-group">
-            <label>Precinct</label>
-            <select id="filterPrecinct">
-              <option value="">All Precincts</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Party Affiliation</label>
+            <input type="text" id="filterPrecinct" placeholder="(leave blank for all)">
+            <label>Party</label>
             <select id="filterParty">
-              <option value="">All Parties</option>
-              <option value="Democratic">Democratic</option>
-              <option value="Republican">Republican</option>
-              <option value="Independent">Independent</option>
-              <option value="Other">Other</option>
+              <option value="">All parties</option>
+              <option value="democrat">Democrat</option>
+              <option value="republican">Republican</option>
+              <option value="independent">Independent</option>
             </select>
+            <label>Voted in last X years</label>
+            <input type="number" id="filterYears" value="3" min="1" max="20">
+            <div style="display: flex; gap: 12px;">
+              <button class="btn btn-primary" onclick="assignVoters(false)" style="flex: 1;">Assign Voters</button>
+              <button class="btn btn-primary" onclick="assignVoters(true)" style="flex: 1; background: #FF6B6B;">Replace & Reassign</button>
+            </div>
+            <div id="assignMessage" style="margin-top: 12px; padding: 12px; border-radius: 6px; display: none;"></div>
           </div>
-          <div class="form-group">
-            <label>Voted in Last N Years</label>
-            <input type="number" id="filterVotedYears" min="1" max="30" placeholder="E.g., 2">
-          </div>
-          <div class="form-group">
-            <label>Name (First or Last)</label>
-            <input type="text" id="filterName" placeholder="Search by name">
+
+          <!-- Assignments List -->
+          <div>
+            <h3 style="color: #F5A623; margin-bottom: 12px;">Assigned Voters</h3>
+            <div id="assignmentsList" class="empty">No assignments yet</div>
           </div>
         </div>
-
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary">Assign Voters</button>
-          <button type="button" class="btn" onclick="closeAssignModal()">Cancel</button>
-        </div>
-
-        <div id="assignMessage"></div>
-      </form>
+      </div>
     </div>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    let selectedVolunteer = null;
-    let volunteers = [];
-    let precincts = [];
+    let selectedVolId = null;
 
-    // Initialize
-    document.addEventListener('DOMContentLoaded', async () => {
-      await loadPrecincts();
-      await loadVolunteers();
-      loadTheme();
-    });
-
-    // Theme toggle
     function toggleTheme() {
-      document.body.classList.toggle('light-theme');
-      localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
+      document.body.classList.toggle('light-mode');
+      const isDark = document.body.classList.contains('light-mode');
+      localStorage.setItem('theme', isDark ? 'light' : 'dark');
+      document.querySelector('.btn-dark-toggle').textContent = isDark ? '☀️ Light' : '🌙 Dark';
     }
 
-    function loadTheme() {
-      if (localStorage.getItem('theme') === 'light') {
-        document.body.classList.add('light-theme');
-      }
+    function initTheme() {
+      const saved = localStorage.getItem('theme') || 'dark';
+      if (saved === 'light') document.body.classList.add('light-mode');
+      document.querySelector('.btn-dark-toggle').textContent = saved === 'light' ? '☀️ Light' : '🌙 Dark';
     }
 
-    // Load precincts
-    async function loadPrecincts() {
-      try {
-        const res = await fetch('/api/precincts', { credentials: 'include' });
-        const data = await res.json();
-        precincts = data.precincts || [];
-
-        const selectPrecinct = document.getElementById('precinctFilter');
-        const selectVolPrecinct = document.getElementById('volPrecinct');
-        const selectFilterPrecinct = document.getElementById('filterPrecinct');
-
-        precincts.forEach(p => {
-          const opt1 = document.createElement('option');
-          opt1.value = p.id;
-          opt1.textContent = p.name;
-          selectVolPrecinct.appendChild(opt1);
-
-          const opt2 = document.createElement('option');
-          opt2.value = p.id;
-          opt2.textContent = p.name;
-          selectPrecinct.appendChild(opt2);
-
-          const opt3 = document.createElement('option');
-          opt3.value = p.id;
-          opt3.textContent = p.name;
-          selectFilterPrecinct.appendChild(opt3);
-        });
-      } catch (err) {
-        console.error('Error loading precincts:', err);
-      }
+    function logout() {
+      fetch('/logout', { method: 'POST' }).then(() => window.location.href = '/login');
     }
 
-    // Load volunteers
+    function showAddForm() {
+      document.getElementById('addForm').style.display = 'block';
+      document.getElementById('detailContent').style.display = 'none';
+    }
+
+    function hideAddForm() {
+      document.getElementById('addForm').style.display = 'none';
+    }
+
     async function loadVolunteers() {
       try {
-        const precinctId = document.getElementById('precinctFilter').value;
-        const url = precinctId
-          ? `/api/volunteers?precinct_id=${precinctId}`
-          : '/api/volunteers';
-
-        const res = await fetch(url, { credentials: 'include' });
+        const res = await fetch('/api/volunteers');
         const data = await res.json();
-        volunteers = data.volunteers || [];
-        renderVolunteerList();
+        const volunteers = data.volunteers || [];
+
+        if (volunteers.length === 0) {
+          document.getElementById('volunteerList').innerHTML = '<div class="empty">No volunteers</div>';
+          return;
+        }
+
+        let html = '';
+        volunteers.forEach(vol => {
+          const assigned = vol.assigned_count || 0;
+          const visited = vol.visited_count || 0;
+          const percent = assigned > 0 ? Math.round((visited / assigned) * 100) : 0;
+          html += `
+            <div class="volunteer-card" onclick="selectVolunteer(${vol.id}, '${vol.name}', ${assigned}, ${visited})">
+              <div class="vol-name">${vol.name}</div>
+              <div class="vol-meta">${vol.phone || 'No phone'} • ${vol.precinct || 'No precinct'}</div>
+              <div class="progress-bar"><div class="progress-fill" style="width: ${percent}%"></div></div>
+              <div class="vol-stats">${visited} / ${assigned} visited</div>
+            </div>
+          `;
+        });
+        document.getElementById('volunteerList').innerHTML = html;
       } catch (err) {
         console.error('Error loading volunteers:', err);
+        document.getElementById('volunteerList').innerHTML = '<div class="empty">Error loading volunteers</div>';
       }
     }
 
-    // Filter volunteers by precinct
-    function filterVolunteers() {
-      loadVolunteers();
+    function selectVolunteer(id, name, assigned, visited) {
+      selectedVolId = id;
+      document.querySelectorAll('.volunteer-card').forEach(c => c.classList.remove('selected'));
+      event.target.closest('.volunteer-card').classList.add('selected');
+
+      document.getElementById('addForm').style.display = 'none';
+      document.getElementById('detailContent').style.display = 'block';
+      document.getElementById('detailTitle').textContent = name;
+      document.getElementById('detailName').textContent = name;
+      document.getElementById('detailAssigned').textContent = assigned;
+      document.getElementById('detailVisited').textContent = visited;
+      document.getElementById('detailMeta').textContent = `ID: ${id}`;
+
+      loadAssignments(id);
     }
 
-    // Render volunteer list
-    function renderVolunteerList() {
-      const list = document.getElementById('volunteerList');
-      list.innerHTML = '';
+    async function loadAssignments(volId) {
+      try {
+        const res = await fetch(`/api/volunteers/${volId}`);
+        const data = await res.json();
+        const assignments = data.assignments || [];
 
-      if (volunteers.length === 0) {
-        list.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 20px;">No volunteers yet</p>';
+        if (assignments.length === 0) {
+          document.getElementById('assignmentsList').innerHTML = '<div class="empty">No assigned voters</div>';
+          return;
+        }
+
+        const pending = assignments.filter(a => a.status === 'pending');
+        const visited = assignments.filter(a => a.status === 'visited');
+
+        let html = '<div style="margin-bottom: 16px;"><strong style="color: #F5A623;">Pending (' + pending.length + ')</strong><table><thead><tr><th>Name</th><th>Address</th><th>Party</th></tr></thead><tbody>';
+        pending.slice(0, 5).forEach(a => {
+          html += `<tr><td>${a.voter_name || '-'}</td><td>${a.voter_address || '-'}</td><td>${a.voter_party || '-'}</td></tr>`;
+        });
+        html += '</tbody></table></div>';
+
+        if (visited.length > 0) {
+          html += '<div><strong style="color: #5DE0B0;">Visited (' + visited.length + ')</strong><table><thead><tr><th>Name</th><th>Address</th><th>Visited</th></tr></thead><tbody>';
+          visited.slice(0, 5).forEach(a => {
+            html += `<tr><td>${a.voter_name || '-'}</td><td>${a.voter_address || '-'}</td><td>${a.visited_at || '-'}</td></tr>`;
+          });
+          html += '</tbody></table></div>';
+        }
+
+        document.getElementById('assignmentsList').innerHTML = html;
+      } catch (err) {
+        console.error('Error loading assignments:', err);
+      }
+    }
+
+    async function assignVoters(replace) {
+      if (!selectedVolId) {
+        alert('Select a volunteer first');
         return;
       }
 
-      volunteers.forEach(vol => {
-        const item = document.createElement('div');
-        item.className = `volunteer-item ${selectedVolunteer?.id === vol.id ? 'selected' : ''}`;
-        item.onclick = () => selectVolunteer(vol);
-
-        item.innerHTML = `
-          <div class="volunteer-item-header">
-            <div class="volunteer-name">${vol.name}</div>
-            <div class="volunteer-badge">Active</div>
-          </div>
-          <div class="volunteer-meta">
-            <div class="stat-item">
-              <span class="stat-label">Assigned:</span>
-              <span class="stat-value">${vol.assigned_count || 0}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">Visited:</span>
-              <span class="stat-value">${vol.visited_count || 0}</span>
-            </div>
-          </div>
-        `;
-
-        list.appendChild(item);
-      });
-    }
-
-    // Select volunteer
-    async function selectVolunteer(vol) {
-      selectedVolunteer = vol;
-      renderVolunteerList();
+      const filters = {
+        precinct: document.getElementById('filterPrecinct').value || undefined,
+        party: document.getElementById('filterParty').value || undefined,
+        votedInYears: parseInt(document.getElementById('filterYears').value) || 3
+      };
 
       try {
-        const res = await fetch(`/api/volunteers/${vol.id}`, { credentials: 'include' });
-        const data = await res.json();
-        displayVolunteerDetail(data.volunteer, data.assignments);
-      } catch (err) {
-        console.error('Error loading volunteer detail:', err);
-      }
-    }
-
-    // Display volunteer detail
-    function displayVolunteerDetail(vol, assignments) {
-      const addSection = document.getElementById('addVolunteerSection');
-      const detailSection = document.getElementById('volunteerDetailSection');
-      const detailContent = document.getElementById('volunteerDetailContent');
-
-      addSection.classList.add('hidden');
-      detailSection.classList.remove('hidden');
-
-      const visitedCount = assignments.filter(a => a.status === 'visited').length;
-      const progressPct = assignments.length > 0
-        ? Math.round((visitedCount / assignments.length) * 100)
-        : 0;
-
-      detailContent.innerHTML = `
-        <div class="detail-header">
-          <div>
-            <h2>${vol.name}</h2>
-            <div class="info-row" style="margin-top: 8px;">
-              <span class="info-label">Phone:</span>
-              <span class="info-value">${vol.phone || 'N/A'}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Precinct:</span>
-              <span class="info-value">${vol.precinct_name || 'N/A'}</span>
-            </div>
-          </div>
-          <button class="btn btn-sm" onclick="deleteVolunteer(${vol.id})">Delete</button>
-        </div>
-
-        <div class="progress-stats">
-          <div class="stat-card">
-            <div class="stat-card-value">${assignments.length}</div>
-            <div class="stat-card-label">Assigned</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-card-value">${visitedCount}</div>
-            <div class="stat-card-label">Visited</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-card-value">${progressPct}%</div>
-            <div class="stat-card-label">Progress</div>
-          </div>
-        </div>
-
-        <div style="margin-top: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <span class="section-title">Assigned Voters</span>
-            <button class="btn btn-sm" onclick="openAssignModal(${vol.id}, '${vol.name}')">+ Assign More</button>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-            <div class="form-group">
-              <label style="margin-bottom: 4px; font-size: 12px;">Filter Status</label>
-              <select id="assignmentFilterStatus" onchange="filterAssignments()" style="width: 100%; padding: 8px 12px; background: var(--navy-light); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'Barlow', sans-serif; font-size: 13px;">
-                <option value="">All</option>
-                <option value="pending">Pending</option>
-                <option value="visited">Visited</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label style="margin-bottom: 4px; font-size: 12px;">Search Name</label>
-              <input type="text" id="assignmentFilterName" placeholder="First or last name" onkeyup="filterAssignments()" style="width: 100%; padding: 8px 12px; background: var(--navy-light); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'Barlow', sans-serif; font-size: 13px;">
-            </div>
-          </div>
-
-          <div class="assignments-list" id="assignmentsList">
-            ${assignments.length === 0
-              ? '<div style="padding: 12px; text-align: center; color: var(--text-muted);">No assignments yet</div>'
-              : assignments.map(a => `
-                <div class="assignment-item" data-status="${a.status}" data-name="${a.first_name} ${a.last_name}">
-                  <div class="assignment-name">${a.first_name} ${a.last_name}</div>
-                  <div class="assignment-status ${a.status === 'visited' ? 'status-visited' : 'status-pending'}">
-                    ${a.status}
-                  </div>
-                </div>
-              `).join('')
-            }
-          </div>
-        </div>
-      `;
-    }
-
-    // Show add volunteer form
-    function showAddVolunteerForm() {
-      selectedVolunteer = null;
-      const addSection = document.getElementById('addVolunteerSection');
-      const detailSection = document.getElementById('volunteerDetailSection');
-
-      addSection.classList.remove('hidden');
-      detailSection.classList.add('hidden');
-      renderVolunteerList();
-    }
-
-    // Create volunteer
-    async function createVolunteer(e) {
-      e.preventDefault();
-
-      const name = document.getElementById('volName').value;
-      const email = document.getElementById('volEmail').value;
-      const phone = document.getElementById('volPhone').value;
-      const precinctId = document.getElementById('volPrecinct').value;
-
-      try {
-        const res = await fetch('/api/volunteers', {
+        const res = await fetch(`/api/volunteers/${selectedVolId}/assign`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            name,
-            email,
-            phone: phone || null,
-            precinct_id: precinctId || null
-          })
+          body: JSON.stringify({ voterFilters: filters, replaceExisting: replace })
         });
-
         const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.error || 'Failed to create volunteer');
+        const msg = document.getElementById('assignMessage');
+        if (data.success) {
+          msg.style.background = 'rgba(93, 224, 176, 0.15)';
+          msg.style.color = '#5DE0B0';
+          msg.textContent = `✅ Assigned ${data.count || 0} voters`;
+          msg.style.display = 'block';
+          loadVolunteers();
+          loadAssignments(selectedVolId);
+        } else {
+          msg.style.background = 'rgba(255, 107, 107, 0.15)';
+          msg.style.color = '#FF6B6B';
+          msg.textContent = `❌ ${data.error || 'Error assigning voters'}`;
+          msg.style.display = 'block';
         }
-
-        const msg = document.getElementById('formMessage');
-        msg.className = 'alert alert-success';
-        msg.innerHTML = `✅ Volunteer created! Temp password: <strong>${data.account.tempPassword}</strong> (sent to ${email})`;
-
-        resetForm();
-        await loadVolunteers();
-
-        setTimeout(() => {
-          msg.innerHTML = '';
-        }, 5000);
-      } catch (err) {
-        const msg = document.getElementById('formMessage');
-        msg.className = 'alert alert-error';
-        msg.textContent = '❌ ' + err.message;
-      }
-    }
-
-    // Reset form
-    function resetForm() {
-      document.getElementById('volName').value = '';
-      document.getElementById('volEmail').value = '';
-      document.getElementById('volPhone').value = '';
-      document.getElementById('volPrecinct').value = '';
-      document.getElementById('formMessage').innerHTML = '';
-    }
-
-    // Delete volunteer
-    async function deleteVolunteer(volId) {
-      if (!confirm('Are you sure you want to delete this volunteer?')) return;
-
-      try {
-        const res = await fetch(`/api/volunteers/${volId}`, { method: 'DELETE', credentials: 'include' });
-        const data = await res.json();
-
-        if (!res.ok) throw new Error(data.error);
-
-        selectedVolunteer = null;
-        await loadVolunteers();
-        showAddVolunteerForm();
       } catch (err) {
         alert('Error: ' + err.message);
       }
     }
 
-    // Open assign modal
-    function openAssignModal(volId, volName) {
-      document.getElementById('assignVolName').textContent = volName;
-      document.getElementById('assignForm').dataset.volunteerId = volId;
-      document.getElementById('assignModal').classList.add('active');
-      document.getElementById('assignMessage').innerHTML = '';
-    }
+    async function saveNewVolunteer() {
+      const name = document.getElementById('newVolName').value.trim();
+      const email = document.getElementById('newVolEmail').value.trim();
+      const phone = document.getElementById('newVolPhone').value.trim();
+      const precinct = document.getElementById('newVolPrecinct').value.trim();
 
-    // Close assign modal
-    function closeAssignModal() {
-      document.getElementById('assignModal').classList.remove('active');
-      document.getElementById('assignForm').reset();
-    }
-
-    // Assign voters
-    async function assignVoters(e) {
-      e.preventDefault();
-
-      const volunteerId = document.getElementById('assignForm').dataset.volunteerId;
-      const precinct = document.getElementById('filterPrecinct').value;
-      const party = document.getElementById('filterParty').value;
-      const votedInYears = document.getElementById('filterVotedYears').value;
-      const name = document.getElementById('filterName').value;
+      if (!name || !email) {
+        alert('Name and email are required');
+        return;
+      }
 
       try {
-        const res = await fetch(`/api/volunteers/${volunteerId}/assign`, {
+        const res = await fetch('/api/admin/create-user', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
           body: JSON.stringify({
-            precinct: precinct || null,
-            party: party || null,
-            votedInYears: votedInYears ? parseInt(votedInYears) : null,
-            name: name || null
+            email, name, password: 'TempPassword123!', role: 'volunteer',
+            phone, precinct
           })
         });
-
         const data = await res.json();
-
-        if (!res.ok) throw new Error(data.error);
-
-        const msg = document.getElementById('assignMessage');
-        msg.className = 'alert alert-success';
-        msg.textContent = `✅ ${data.assigned} voters assigned (${data.total} matched filters)`;
-
-        setTimeout(() => {
-          closeAssignModal();
-          selectedVolunteer && selectVolunteer(selectedVolunteer);
-        }, 2000);
-      } catch (err) {
-        const msg = document.getElementById('assignMessage');
-        msg.className = 'alert alert-error';
-        msg.textContent = '❌ ' + err.message;
-      }
-    }
-
-    // Filter assignments
-    function filterAssignments() {
-      const statusFilter = document.getElementById('assignmentFilterStatus').value;
-      const nameFilter = document.getElementById('assignmentFilterName').value.toLowerCase();
-      const items = document.querySelectorAll('.assignment-item');
-
-      let visibleCount = 0;
-      items.forEach(item => {
-        const itemStatus = item.dataset.status;
-        const itemName = item.dataset.name.toLowerCase();
-
-        const statusMatch = !statusFilter || itemStatus === statusFilter;
-        const nameMatch = !nameFilter || itemName.includes(nameFilter);
-
-        if (statusMatch && nameMatch) {
-          item.style.display = '';
-          visibleCount++;
+        if (data.success) {
+          alert('✅ Volunteer created');
+          document.getElementById('newVolName').value = '';
+          document.getElementById('newVolEmail').value = '';
+          document.getElementById('newVolPhone').value = '';
+          document.getElementById('newVolPrecinct').value = '';
+          hideAddForm();
+          loadVolunteers();
         } else {
-          item.style.display = 'none';
+          alert('❌ Error: ' + (data.error || 'Unknown error'));
         }
-      });
-
-      // Show "no results" if all hidden
-      const list = document.getElementById('assignmentsList');
-      if (visibleCount === 0 && items.length > 0) {
-        if (!document.getElementById('noResultsMsg')) {
-          const msg = document.createElement('div');
-          msg.id = 'noResultsMsg';
-          msg.style.cssText = 'padding: 12px; text-align: center; color: var(--text-muted);';
-          msg.textContent = 'No assignments match filters';
-          list.appendChild(msg);
-        }
-      } else {
-        const msg = document.getElementById('noResultsMsg');
-        if (msg) msg.remove();
+      } catch (err) {
+        alert('Error: ' + err.message);
       }
     }
 
-    // Navigation
-    function goToDashboard() {
-      window.location.href = '/dashboard';
-    }
+    initTheme();
+    loadVolunteers();
   </script>
 </body>
 </html>

@@ -3471,4 +3471,492 @@ function renderEarlyVoteMap(){
 filtered=VR.map((_,i)=>i);
 renderTable();updateExportSummary();renderWalkPreview();
 </script>
+
+<!-- Claude AI Assistant Widget -->
+<div id="claudeAssistant" class="claude-assistant">
+  <!-- Toggle Button -->
+  <button id="claudeToggle" class="claude-toggle" title="Ask Claude for help">
+    🤖
+  </button>
+
+  <!-- Chat Panel -->
+  <div id="claudePanel" class="claude-panel" style="display: none;">
+    <!-- Header -->
+    <div class="claude-header">
+      <div class="claude-title">
+        <span class="claude-icon">🤖</span>
+        <span>Claude Assistant</span>
+      </div>
+      <button id="claudeClose" class="claude-close" title="Close">×</button>
+    </div>
+
+    <!-- Messages -->
+    <div id="claudeMessages" class="claude-messages">
+      <div class="claude-message assistant">
+        <div class="claude-bubble">
+          Hi! I'm Claude, your campaign assistant. Ask me about email strategy, volunteer management, analytics, or how to use any features. What can I help with? 👋
+        </div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="claude-input-area">
+      <form id="claudeForm" class="claude-form">
+        <input
+          type="text"
+          id="claudeInput"
+          class="claude-input"
+          placeholder="Ask Claude anything..."
+          autocomplete="off"
+          maxlength="500"
+        />
+        <button type="submit" class="claude-send" title="Send message">
+          ↑
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Claude Assistant Styles */
+.claude-assistant {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  font-family: 'Barlow', sans-serif;
+  z-index: 1000;
+}
+
+.claude-toggle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #F5A623 0%, #FBBF48 100%);
+  border: 2px solid rgba(245, 166, 35, 0.3);
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(245, 166, 35, 0.4);
+  transition: all 0.3s ease;
+}
+
+.claude-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 28px rgba(245, 166, 35, 0.6);
+}
+
+.claude-toggle:active {
+  transform: scale(0.95);
+}
+
+.claude-panel {
+  position: absolute;
+  bottom: 80px;
+  right: 0;
+  width: 380px;
+  height: 500px;
+  background: #0B1929;
+  border: 1px solid rgba(245, 166, 35, 0.3);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.claude-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #122338 0%, #1A3550 100%);
+  border-bottom: 1px solid rgba(245, 166, 35, 0.2);
+}
+
+.claude-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #F5A623;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.claude-icon {
+  font-size: 18px;
+}
+
+.claude-close {
+  background: transparent;
+  border: none;
+  color: #8BA3BE;
+  font-size: 28px;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.claude-close:hover {
+  color: #F5A623;
+}
+
+.claude-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.claude-message {
+  display: flex;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.claude-message.user {
+  justify-content: flex-end;
+}
+
+.claude-message.assistant {
+  justify-content: flex-start;
+}
+
+.claude-bubble {
+  max-width: 85%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.claude-message.user .claude-bubble {
+  background: #F5A623;
+  color: #0B1929;
+  font-weight: 500;
+}
+
+.claude-message.assistant .claude-bubble {
+  background: #1A3550;
+  color: #EEF2F7;
+  border: 1px solid rgba(245, 166, 35, 0.2);
+}
+
+.claude-loading {
+  display: flex;
+  gap: 4px;
+}
+
+.claude-loading span {
+  width: 6px;
+  height: 6px;
+  background: #F5A623;
+  border-radius: 50%;
+  animation: pulse 1.4s infinite;
+}
+
+.claude-loading span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.claude-loading span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes pulse {
+  0%, 60%, 100% {
+    opacity: 0.3;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+
+.claude-input-area {
+  padding: 12px;
+  border-top: 1px solid rgba(245, 166, 35, 0.2);
+  background: #122338;
+}
+
+.claude-form {
+  display: flex;
+  gap: 8px;
+}
+
+.claude-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid rgba(245, 166, 35, 0.3);
+  border-radius: 8px;
+  background: #0B1929;
+  color: #EEF2F7;
+  font-family: 'Barlow', sans-serif;
+  font-size: 13px;
+  transition: border-color 0.2s;
+}
+
+.claude-input:focus {
+  outline: none;
+  border-color: #F5A623;
+}
+
+.claude-input::placeholder {
+  color: #8BA3BE;
+}
+
+.claude-send {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #F5A623;
+  border-radius: 8px;
+  background: rgba(245, 166, 35, 0.1);
+  color: #F5A623;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.claude-send:hover {
+  background: rgba(245, 166, 35, 0.2);
+}
+
+.claude-send:active {
+  transform: scale(0.95);
+}
+
+.claude-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Scrollbar styling */
+.claude-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.claude-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.claude-messages::-webkit-scrollbar-thumb {
+  background: rgba(245, 166, 35, 0.3);
+  border-radius: 3px;
+}
+
+.claude-messages::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 166, 35, 0.5);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .claude-panel {
+    width: 100vw;
+    height: 60vh;
+    max-width: 100%;
+    bottom: 70px;
+    right: -20px;
+    left: auto;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .claude-assistant {
+    bottom: 10px;
+    right: 10px;
+  }
+
+  .claude-toggle {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+  }
+}
+</style>
+
+<script>
+// Claude Assistant Logic
+(function() {
+  const assistant = {
+    isOpen: false,
+    isLoading: false,
+    messageCount: 0,
+
+    init() {
+      const toggle = document.getElementById('claudeToggle');
+      const closeBtn = document.getElementById('claudeClose');
+      const form = document.getElementById('claudeForm');
+      const input = document.getElementById('claudeInput');
+
+      toggle.addEventListener('click', () => this.toggle());
+      closeBtn.addEventListener('click', () => this.close());
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.sendMessage(input.value);
+        input.value = '';
+      });
+
+      // Focus input when panel opens
+      const panel = document.getElementById('claudePanel');
+      const originalDisplay = panel.style.display;
+      Object.defineProperty(panel.style, 'display', {
+        set(value) {
+          if (value !== 'none' && originalDisplay === 'none') {
+            setTimeout(() => input.focus(), 100);
+          }
+          this._display = value;
+        },
+        get() {
+          return this._display;
+        }
+      });
+    },
+
+    toggle() {
+      this.isOpen ? this.close() : this.open();
+    },
+
+    open() {
+      document.getElementById('claudePanel').style.display = 'flex';
+      document.getElementById('claudeInput').focus();
+      this.isOpen = true;
+    },
+
+    close() {
+      document.getElementById('claudePanel').style.display = 'none';
+      this.isOpen = false;
+    },
+
+    async sendMessage(text) {
+      if (!text.trim() || this.isLoading) return;
+
+      const input = document.getElementById('claudeInput');
+      const sendBtn = document.querySelector('.claude-send');
+      const messagesDiv = document.getElementById('claudeMessages');
+
+      // Add user message
+      this.addMessage(text, 'user');
+      input.value = '';
+
+      // Show loading state
+      this.isLoading = true;
+      sendBtn.disabled = true;
+      input.disabled = true;
+
+      // Add loading indicator
+      const loadingDiv = document.createElement('div');
+      loadingDiv.className = 'claude-message assistant';
+      loadingDiv.innerHTML = '<div class="claude-bubble"><div class="claude-loading"><span></span><span></span><span></span></div></div>';
+      messagesDiv.appendChild(loadingDiv);
+      this.scrollToBottom();
+
+      try {
+        // Get JWT token from localStorage (set during login)
+        const token = localStorage.getItem('token');
+        if (!token) {
+          this.addMessage('Please log in to use the assistant.', 'assistant');
+          this.removeElement(loadingDiv);
+          return;
+        }
+
+        const response = await fetch('/api/assistant/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ message: text })
+        });
+
+        this.removeElement(loadingDiv);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        this.addMessage(data.message, 'assistant');
+      } catch (err) {
+        console.error('Assistant error:', err);
+        this.removeElement(loadingDiv);
+        this.addMessage('Sorry, I encountered an error. Please try again.', 'assistant');
+      } finally {
+        this.isLoading = false;
+        sendBtn.disabled = false;
+        input.disabled = false;
+      }
+    },
+
+    addMessage(text, sender) {
+      const messagesDiv = document.getElementById('claudeMessages');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `claude-message ${sender}`;
+
+      const bubble = document.createElement('div');
+      bubble.className = 'claude-bubble';
+      bubble.textContent = text;
+
+      messageDiv.appendChild(bubble);
+      messagesDiv.appendChild(messageDiv);
+
+      this.scrollToBottom();
+      this.messageCount++;
+    },
+
+    removeElement(el) {
+      if (el && el.parentNode) {
+        el.parentNode.removeChild(el);
+      }
+    },
+
+    scrollToBottom() {
+      const messagesDiv = document.getElementById('claudeMessages');
+      setTimeout(() => {
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }, 0);
+    }
+  };
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => assistant.init());
+  } else {
+    assistant.init();
+  }
+})();
+</script>
 </body></html>

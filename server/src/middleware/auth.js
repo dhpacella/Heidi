@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const logger = require('../lib/logger');
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '8h';
 
@@ -35,14 +36,16 @@ function requireApiAuth(req, res, next) {
   if (header && header.startsWith('Bearer ')) {
     const token = header.slice(7);
     try {
-      const decoded = jwt.verify(token, jwtSecret());
+      const decoded = jwt.verify(token, jwtSecret(), { algorithms: ['HS256'] });
       req.user = { id: decoded.sub, email: decoded.email, role: decoded.role };
       return next();
     } catch (err) {
+      logger.warn('Auth failed: invalid token', { requestId: req.id, path: req.path, message: err.message });
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
   }
 
+  logger.warn('Auth failed: missing token', { requestId: req.id, path: req.path });
   res.status(401).json({ error: 'Authentication required' });
 }
 

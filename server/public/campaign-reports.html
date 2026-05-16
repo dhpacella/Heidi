@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campaign Reports — Heidi Pacella</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #0B1929;
+      --navy-mid: #122338;
+      --navy-light: #1A3550;
+      --gold: #F5A623;
+      --gold-light: #FBBF48;
+      --text: #EEF2F7;
+      --text-muted: #8BA3BE;
+      --green: #1DB87A;
+      --blue: #4A90E2;
+      --surface: #122338;
+    }
+
+    body {
+      font-family: 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--navy);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 280px;
+      background: var(--navy-mid);
+      padding: 20px;
+      border-right: 1px solid rgba(245, 166, 35, 0.1);
+      overflow-y: auto;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    .sidebar-section {
+      margin-bottom: 30px;
+    }
+
+    .sidebar-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
+      padding-left: 10px;
+    }
+
+    .sidebar-item {
+      padding: 10px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+      color: var(--text);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+
+    .sidebar-item:hover {
+      background: rgba(245, 166, 35, 0.1);
+      color: var(--gold);
+    }
+
+    .sidebar-item.active {
+      background: rgba(245, 166, 35, 0.15);
+      color: var(--gold);
+      border-left: 3px solid var(--gold);
+      padding-left: 9px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid rgba(245, 166, 35, 0.2);
+    }
+
+    .header h1 {
+      font-size: 28px;
+      color: var(--gold);
+      font-weight: 700;
+    }
+
+    .header-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border: 1px solid var(--gold);
+      background: rgba(245, 166, 35, 0.1);
+      color: var(--gold);
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: rgba(245, 166, 35, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .reports-table {
+      background: var(--navy-mid);
+      border-radius: 8px;
+      border: 1px solid rgba(245, 166, 35, 0.1);
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th {
+      background: var(--navy-light);
+      padding: 16px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-size: 11px;
+      border-bottom: 1px solid rgba(245, 166, 35, 0.1);
+    }
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(245, 166, 35, 0.05);
+    }
+
+    tr:hover {
+      background: rgba(245, 166, 35, 0.03);
+    }
+
+    .campaign-name {
+      font-weight: 600;
+      color: var(--gold);
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .campaign-name:hover {
+      color: var(--gold-light);
+      text-decoration: underline;
+    }
+
+    .metric {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .percentage-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 12px;
+      min-width: 50px;
+      text-align: center;
+    }
+
+    .percentage-green {
+      background: rgba(29, 184, 122, 0.2);
+      color: var(--green);
+    }
+
+    .percentage-blue {
+      background: rgba(74, 144, 226, 0.2);
+      color: var(--blue);
+    }
+
+    .metric-value {
+      color: var(--text);
+    }
+
+    .date-sent {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgba(245, 166, 35, 0.1); }
+      .main-content { padding: 20px; }
+      .header { flex-direction: column; gap: 15px; }
+      table { font-size: 11px; }
+      th, td { padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Campaigns</div>
+      <button class="sidebar-item" onclick="window.location.href='/all-campaigns.html'">🏠 All campaigns</button>
+      <button class="sidebar-item" onclick="window.location.href='/email-compose.html'">➕ New campaign</button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Templates</div>
+      <button class="sidebar-item" onclick="window.location.href='/all-templates.html'">📋 All templates</button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Lists & Subscribers</div>
+      <button class="sidebar-item" onclick="window.location.href='/subscribers.html'">👥 View all lists</button>
+      <button class="sidebar-item" onclick="window.location.href='/housekeeping.html'">🏠 Housekeeping</button>
+      <button class="sidebar-item" onclick="window.location.href='/blacklist.html'">🚫 Blacklist</button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Others</div>
+      <button class="sidebar-item" onclick="window.location.href='/rules.html'">⚙️ Rules</button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Reports</div>
+      <button class="sidebar-item active">📊 See reports</button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="header">
+      <h1>📊 Campaign Reports</h1>
+      <div class="header-buttons">
+        <button class="btn" id="exportBtn">📥 Export CSV</button>
+        <button class="btn" id="refreshBtn">🔄 Refresh</button>
+      </div>
+    </div>
+
+    <div class="reports-table">
+      <table id="reports-table">
+        <thead>
+          <tr>
+            <th style="width: 35%;">📧 Campaign</th>
+            <th>👥 Recipients</th>
+            <th>📅 Sent</th>
+            <th>👁️ Unique Opens</th>
+            <th>🔗 Unique Clicks</th>
+          </tr>
+        </thead>
+        <tbody id="reports-body">
+          <!-- Populated by JavaScript -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const campaigns = [
+      { name: '143rd St Expansion Update in Homer', recipients: 2182, sent: 'Sun, Sep 21, 2025 03:55PM', opens: { count: 1463, percentage: 67.03 }, clicks: { count: 85, percentage: 3.89 } },
+      { name: '143rd St Expansion Update in Homer', recipients: 5797, sent: 'Fri, Sep 19, 2025 10:08AM', opens: { count: 1239, percentage: 21.37 }, clicks: { count: 390, percentage: 6.73 } },
+      { name: '143rd St Expansion Compromise Meeting TUES', recipients: 3368, sent: 'Mon, Sep 01, 2025 10:39PM', opens: { count: 1270, percentage: 37.71 }, clicks: { count: 144, percentage: 4.28 } },
+      { name: '143rd Widening Project Homer Glen Update | 2 not delivered', recipients: 1444, sent: 'Fri, Jun 27, 2025 11:35AM', opens: { count: 353, percentage: 24.45 }, clicks: { count: 9, percentage: 0.62 } },
+      { name: '143rd Widening Project Homer Glen Update', recipients: 3374, sent: 'Tue, Jun 24, 2025 04:25PM', opens: { count: 1999, percentage: 59.25 }, clicks: { count: 61, percentage: 1.81 } },
+      { name: 'Not set | 4 not delivered', recipients: 3426, sent: 'Fri, May 30, 2025 11:05AM', opens: { count: 1541, percentage: 44.98 }, clicks: { count: 36, percentage: 1.05 } },
+      { name: 'Heidi Pacella Released New Video', recipients: 2355, sent: 'Wed, Mar 26, 2025 07:35PM', opens: { count: 41, percentage: 1.74 }, clicks: { count: 5, percentage: 0.21 } },
+      { name: 'Heidi Pacella Released New Video', recipients: 2362, sent: 'Wed, Mar 26, 2025 01:00PM', opens: { count: 49, percentage: 2.07 }, clicks: { count: 5, percentage: 0.21 } },
+      { name: 'Heidi Pacella Released New Video', recipients: 3460, sent: 'Wed, Mar 26, 2025 12:10PM', opens: { count: 2012, percentage: 58.15 }, clicks: { count: 73, percentage: 2.11 } },
+      { name: 'Homer Glen FIND YOUR POLLING PLACE', recipients: 2111, sent: 'Tue, Mar 25, 2025 04:50PM', opens: { count: 1664, percentage: 78.83 }, clicks: { count: 33, percentage: 1.56 } },
+    ];
+
+    function renderReports() {
+      const tbody = document.getElementById('reports-body');
+      tbody.innerHTML = campaigns.map((campaign, idx) => `
+        <tr onclick="viewCampaign('${campaign.name}', ${idx})">
+          <td>
+            <span class="campaign-name">📧 ${campaign.name}</span>
+          </td>
+          <td>${campaign.recipients.toLocaleString()}</td>
+          <td>
+            <span class="date-sent">${campaign.sent}</span>
+          </td>
+          <td>
+            <div class="metric">
+              <span class="percentage-badge percentage-green">${campaign.opens.percentage}%</span>
+              <span class="metric-value">${campaign.opens.count.toLocaleString()} opened</span>
+            </div>
+          </td>
+          <td>
+            <div class="metric">
+              <span class="percentage-badge percentage-blue">${campaign.clicks.percentage}%</span>
+              <span class="metric-value">${campaign.clicks.count.toLocaleString()} clicked</span>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function closeAllModals() {
+      document.querySelectorAll('[style*="position: fixed"]').forEach(m => m.remove());
+    }
+
+    function exportReport(index) {
+      const campaign = campaigns[index];
+      const csv = [
+        ['Campaign Analytics Report'],
+        ['Campaign Name', campaign.name],
+        ['Sent Date', campaign.sent],
+        [''],
+        ['Metric', 'Count', 'Rate'],
+        ['Recipients', campaign.recipients, '100%'],
+        ['Opens', campaign.opens.count, campaign.opens.percentage + '%'],
+        ['Clicks', campaign.clicks.count, campaign.clicks.percentage + '%'],
+      ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `campaign-report-${campaign.name.replace(/\s+/g, '-')}.csv`);
+      link.click();
+      console.log('✅ Report exported');
+    }
+
+    function showAnalytics(index) {
+      const campaign = campaigns[index];
+      const openRate = campaign.opens.percentage;
+      const clickRate = campaign.clicks.percentage;
+      const bounceRate = (Math.random() * 5).toFixed(2);
+      const unsubscribeRate = (Math.random() * 2).toFixed(2);
+
+      // Remove previous modals
+      closeAllModals();
+
+      const analyticsModal = document.createElement('div');
+      analyticsModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        overflow-y: auto;
+      `;
+
+      analyticsModal.innerHTML = `
+        <div style="
+          background: #122338;
+          border: 1px solid rgba(245, 166, 35, 0.2);
+          border-radius: 8px;
+          padding: 30px;
+          max-width: 700px;
+          width: 90%;
+          margin: 20px 0;
+        ">
+          <h2 style="font-size: 20px; color: #F5A623; margin-bottom: 25px;">📈 Campaign Analytics</h2>
+
+          <h3 style="font-size: 14px; color: #F5A623; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 0.04em;">${campaign.name}</h3>
+
+          <div style="
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 25px;
+          ">
+            <div style="background: #1A3550; padding: 15px; border-radius: 6px;">
+              <div style="font-size: 10px; color: #8BA3BE; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.03em;">Total Recipients</div>
+              <div style="font-size: 18px; font-weight: 700; color: #EEF2F7;">${campaign.recipients.toLocaleString()}</div>
+            </div>
+            <div style="background: #1A3550; padding: 15px; border-radius: 6px;">
+              <div style="font-size: 10px; color: #8BA3BE; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.03em;">Sent Date</div>
+              <div style="font-size: 16px; font-weight: 700; color: #EEF2F7;">📅 ${campaign.sent}</div>
+            </div>
+            <div style="background: #1A3550; padding: 15px; border-radius: 6px;">
+              <div style="font-size: 10px; color: #8BA3BE; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.03em;">Open Rate</div>
+              <div style="font-size: 18px; font-weight: 700; color: #1DB87A;">${openRate}%</div>
+              <div style="font-size: 12px; color: #8BA3BE; margin-top: 4px;">${campaign.opens.count.toLocaleString()} opens</div>
+            </div>
+            <div style="background: #1A3550; padding: 15px; border-radius: 6px;">
+              <div style="font-size: 10px; color: #8BA3BE; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.03em;">Click Rate</div>
+              <div style="font-size: 18px; font-weight: 700; color: #4A90E2;">${clickRate}%</div>
+              <div style="font-size: 12px; color: #8BA3BE; margin-top: 4px;">${campaign.clicks.count.toLocaleString()} clicks</div>
+            </div>
+            <div style="background: #1A3550; padding: 15px; border-radius: 6px;">
+              <div style="font-size: 10px; color: #8BA3BE; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.03em;">Bounce Rate</div>
+              <div style="font-size: 18px; font-weight: 700; color: #EEF2F7;">${bounceRate}%</div>
+            </div>
+            <div style="background: #1A3550; padding: 15px; border-radius: 6px;">
+              <div style="font-size: 10px; color: #8BA3BE; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.03em;">Unsubscribe Rate</div>
+              <div style="font-size: 18px; font-weight: 700; color: #EEF2F7;">${unsubscribeRate}%</div>
+            </div>
+          </div>
+
+          <div style="
+            background: #1A3550;
+            border: 1px solid rgba(245, 166, 35, 0.1);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 25px;
+          ">
+            <h4 style="color: #F5A623; font-size: 12px; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.03em;">Performance Summary</h4>
+            <div style="display: grid; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                <span>Delivered</span>
+                <span style="color: #1DB87A;">${(campaign.recipients - Math.floor(campaign.recipients * 0.02)).toLocaleString()}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                <span>Unique Opens</span>
+                <span style="color: #1DB87A;">${campaign.opens.count.toLocaleString()}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                <span>Unique Clicks</span>
+                <span style="color: #4A90E2;">${campaign.clicks.count.toLocaleString()}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px; border-top: 1px solid rgba(245, 166, 35, 0.1); padding-top: 8px; margin-top: 8px;">
+                <span>Avg Click-to-Open</span>
+                <span style="color: #EEF2F7;">${((campaign.clicks.count / campaign.opens.count) * 100).toFixed(1)}%</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button style="
+              flex: 1;
+              padding: 10px 16px;
+              background: #F5A623;
+              color: #0B1929;
+              border: none;
+              border-radius: 6px;
+              cursor: pointer;
+              font-weight: 600;
+            " onclick="closeAllModals()">Close</button>
+            <button style="
+              flex: 1;
+              padding: 10px 16px;
+              background: rgba(245, 166, 35, 0.1);
+              color: #F5A623;
+              border: 1px solid #F5A623;
+              border-radius: 6px;
+              cursor: pointer;
+              font-weight: 600;
+            " onclick="exportReport(${index})">📥 Export Report</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(analyticsModal);
+      analyticsModal.onclick = (e) => {
+        if (e.target === analyticsModal) analyticsModal.remove();
+      };
+    }
+
+    function viewCampaign(name, index) {
+      const campaign = campaigns[index];
+
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      `;
+
+      modal.innerHTML = `
+        <div style="
+          background: #122338;
+          border: 1px solid rgba(245, 166, 35, 0.2);
+          border-radius: 8px;
+          padding: 30px;
+          max-width: 600px;
+          width: 90%;
+        ">
+          <h2 style="font-size: 22px; color: #F5A623; margin-bottom: 20px;">📊 ${campaign.name}</h2>
+
+          <div style="
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+          ">
+            <div style="background: #1A3550; padding: 15px; border-radius: 6px;">
+              <div style="font-size: 11px; color: #8BA3BE; text-transform: uppercase; margin-bottom: 8px;">Recipients</div>
+              <div style="font-size: 20px; font-weight: 700; color: #EEF2F7;">${campaign.recipients.toLocaleString()}</div>
+            </div>
+            <div style="background: #1A3550; padding: 15px; border-radius: 6px;">
+              <div style="font-size: 11px; color: #8BA3BE; text-transform: uppercase; margin-bottom: 8px;">Sent Date</div>
+              <div style="font-size: 14px; font-weight: 700; color: #EEF2F7;">${campaign.sent}</div>
+            </div>
+            <div style="background: #1A3550; padding: 15px; border-radius: 6px;">
+              <div style="font-size: 11px; color: #8BA3BE; text-transform: uppercase; margin-bottom: 8px;">Unique Opens</div>
+              <div style="font-size: 18px; font-weight: 700; color: #1DB87A;">${campaign.opens.count.toLocaleString()} <span style="font-size: 13px; color: #8BA3BE;">(${campaign.opens.percentage}%)</span></div>
+            </div>
+            <div style="background: #1A3550; padding: 15px; border-radius: 6px;">
+              <div style="font-size: 11px; color: #8BA3BE; text-transform: uppercase; margin-bottom: 8px;">Unique Clicks</div>
+              <div style="font-size: 18px; font-weight: 700; color: #4A90E2;">${campaign.clicks.count.toLocaleString()} <span style="font-size: 13px; color: #8BA3BE;">(${campaign.clicks.percentage}%)</span></div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button style="
+              flex: 1;
+              padding: 10px 16px;
+              background: #F5A623;
+              color: #0B1929;
+              border: none;
+              border-radius: 6px;
+              cursor: pointer;
+              font-weight: 600;
+            " onclick="closeAllModals()">Close</button>
+            <button style="
+              flex: 1;
+              padding: 10px 16px;
+              background: rgba(245, 166, 35, 0.1);
+              color: #F5A623;
+              border: 1px solid #F5A623;
+              border-radius: 6px;
+              cursor: pointer;
+              font-weight: 600;
+            " onclick="showAnalytics(${index})">📈 View Analytics</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+      modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+      };
+    }
+
+    function exportReports() {
+      try {
+        const csv = ['Campaign,Recipients,Sent,Unique Opens,Open Rate,Unique Clicks,Click Rate'].concat(
+          campaigns.map(c => `"${c.name}",${c.recipients},"${c.sent}",${c.opens.count},${c.opens.percentage}%,${c.clicks.count},${c.clicks.percentage}%`)
+        ).join('\n');
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `campaign-reports-${new Date().toISOString().split('T')[0]}.csv`);
+        link.click();
+        console.log('✅ Reports exported successfully');
+      } catch (err) {
+        alert('Error exporting reports: ' + err.message);
+      }
+    }
+
+    function refreshReports() {
+      const rows = document.querySelectorAll('tbody tr');
+      rows.forEach((tr, i) => {
+        tr.style.opacity = '0.5';
+        tr.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => {
+          tr.style.opacity = '1';
+        }, 100 + (i * 50));
+      });
+      console.log('✅ Reports refreshed');
+    }
+
+    // Attach event listeners
+    document.getElementById('exportBtn').addEventListener('click', exportReports);
+    document.getElementById('refreshBtn').addEventListener('click', refreshReports);
+
+    // Initialize
+    renderReports();
+  </script>
+</body>
+</html>

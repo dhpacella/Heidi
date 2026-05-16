@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Volunteer Manager — Heidi Pacella</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #0B1929;
+      --navy-mid: #122338;
+      --navy-light: #1A3550;
+      --gold: #F5A623;
+      --gold-light: #FBBF48;
+      --text: #EEF2F7;
+      --text-muted: #8BA3BE;
+      --green: #1DB87A;
+      --blue: #4A90E2;
+      --surface: #122338;
+    }
+
+    body {
+      font-family: 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--navy);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 280px;
+      background: var(--navy-mid);
+      padding: 20px;
+      border-right: 1px solid rgba(245, 166, 35, 0.1);
+      overflow-y: auto;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 30px;
+    }
+
+    .sidebar-section {
+      margin-bottom: 30px;
+    }
+
+    .sidebar-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
+      padding-left: 10px;
+    }
+
+    .sidebar-item {
+      padding: 10px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+      color: var(--text);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+
+    .sidebar-item:hover {
+      background: rgba(245, 166, 35, 0.1);
+      color: var(--gold);
+    }
+
+    .sidebar-item.active {
+      background: rgba(245, 166, 35, 0.15);
+      color: var(--gold);
+      border-left: 3px solid var(--gold);
+      padding-left: 9px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid rgba(245, 166, 35, 0.2);
+      grid-column: 1 / -1;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      color: var(--gold);
+      font-weight: 700;
+    }
+
+    .header-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border: 1px solid var(--gold);
+      background: rgba(245, 166, 35, 0.1);
+      color: var(--gold);
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: rgba(245, 166, 35, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary {
+      background: var(--gold);
+      color: var(--navy);
+      border-color: var(--gold);
+    }
+
+    .btn-primary:hover {
+      background: var(--gold-light);
+    }
+
+    .volunteer-list {
+      background: var(--navy-mid);
+      border-radius: 8px;
+      border: 1px solid rgba(245, 166, 35, 0.1);
+      padding: 20px;
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+    }
+
+    .volunteer-item {
+      padding: 14px;
+      border: 1px solid rgba(245, 166, 35, 0.1);
+      border-radius: 6px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .volunteer-item:hover {
+      border-color: var(--gold);
+      background: rgba(245, 166, 35, 0.05);
+    }
+
+    .volunteer-item.selected {
+      border-color: var(--gold);
+      background: rgba(245, 166, 35, 0.1);
+    }
+
+    .volunteer-name {
+      font-weight: 600;
+      color: var(--gold);
+      margin-bottom: 4px;
+    }
+
+    .volunteer-phone {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .progress-bar {
+      height: 4px;
+      background: rgba(245, 166, 35, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--gold);
+      transition: width 0.3s;
+    }
+
+    .progress-text {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .detail-panel {
+      background: var(--navy-mid);
+      border-radius: 8px;
+      border: 1px solid rgba(245, 166, 35, 0.1);
+      padding: 20px;
+      overflow-y: auto;
+      max-height: calc(100vh - 200px);
+    }
+
+    .detail-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .stat-box {
+      background: var(--navy-light);
+      border: 1px solid rgba(245, 166, 35, 0.1);
+      border-radius: 6px;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      letter-spacing: 0.03em;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--gold);
+    }
+
+    .form-section {
+      background: var(--navy-light);
+      border: 1px solid rgba(245, 166, 35, 0.1);
+      border-radius: 6px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .form-section h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 15px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-bottom: 6px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--navy-mid);
+      color: var(--text);
+      border: 1px solid rgba(245, 166, 35, 0.2);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 13px;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.1);
+    }
+
+    .button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .assignments-section {
+      margin-top: 20px;
+    }
+
+    .assignments-section h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 15px;
+    }
+
+    .assignment-item {
+      background: var(--navy);
+      border: 1px solid rgba(245, 166, 35, 0.1);
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+
+    .assignment-name {
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .assignment-address {
+      color: var(--text-muted);
+      font-size: 11px;
+      margin-bottom: 6px;
+    }
+
+    .assignment-status {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .status-pending {
+      background: rgba(245, 158, 11, 0.2);
+      color: #FBBF48;
+    }
+
+    .status-visited {
+      background: rgba(34, 197, 94, 0.2);
+      color: #86EFAC;
+    }
+
+    .message {
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      font-size: 12px;
+    }
+
+    .message.success {
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid #22C55E;
+      color: #86EFAC;
+    }
+
+    .message.error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid #EF4444;
+      color: #FCA5A5;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 1024px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+      .detail-header {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Campaign</div>
+      <button class="sidebar-item" onclick="window.location.href='/all-campaigns.html'">🏠 All campaigns</button>
+      <button class="sidebar-item" onclick="window.location.href='/email-compose.html'">➕ New campaign</button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Templates</div>
+      <button class="sidebar-item" onclick="window.location.href='/all-templates.html'">📋 All templates</button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Subscribers</div>
+      <button class="sidebar-item" onclick="window.location.href='/subscribers.html'">👥 View all</button>
+      <button class="sidebar-item" onclick="window.location.href='/housekeeping.html'">🏠 Housekeeping</button>
+      <button class="sidebar-item" onclick="window.location.href='/blacklist.html'">🚫 Blacklist</button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Configuration</div>
+      <button class="sidebar-item" onclick="window.location.href='/rules.html'">⚙️ Rules</button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Volunteers</div>
+      <button class="sidebar-item active">🙋 Manage</button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Reports</div>
+      <button class="sidebar-item" onclick="window.location.href='/campaign-reports.html'">📊 Campaign Analytics</button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="header" style="grid-column: 1 / -1;">
+      <h1>🙋 Volunteer Manager</h1>
+      <div class="header-buttons">
+        <button class="btn btn-primary" id="addVolunteerBtn">➕ Add Volunteer</button>
+        <button class="btn" id="refreshBtn">🔄 Refresh</button>
+      </div>
+    </div>
+
+    <!-- Left Panel: Volunteer List -->
+    <div class="volunteer-list" id="volunteerList">
+      <p style="color: var(--text-muted); font-size: 12px;">Loading volunteers...</p>
+    </div>
+
+    <!-- Right Panel: Detail -->
+    <div class="detail-panel" id="detailPanel">
+      <div class="empty-state">
+        <p>Select a volunteer to view details and assignments</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const volunteers = [
+      {
+        id: 1,
+        name: 'Sarah Martinez',
+        phone: '(312) 555-0101',
+        precinct: 'Precinct 1',
+        status: 'active',
+        assigned: 24,
+        visited: 18,
+        assignments: [
+          { id: 1, voter_name: 'John Smith', address: '123 Main St', status: 'visited' },
+          { id: 2, voter_name: 'Jane Doe', address: '456 Oak Ave', status: 'visited' },
+          { id: 3, voter_name: 'Bob Johnson', address: '789 Pine Rd', status: 'pending' },
+          { id: 4, voter_name: 'Alice Williams', address: '321 Elm St', status: 'pending' },
+          { id: 5, voter_name: 'Charlie Brown', address: '654 Maple Dr', status: 'pending' },
+        ]
+      },
+      {
+        id: 2,
+        name: 'Marcus Thompson',
+        phone: '(312) 555-0102',
+        precinct: 'Precinct 2',
+        status: 'active',
+        assigned: 18,
+        visited: 12,
+        assignments: [
+          { id: 6, voter_name: 'Diana Prince', address: '987 Cedar Ln', status: 'visited' },
+          { id: 7, voter_name: 'Edward Norton', address: '147 Birch Ct', status: 'visited' },
+          { id: 8, voter_name: 'Fiona Green', address: '258 Spruce Way', status: 'pending' },
+        ]
+      },
+      {
+        id: 3,
+        name: 'Lisa Chen',
+        phone: '(312) 555-0103',
+        precinct: 'Precinct 1',
+        status: 'active',
+        assigned: 32,
+        visited: 15,
+        assignments: [
+          { id: 9, voter_name: 'George White', address: '369 Ash Blvd', status: 'visited' },
+          { id: 10, voter_name: 'Hannah Black', address: '741 Hickory St', status: 'pending' },
+        ]
+      },
+    ];
+
+    let selectedVolunteer = null;
+
+    function renderVolunteerList() {
+      const list = document.getElementById('volunteerList');
+      if (volunteers.length === 0) {
+        list.innerHTML = '<p style="color: var(--text-muted); font-size: 12px;">No volunteers yet</p>';
+        return;
+      }
+
+      list.innerHTML = volunteers.map(vol => {
+        const pct = vol.assigned > 0 ? Math.round((vol.visited / vol.assigned) * 100) : 0;
+        return `
+          <div class="volunteer-item ${selectedVolunteer?.id === vol.id ? 'selected' : ''}" onclick="selectVolunteer(${vol.id})">
+            <div class="volunteer-name">${vol.name}</div>
+            <div class="volunteer-phone">📱 ${vol.phone}</div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: ${pct}%"></div>
+            </div>
+            <div class="progress-text">${vol.visited}/${vol.assigned} visited (${pct}%)</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectVolunteer(id) {
+      selectedVolunteer = volunteers.find(v => v.id === id);
+      renderVolunteerList();
+      renderDetailPanel();
+    }
+
+    function renderDetailPanel() {
+      const panel = document.getElementById('detailPanel');
+
+      if (!selectedVolunteer) {
+        panel.innerHTML = `
+          <div class="empty-state">
+            <p>Select a volunteer to view details and assignments</p>
+          </div>
+        `;
+        return;
+      }
+
+      const pendingCount = selectedVolunteer.assignments.filter(a => a.status === 'pending').length;
+      const visitedCount = selectedVolunteer.assignments.filter(a => a.status === 'visited').length;
+
+      panel.innerHTML = `
+        <div>
+          <h2 style="font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 20px;">${selectedVolunteer.name}</h2>
+
+          <div class="detail-header">
+            <div class="stat-box">
+              <div class="stat-label">Total Assigned</div>
+              <div class="stat-value">${selectedVolunteer.assigned}</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Visited</div>
+              <div class="stat-value">${visitedCount}</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Pending</div>
+              <div class="stat-value">${pendingCount}</div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Filter &amp; Assign Voters</h3>
+            <div class="form-group">
+              <label>Precinct</label>
+              <input type="text" placeholder="e.g., Precinct 1" value="${selectedVolunteer.precinct}">
+            </div>
+            <div class="form-group">
+              <label>Party</label>
+              <select>
+                <option>All Parties</option>
+                <option>Democrat</option>
+                <option>Republican</option>
+                <option>Independent</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Voted In Last N Years</label>
+              <input type="number" min="1" max="10" value="3">
+            </div>
+            <div class="button-group">
+              <button class="btn" onclick="assignVoters(false)">Add to Existing</button>
+              <button class="btn btn-primary" onclick="assignVoters(true)">Replace &amp; Assign</button>
+            </div>
+          </div>
+
+          <div class="assignments-section">
+            <h3>Assigned Voters</h3>
+            ${selectedVolunteer.assignments.length === 0 ?
+              '<p style="color: var(--text-muted); font-size: 12px;">No assignments yet</p>' :
+              selectedVolunteer.assignments
+                .sort((a, b) => a.status === 'pending' ? -1 : 1)
+                .map(a => `
+                  <div class="assignment-item">
+                    <div class="assignment-name">${a.voter_name}</div>
+                    <div class="assignment-address">${a.address}</div>
+                    <span class="assignment-status ${a.status === 'visited' ? 'status-visited' : 'status-pending'}">
+                      ${a.status === 'visited' ? '✅ Visited' : '⏳ Pending'}
+                    </span>
+                  </div>
+                `).join('')
+            }
+          </div>
+        </div>
+      `;
+    }
+
+    function assignVoters(replace) {
+      if (!selectedVolunteer) return;
+      const action = replace ? 'Replace and reassign' : 'Add';
+      alert(`${action} voters for ${selectedVolunteer.name}.\n\nFull assignment API coming soon!`);
+    }
+
+    function addVolunteer() {
+      const name = prompt('Volunteer name:');
+      if (name) {
+        const phone = prompt('Phone number:');
+        const precinct = prompt('Precinct:');
+        if (phone && precinct) {
+          volunteers.push({
+            id: Math.max(...volunteers.map(v => v.id), 0) + 1,
+            name,
+            phone,
+            precinct,
+            status: 'active',
+            assigned: 0,
+            visited: 0,
+            assignments: []
+          });
+          renderVolunteerList();
+          alert(`✅ Added volunteer: ${name}`);
+        }
+      }
+    }
+
+    function refreshVolunteers() {
+      const items = document.querySelectorAll('.volunteer-item');
+      items.forEach((item, i) => {
+        item.style.opacity = '0.5';
+        setTimeout(() => { item.style.opacity = '1'; }, 100 + (i * 50));
+      });
+      console.log('✅ Volunteers refreshed');
+    }
+
+    // Event listeners
+    document.getElementById('addVolunteerBtn').addEventListener('click', addVolunteer);
+    document.getElementById('refreshBtn').addEventListener('click', refreshVolunteers);
+
+    // Initialize
+    renderVolunteerList();
+    renderDetailPanel();
+  </script>
+</body>
+</html>

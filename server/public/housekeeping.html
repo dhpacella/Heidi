@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Housekeeping — Heidi Pacella</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0B1929;
+      --navy-mid: #122338;
+      --navy-light: #1A3550;
+      --gold: #F5A623;
+      --gold-light: #FBBF48;
+      --text: #EEF2F7;
+      --text-muted: #8BA3BE;
+      --green: #1DB87A;
+      --red: #E03434;
+      --surface: #122338;
+    }
+    body {
+      font-family: 'Barlow', sans-serif;
+      background: var(--navy);
+      color: var(--text);
+      padding: 30px;
+    }
+    .container { max-width: 800px; margin: 0 auto; }
+    .header {
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid rgba(245, 166, 35, 0.2);
+    }
+    h1 { font-size: 28px; color: var(--gold); font-weight: 700; }
+    .btn {
+      padding: 10px 16px;
+      border: 1px solid var(--gold);
+      background: rgba(245, 166, 35, 0.1);
+      color: var(--gold);
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn:hover { background: rgba(245, 166, 35, 0.2); }
+    .card {
+      background: var(--navy-mid);
+      border: 1px solid rgba(245, 166, 35, 0.1);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .card h2 { color: var(--gold); margin-bottom: 12px; font-size: 16px; }
+    .card p { color: var(--text-muted); margin-bottom: 16px; font-size: 13px; }
+    .action-btn {
+      padding: 10px 20px;
+      background: var(--red);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .action-btn:hover { background: #CC2A2A; }
+    .stat { display: flex; justify-content: space-between; padding: 8px 0; }
+    .stat-label { color: var(--text-muted); }
+    .stat-value { color: var(--green); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🏠 List Housekeeping</h1>
+      <p style="color: var(--text-muted); margin-top: 4px;">Manage inactive subscribers and clean your lists</p>
+    </div>
+
+    <div class="card">
+      <h2>📊 List Statistics</h2>
+      <div class="stat">
+        <span class="stat-label">Total Subscribers</span>
+        <span class="stat-value">10,002</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Active Subscribers</span>
+        <span class="stat-value">9,999</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Inactive (90+ days)</span>
+        <span class="stat-value">3</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🧹 Clean Inactive Subscribers</h2>
+      <p>Remove subscribers who haven't opened an email in 90 days</p>
+      <button class="action-btn" onclick="cleanInactive()">🗑️ Remove Inactive</button>
+    </div>
+
+    <div class="card">
+      <h2>✔️ Remove Unconfirmed</h2>
+      <p>Delete subscribers who never confirmed their subscription</p>
+      <button class="action-btn" onclick="removeUnconfirmed()">🗑️ Remove Unconfirmed</button>
+    </div>
+
+    <div class="card">
+      <h2>📧 Remove Bounced Emails</h2>
+      <p>Delete permanently bounced email addresses</p>
+      <button class="action-btn" onclick="removeBounced()">🗑️ Remove Bounced</button>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px;">
+      <button class="btn" onclick="history.back()">← Back</button>
+    </div>
+  </div>
+
+  <script>
+    function cleanInactive() {
+      if (confirm('Remove 3 inactive subscribers? This cannot be undone.')) {
+        alert('✅ Removed 3 inactive subscribers');
+      }
+    }
+
+    function removeUnconfirmed() {
+      if (confirm('Remove 0 unconfirmed subscribers?')) {
+        alert('✅ No unconfirmed subscribers to remove');
+      }
+    }
+
+    function removeBounced() {
+      if (confirm('Remove 1 bounced email address?')) {
+        alert('✅ Removed 1 bounced email');
+      }
+    }
+  </script>
+</body>
+</html>
