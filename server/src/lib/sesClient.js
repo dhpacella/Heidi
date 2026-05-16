@@ -27,8 +27,13 @@ async function sendWithRetry(command, retries = 3) {
   }
 }
 
-async function sendEmail(toAddress, subject, htmlBody, textBody, fromAddress) {
+async function sendEmail(toAddress, subject, htmlBody, textBody, fromAddress, unsubscribeLink) {
   try {
+    let finalHtmlBody = htmlBody;
+    if (unsubscribeLink) {
+      finalHtmlBody = `${htmlBody}\n<footer style="margin-top:40px;padding-top:20px;border-top:1px solid #ccc;font-size:12px;color:#999;"><p><a href="${unsubscribeLink}" style="color:#999;">Unsubscribe from future emails</a></p></footer>`;
+    }
+
     const command = new SendEmailCommand({
       Source: fromAddress,
       Destination: {
@@ -41,7 +46,7 @@ async function sendEmail(toAddress, subject, htmlBody, textBody, fromAddress) {
         },
         Body: {
           Html: {
-            Data: htmlBody,
+            Data: finalHtmlBody,
             Charset: 'UTF-8',
           },
           Text: {

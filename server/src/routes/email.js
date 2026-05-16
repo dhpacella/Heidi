@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const multer = require('multer');
 const { parse } = require('csv-parse/sync');
 const XLSX = require('xlsx');
@@ -192,11 +193,15 @@ router.post('/send', requireRole('admin', 'campaign_manager'), upload.single('fi
       const results = [];
       const BATCH_SIZE = 10;
       const BATCH_DELAY_MS = 100;
+      const baseUrl = process.env.APP_BASE_URL || 'https://heidi.cushingtrans.com';
 
       for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
         const batch = recipients.slice(i, i + BATCH_SIZE);
         const batchResults = await Promise.all(
-          batch.map(r => sendEmail(r.email, subject, finalHtmlBody, plainTextBody || '', fromAddress))
+          batch.map(r => {
+            const unsubscribeUrl = `${baseUrl}/api/email/unsubscribe?email=${encodeURIComponent(r.email)}&blastId=${blastId}`;
+            return sendEmail(r.email, subject, finalHtmlBody, plainTextBody || '', fromAddress, unsubscribeUrl);
+          })
         );
         results.push(...batchResults);
 
@@ -382,6 +387,89 @@ router.get('/stream', requireRole('admin', 'campaign_manager'), (req, res) => {
   });
 
   res.write(`:heartbeat\n\n`);
+});
+
+// Public unsubscribe endpoint (no auth required, handles GET + POST)
+router.get('/unsubscribe', async (req, res) => {
+  try {
+    const { email, blastId } = req.query;
+    if (!email) {
+      return res.sendFile(path.join(__dirname, '../public/unsubscribe-error.html'));
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedEmail) {
+      return res.sendFile(path.join(__dirname, '../public/unsubscribe-error.html'));
+    }
+
+    // Mark recipient as unsubscribed (if specific blast)
+    if (blastId) {
+      await pool.query(
+        'UPDATE email_recipients SET status = $1, unsubscribed_at = NOW() WHERE email = $2 AND blast_id = $3',
+        ['unsubscribed', normalizedEmail, blastId]
+      );
+    } else {
+      // Mark all occurrences of this email as unsubscribed
+      await pool.query(
+        'UPDATE email_recipients SET status = $1, unsubscribed_at = NOW() WHERE email = $2',
+        ['unsubscribed', normalizedEmail]
+      );
+    }
+
+    // Also mark in email_subscribers
+    await pool.query(
+      'UPDATE email_subscribers SET status = $1 WHERE email = $2',
+      ['unsubscribed', normalizedEmail]
+    );
+
+    res.sendFile(path.join(__dirname, '../public/unsubscribe-success.html'));
+  } catch (err) {
+    console.error('Unsubscribe error:', err);
+    res.sendFile(path.join(__dirname, '../public/unsubscribe-error.html'));
+  }
+});
+
+router.post('/unsubscribe', async (req, res) => {
+  try {
+    const { email, blastId, listId } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedEmail) {
+      return res.status(400).json({ error: 'Invalid email address' });
+    }
+
+    if (blastId) {
+      await pool.query(
+        'UPDATE email_recipients SET status = $1, unsubscribed_at = NOW() WHERE email = $2 AND blast_id = $3',
+        ['unsubscribed', normalizedEmail, blastId]
+      );
+    } else {
+      await pool.query(
+        'UPDATE email_recipients SET status = $1, unsubscribed_at = NOW() WHERE email = $2',
+        ['unsubscribed', normalizedEmail]
+      );
+    }
+
+    if (listId) {
+      await pool.query(
+        'UPDATE email_subscribers SET status = $1 WHERE email = $2 AND list_id = $3',
+        ['unsubscribed', normalizedEmail, listId]
+      );
+    } else {
+      await pool.query(
+        'UPDATE email_subscribers SET status = $1 WHERE email = $2',
+        ['unsubscribed', normalizedEmail]
+      );
+    }
+
+    res.json({ success: true, message: 'You have been unsubscribed from future emails.' });
+  } catch (err) {
+    console.error('Unsubscribe error:', err);
+    res.status(500).json({ error: 'Failed to process unsubscribe request' });
+  }
 });
 
 module.exports = router;

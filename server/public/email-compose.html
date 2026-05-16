@@ -576,23 +576,6 @@
       </div>
     </div>
 
-    <!-- Recipients & Cost Card -->
-    <div class="card">
-      <h2>👥 Recipients & Cost</h2>
-      <div id="recipientInfo" class="recipients-preview">
-        <p style="color: var(--text-muted);">Upload a CSV or Excel file to see recipient count</p>
-      </div>
-      <div style="background: rgba(93, 224, 176, 0.08); border: 1px solid rgba(93, 224, 176, 0.3); border-left: 3px solid #5DE0B0; border-radius: 8px; padding: 16px; margin-top: 16px;">
-        <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px;">💰 Estimated Cost</div>
-        <div style="font-family: 'Barlow Condensed', sans-serif; font-size: 32px; font-weight: 700; color: #5DE0B0; line-height: 1;">
-          $<span id="costDisplay">0.00</span>
-        </div>
-        <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
-          <span id="costBreakdown">0 recipients × $0.0001 per email</span>
-        </div>
-      </div>
-    </div>
-
     <!-- Advanced Options Card -->
     <div class="card">
       <h2>⚙️ Advanced Options</h2>
@@ -663,6 +646,23 @@
         <div style="font-size: 12px; font-weight: 600; color: #FF9800; margin-bottom: 8px;">⚖️ GDPR Re-Consent Log</div>
         <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6;">
           When requesting re-consent from subscribers, use the <code style="background: var(--navy); padding: 2px 6px; border-radius: 3px;">[gdpr]</code> tag in your brand settings. If you turn on the 'GDPR safe switch', future campaigns and autoresponders will only be sent to subscribers tagged with <code style="background: var(--navy); padding: 2px 6px; border-radius: 3px;">[gdpr]</code>.
+        </div>
+      </div>
+    </div>
+
+    <!-- Recipients & Cost Card -->
+    <div class="card">
+      <h2>👥 Recipients & Cost</h2>
+      <div id="recipientInfo" class="recipients-preview">
+        <p style="color: var(--text-muted);">Upload a CSV or Excel file to see recipient count</p>
+      </div>
+      <div style="background: rgba(93, 224, 176, 0.08); border: 1px solid rgba(93, 224, 176, 0.3); border-left: 3px solid #5DE0B0; border-radius: 8px; padding: 16px; margin-top: 16px;">
+        <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px;">💰 Estimated Cost</div>
+        <div style="font-family: 'Barlow Condensed', sans-serif; font-size: 32px; font-weight: 700; color: #5DE0B0; line-height: 1;">
+          $<span id="costDisplay">0.00</span>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
+          <span id="costBreakdown">0 recipients × $0.0001 per email</span>
         </div>
       </div>
     </div>
