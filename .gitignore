@@ -21,3 +21,8 @@ build/
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
 credentials
+
+# Claude worktrees and local dev
+.claude/worktrees/
+...claudeworktreesemail-templates-feature/
+backend/
