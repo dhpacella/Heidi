@@ -29,23 +29,34 @@ async function processEmailBlast(blastId) {
 
     const blast = blastRes.rows[0];
     const recipientRes = await pgPool.query(
-      'SELECT email FROM email_recipients WHERE blast_id = $1',
+      `SELECT email FROM email_recipients
+       WHERE blast_id = $1
+       AND status NOT IN ('bounced', 'complained', 'unsubscribed')`,
+      [blastId]
+    );
+
+    const skipped = await pgPool.query(
+      `SELECT COUNT(*) as count FROM email_recipients
+       WHERE blast_id = $1
+       AND status IN ('bounced', 'complained', 'unsubscribed')`,
       [blastId]
     );
 
     const emails = recipientRes.rows.map(r => r.email);
-    console.log(`📧 Sending ${emails.length} emails from blast ${blastId}...`);
+    console.log(`📧 Sending ${emails.length} emails from blast ${blastId}... (${skipped.rows[0].count} suppressed)`);
 
     const results = [];
     const BATCH_SIZE = 10;
     const BATCH_DELAY_MS = 100;
+    const baseUrl = process.env.APP_BASE_URL || 'https://heidi.cushingtrans.com';
 
     for (let i = 0; i < emails.length; i += BATCH_SIZE) {
       const batch = emails.slice(i, i + BATCH_SIZE);
       const batchResults = await Promise.all(
-        batch.map(email =>
-          sendEmail(email, blast.subject, blast.html_body, '', blast.from_address)
-        )
+        batch.map(email => {
+          const unsubscribeUrl = `${baseUrl}/api/email/unsubscribe?email=${encodeURIComponent(email)}&blastId=${blastId}`;
+          return sendEmail(email, blast.subject, blast.html_body, '', blast.from_address, unsubscribeUrl);
+        })
       );
       results.push(...batchResults);
 
