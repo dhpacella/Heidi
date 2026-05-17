@@ -51,7 +51,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     });
   } catch (err) {
     console.error('API login error:', err);
-    res.status(500).json({ error: 'Login failed', detail: err.message });
+    res.status(500).json({ error: 'Login failed' });
   }
 });
 

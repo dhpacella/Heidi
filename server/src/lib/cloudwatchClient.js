@@ -18,7 +18,7 @@ async function putMetric(metricName, value, unit = 'Count', dimensions = []) {
       }],
     }));
   } catch (err) {
-    logger.warn('CloudWatch metric failed', { metricName, message: err.message });
+    console.warn('CloudWatch metric failed:', metricName, err.message);
   }
 }
 
