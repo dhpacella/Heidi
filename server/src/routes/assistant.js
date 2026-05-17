@@ -5,6 +5,24 @@ const pool = require('../db/connection');
 
 const router = express.Router();
 
+// Health check endpoint (no auth required, no token usage)
+router.get('/health', async (req, res) => {
+  try {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const isConfigured = !!apiKey && apiKey.length > 0;
+
+    res.json({
+      status: isConfigured ? 'ok' : 'unconfigured',
+      configured: isConfigured,
+      hasApiKey: isConfigured,
+      message: isConfigured ? 'Claude Assistant ready' : 'API key not configured',
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+});
+
 // Get campaign context for Claude
 async function getCampaignContext(userId) {
   try {

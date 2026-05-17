@@ -4,12 +4,19 @@ const mockData = {
   users: [
     {
       id: 1,
-      email: 'admin@test.com',
-      name: 'Admin User',
-      password_hash: '$2a$12$itGdR66PruLCz0EGeVQWK.ZH3s2.m5el.GiafivNZA0JsinA1R9vq',
+      email: 'admin@heidiformayor.com',
+      name: 'Admin',
+      password_hash: '$2a$12$w4jSSEkXfpjndiJHEpV0t.XEkNTxWdgt9XTXU.vzozHYX8kNiz.7e',
       role: 'admin',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
+  ],
+  precincts: [
+    { id: 1, name: 'Precinct 1' },
+    { id: 2, name: 'Precinct 2' },
+    { id: 3, name: 'Precinct 3' },
+    { id: 4, name: 'Precinct 4' },
   ],
   voters: [],
   email_blasts: [],
@@ -17,7 +24,20 @@ const mockData = {
   email_lists: [],
   email_subscribers: [],
   email_templates: [],
-  email_recipients: []
+  email_recipients: [],
+  heidi_posts: [],
+  heidi_polls: [
+    {
+      id: 1,
+      question: 'Do you think LPR\'s (License Plate Readers), aka "Flock" cameras, are necessary in Homer Glen, Illinois?',
+      options: ['Yes', 'No', "I don't know"],
+      active: true,
+      closes_at: null,
+      created_at: new Date().toISOString()
+    }
+  ],
+  poll_votes: [],
+  system_logs: []
 };
 
 const pool = {
@@ -108,7 +128,16 @@ const pool = {
 
     // INSERT INTO sms_blasts
     if (sql.includes('INSERT INTO sms_blasts')) {
-      const blast = { id: Math.random().toString(36).substr(2, 9) };
+      const blast = {
+        id: Math.random().toString(36).substr(2, 9),
+        sender_id: params[0],
+        message: params[1],
+        recipient_count: params[2],
+        parts_per_message: params[3],
+        total_cost: params[4],
+        status: params[5] || 'queued',
+        created_at: new Date().toISOString()
+      };
       mockData.sms_blasts.push(blast);
       return { rows: [{ id: blast.id }], rowCount: 1 };
     }
@@ -201,6 +230,167 @@ const pool = {
       return { rowCount: recipient ? 1 : 0 };
     }
 
+    // SELECT * FROM heidi_posts WHERE published = true ORDER BY published_at DESC
+    if (sql.includes('SELECT') && sql.includes('heidi_posts') && sql.includes('published')) {
+      return {
+        rows: mockData.heidi_posts.filter(p => p.published).sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
+      };
+    }
+
+    // SELECT * FROM heidi_posts WHERE published = true AND (title ILIKE $1 OR content ILIKE $1)
+    if (sql.includes('SELECT') && sql.includes('heidi_posts') && (sql.includes('ILIKE') || sql.includes('ilike'))) {
+      const searchTerm = params[0].toLowerCase();
+      return {
+        rows: mockData.heidi_posts
+          .filter(p => p.published && (p.title.toLowerCase().includes(searchTerm) || p.content.toLowerCase().includes(searchTerm)))
+          .sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
+      };
+    }
+
+    // SELECT * FROM heidi_posts WHERE slug = $1
+    if (sql.includes('SELECT') && sql.includes('heidi_posts') && sql.includes('slug')) {
+      return {
+        rows: mockData.heidi_posts.filter(p => p.slug === params[0])
+      };
+    }
+
+    // SELECT * FROM heidi_posts (all posts for admin)
+    if (sql.includes('SELECT') && sql.includes('heidi_posts')) {
+      return {
+        rows: mockData.heidi_posts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      };
+    }
+
+    // INSERT INTO heidi_posts
+    if (sql.includes('INSERT INTO heidi_posts')) {
+      const post = {
+        id: mockData.heidi_posts.length + 1,
+        title: params[0],
+        slug: params[1],
+        content: params[2],
+        published: params[3] || false,
+        published_at: params[4] || null,
+        created_by: params[5] || 1,
+        created_at: new Date().toISOString()
+      };
+      mockData.heidi_posts.push(post);
+      return { rows: [{ id: post.id }], rowCount: 1 };
+    }
+
+    // UPDATE heidi_posts
+    if (sql.includes('UPDATE heidi_posts')) {
+      const postId = params[params.length - 1];
+      const post = mockData.heidi_posts.find(p => p.id === postId);
+      if (post) {
+        if (sql.includes('published')) post.published = params[0];
+        if (sql.includes('title')) post.title = params[0];
+      }
+      return { rowCount: post ? 1 : 0, rows: [post] };
+    }
+
+    // DELETE FROM heidi_posts
+    if (sql.includes('DELETE FROM heidi_posts')) {
+      const postId = params[0];
+      const idx = mockData.heidi_posts.findIndex(p => p.id === postId);
+      if (idx >= 0) mockData.heidi_posts.splice(idx, 1);
+      return { rowCount: idx >= 0 ? 1 : 0 };
+    }
+
+    // COUNT voters
+    if (sql.includes('COUNT') && sql.includes('voters')) {
+      return { rows: [{ total: mockData.voters.length }] };
+    }
+
+    // SELECT voters (with optional JOIN precincts)
+    if (sql.includes('FROM voters')) {
+      const limit  = params[params.length - 2] || 50;
+      const offset = params[params.length - 1] || 0;
+      const rows = mockData.voters.slice(offset, offset + limit).map(v => ({
+        ...v,
+        precinct_name: (mockData.precincts.find(p => p.id === v.precinct_id) || {}).name || null
+      }));
+      return { rows };
+    }
+
+    // SELECT precincts
+    if (sql.includes('FROM precincts') || (sql.includes('SELECT') && sql.includes('precincts'))) {
+      return { rows: mockData.precincts };
+    }
+
+    // SELECT * FROM heidi_polls WHERE active = true
+    if (sql.includes('SELECT') && sql.includes('heidi_polls') && sql.includes('active')) {
+      return {
+        rows: mockData.heidi_polls.filter(p => p.active)
+      };
+    }
+
+    // SELECT * FROM heidi_polls
+    if (sql.includes('SELECT') && sql.includes('heidi_polls')) {
+      return { rows: mockData.heidi_polls };
+    }
+
+    // INSERT INTO heidi_polls
+    if (sql.includes('INSERT INTO heidi_polls')) {
+      const poll = {
+        id: mockData.heidi_polls.length + 1,
+        question: params[0],
+        options: params[1],
+        active: params[2] || true,
+        closes_at: params[3] || null,
+        created_by: params[4] || 1,
+        created_at: new Date().toISOString()
+      };
+      mockData.heidi_polls.push(poll);
+      return { rows: [{ id: poll.id }], rowCount: 1 };
+    }
+
+    // INSERT INTO poll_votes
+    if (sql.includes('INSERT INTO poll_votes')) {
+      const vote = {
+        id: mockData.poll_votes.length + 1,
+        poll_id: params[0],
+        option_index: params[1],
+        voter_ip: params[2],
+        created_at: new Date().toISOString()
+      };
+      mockData.poll_votes.push(vote);
+      return { rows: [{ id: vote.id }], rowCount: 1 };
+    }
+
+    // SELECT COUNT(*) FROM poll_votes WHERE poll_id = $1 AND option_index = $2
+    if (sql.includes('SELECT') && sql.includes('COUNT') && sql.includes('poll_votes')) {
+      const count = mockData.poll_votes.filter(v => v.poll_id === params[0] && v.option_index === params[1]).length;
+      return { rows: [{ count }] };
+    }
+
+    // INSERT INTO system_logs
+    if (sql.includes('INSERT INTO system_logs')) {
+      const log = {
+        id: mockData.system_logs.length + 1,
+        check_type: params[0],
+        status: params[1],
+        message: params[2],
+        details: params[3] ? JSON.stringify(params[3]) : null,
+        created_at: new Date().toISOString()
+      };
+      mockData.system_logs.push(log);
+      return { rows: [{ id: log.id }], rowCount: 1 };
+    }
+
+    // SELECT FROM system_logs (with LIMIT/OFFSET for pagination)
+    if (sql.includes('SELECT') && sql.includes('system_logs')) {
+      let logs = mockData.system_logs.slice().reverse();
+      if (sql.includes('LIMIT') && sql.includes('OFFSET')) {
+        const limit = params[0] || 100;
+        const offset = params[1] || 0;
+        logs = logs.slice(offset, offset + limit);
+      } else if (sql.includes('LIMIT')) {
+        const limit = params[0] || 100;
+        logs = logs.slice(0, limit);
+      }
+      return { rows: logs };
+    }
+
     // Generic UPDATE
     if (sql.includes('UPDATE')) {
       return { rowCount: 1 };
@@ -219,4 +409,10 @@ const pool = {
   end: () => {}
 };
 
+function getAllData() {
+  return mockData;
+}
+
 module.exports = pool;
+module.exports.getAllData = getAllData;
+module.exports.mockData = mockData;

@@ -4,6 +4,24 @@ const { requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Health check endpoint (no auth required, no token usage)
+router.get('/health', async (req, res) => {
+  try {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const isConfigured = !!apiKey && apiKey.length > 0;
+
+    res.json({
+      status: isConfigured ? 'ok' : 'unconfigured',
+      configured: isConfigured,
+      hasApiKey: isConfigured,
+      message: isConfigured ? 'Claude API ready' : 'API key not configured',
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+});
+
 // All endpoints require admin or campaign_manager role
 router.use(requireRole('admin', 'campaign_manager'));
 

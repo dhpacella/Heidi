@@ -1,6 +1,6 @@
 const { SQSClient, SendMessageCommand, ReceiveMessageCommand, DeleteMessageCommand } = require('@aws-sdk/client-sqs');
 
-const client = new SQSClient({ region: process.env.AWS_REGION || 'us-east-2' });
+const client = new SQSClient({ region: process.env.AWS_REGION || 'us-east-2', useQueueUrlAsEndpoint: false });
 const QUEUE_URL = process.env.SQS_QUEUE_URL;
 
 if (!QUEUE_URL) {

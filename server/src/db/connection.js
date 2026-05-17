@@ -92,11 +92,11 @@ if (dbUrl.startsWith('sqlite:')) {
   const { Pool } = require('pg');
   const mockDb = require('./mock-db');
 
-  // In development mode, prefer mock database unless explicitly using localhost
+  // Use mock database only if NODE_ENV is development AND no DATABASE_URL is set
   const isDev = process.env.NODE_ENV !== 'production';
-  const isLocalDb = dbUrl && (dbUrl.includes('localhost') || dbUrl.includes('127.0.0.1'));
+  const hasExplicitDb = !!dbUrl;
 
-  if (isDev && !isLocalDb) {
+  if (isDev && !hasExplicitDb) {
     console.log('✅ Using in-memory mock database for local development');
     module.exports = mockDb;
   } else {

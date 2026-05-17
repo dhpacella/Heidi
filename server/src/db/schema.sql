@@ -298,6 +298,38 @@ CREATE TABLE IF NOT EXISTS volunteer_gps (
   recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Heidi's posts and polls (public voter content)
+CREATE TABLE IF NOT EXISTS heidi_posts (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  slug VARCHAR(255) UNIQUE NOT NULL,
+  content TEXT NOT NULL,
+  published BOOLEAN DEFAULT FALSE,
+  published_at TIMESTAMP,
+  created_by INTEGER REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS heidi_polls (
+  id SERIAL PRIMARY KEY,
+  question TEXT NOT NULL,
+  options JSONB NOT NULL,
+  active BOOLEAN DEFAULT TRUE,
+  closes_at TIMESTAMP,
+  created_by INTEGER REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS poll_votes (
+  id SERIAL PRIMARY KEY,
+  poll_id INTEGER NOT NULL REFERENCES heidi_polls(id) ON DELETE CASCADE,
+  option_index INTEGER NOT NULL,
+  voter_ip VARCHAR(45),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(poll_id, voter_ip)
+);
+
 -- Volunteer indexes
 CREATE INDEX IF NOT EXISTS idx_volunteers_user ON volunteers(user_id);
 CREATE INDEX IF NOT EXISTS idx_volunteers_precinct ON volunteers(precinct_id);
@@ -305,3 +337,9 @@ CREATE INDEX IF NOT EXISTS idx_volunteer_assignments_volunteer ON volunteer_assi
 CREATE INDEX IF NOT EXISTS idx_volunteer_assignments_voter ON volunteer_assignments(voter_id);
 CREATE INDEX IF NOT EXISTS idx_volunteer_gps_volunteer ON volunteer_gps(volunteer_id);
 CREATE INDEX IF NOT EXISTS idx_volunteer_gps_recorded ON volunteer_gps(recorded_at);
+
+-- Heidi content indexes
+CREATE INDEX IF NOT EXISTS idx_heidi_posts_published ON heidi_posts(published, published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_heidi_posts_slug ON heidi_posts(slug);
+CREATE INDEX IF NOT EXISTS idx_heidi_polls_active ON heidi_polls(active);
+CREATE INDEX IF NOT EXISTS idx_poll_votes_poll ON poll_votes(poll_id);

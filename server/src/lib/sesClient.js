@@ -39,6 +39,7 @@ async function sendEmail(toAddress, subject, htmlBody, textBody, fromAddress, un
       Destination: {
         ToAddresses: [toAddress],
       },
+      ConfigurationSetName: 'heidi-bounces',
       Message: {
         Subject: {
           Data: subject,

@@ -573,6 +573,7 @@ tr:hover td{background:var(--surface);}
 </style>
 </head>
 <body>
+<a href="/content-manager.html" style="position:fixed;top:20px;right:20px;background:#FF0000;color:#FFFFFF;padding:15px 25px;border-radius:6px;font-weight:bold;text-decoration:none;z-index:9999;font-family:Barlow,sans-serif;font-size:16px;box-shadow:0 4px 12px rgba(0,0,0,0.3)">📝 MANAGER</a>
 <div class="app">
 
 <div class="banner">
@@ -586,9 +587,13 @@ tr:hover td{background:var(--surface);}
     <div class="banner-right">
       <div class="days" id="days">—</div>
       <div class="dayslbl">days to election</div>
-      <form method="POST" action="/logout" style="margin-top:12px">
-        <button type="submit" style="font-size:11px;padding:6px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#8BA3BE;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.15)';this.style.color='#EEF2F7'" onmouseout="this.style.background='rgba(255,255,255,.1)';this.style.color='#8BA3BE'">Sign out</button>
-      </form>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button onclick="window.open('/status-dashboard.html', '_blank')" style="font-size:11px;padding:6px 12px;background:rgba(30,100,200,.2);border:1px solid rgba(30,100,200,.4);border-radius:6px;color:#1E64C8;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s" onmouseover="this.style.background='rgba(30,100,200,.3)'" onmouseout="this.style.background='rgba(30,100,200,.2)'">📊 Status</button>
+        <button onclick="window.location.href='/content-manager.html'" style="font-size:11px;padding:6px 12px;background:rgba(245,166,35,.2);border:1px solid rgba(245,166,35,.4);border-radius:6px;color:#F5A623;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s" onmouseover="this.style.background='rgba(245,166,35,.3)'" onmouseout="this.style.background='rgba(245,166,35,.2)'">📝 Manager</button>
+        <form method="POST" action="/logout" style="margin:0">
+          <button type="submit" style="font-size:11px;padding:6px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#8BA3BE;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.15)';this.style.color='#EEF2F7'" onmouseout="this.style.background='rgba(255,255,255,.1)';this.style.color='#8BA3BE'">Sign out</button>
+        </form>
+      </div>
     </div>
   </div>
 </div>

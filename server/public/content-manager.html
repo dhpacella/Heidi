@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Heidi's Content Manager</title>
+  <style>
+    .login-screen {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0B1929 0%, #122338 40%, #1A3550 100%);
+    }
+
+    .login-form {
+      background: #122338;
+      border: 1px solid #243D56;
+      border-radius: 10px;
+      padding: 40px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .login-form h2 {
+      color: #F5A623;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .login-form p {
+      color: #8BA3BE;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .login-form input[type="text"],
+    .login-form input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      background: #0B1929;
+      border: 1px solid #243D56;
+      border-radius: 6px;
+      color: #EEF2F7;
+      font-family: inherit;
+      font-size: 14px;
+    }
+
+    .login-form button {
+      width: 100%;
+      padding: 12px;
+      background: #F5A623;
+      color: #0B1929;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+
+    .login-form button:hover {
+      background: #FBBF48;
+    }
+
+    .login-error {
+      color: #E03434;
+      font-size: 13px;
+      margin-bottom: 15px;
+      padding: 10px;
+      background: rgba(224, 52, 52, 0.1);
+      border-radius: 4px;
+      border: 1px solid rgba(224, 52, 52, 0.3);
+      display: none;
+    }
+
+    .logout-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: #E03434;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .logout-btn:hover {
+      background: #c02a2a;
+    }
+  </style>
+  <style>
+    :root {
+      --navy: #0B1929;
+      --navy-mid: #122338;
+      --navy-light: #1A3550;
+      --gold: #F5A623;
+      --gold-light: #FBBF48;
+      --text: #EEF2F7;
+      --text-muted: #8BA3BE;
+      --border: #243D56;
+      --surface: #122338;
+      --green: #1DB87A;
+      --red: #E03434;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 40%, var(--navy-light) 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container { max-width: 1000px; margin: 0 auto; }
+
+    header {
+      background: var(--navy-mid);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 30px;
+      margin-bottom: 40px;
+      text-align: center;
+    }
+
+    h1 { font-size: 36px; color: var(--gold); margin-bottom: 10px; }
+    .subtitle { color: var(--text-muted); }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab-btn {
+      padding: 12px 20px;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 14px;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .tab-btn.active {
+      color: var(--gold);
+      border-bottom-color: var(--gold);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 12px;
+      background: var(--navy);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+    }
+
+    textarea {
+      min-height: 200px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.1);
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-primary {
+      background: var(--gold);
+      color: var(--navy);
+    }
+
+    .btn-primary:hover {
+      background: var(--gold-light);
+    }
+
+    .btn-secondary {
+      background: var(--navy-light);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--border);
+    }
+
+    .btn-success {
+      background: var(--green);
+      color: white;
+    }
+
+    .btn-danger {
+      background: var(--red);
+      color: white;
+    }
+
+    .posts-list, .polls-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .post-card, .poll-card {
+      background: var(--navy-light);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+    }
+
+    .post-info h3 { color: var(--gold); margin-bottom: 8px; }
+    .post-info p { color: var(--text-muted); font-size: 13px; }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+
+    .status-published { background: rgba(29, 184, 122, 0.2); color: var(--green); }
+    .status-draft { background: rgba(224, 52, 52, 0.2); color: var(--red); }
+
+    .alert {
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .alert.show { display: block; }
+    .alert-success { background: rgba(29, 184, 122, 0.1); color: var(--green); border: 1px solid rgba(29, 184, 122, 0.3); }
+    .alert-error { background: rgba(224, 52, 52, 0.1); color: var(--red); border: 1px solid rgba(224, 52, 52, 0.3); }
+  </style>
+</head>
+<body>
+  <!-- Login Screen -->
+  <div id="loginScreen" class="login-screen">
+    <div class="login-form">
+      <h2>Content Manager</h2>
+      <p>Sign in to manage posts and polls</p>
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div style="margin-bottom: 15px;">
+          <input type="email" id="loginEmail" placeholder="Email address..." required style="margin-bottom: 0;">
+        </div>
+        <div style="margin-bottom: 15px;">
+          <input type="password" id="loginPassword" placeholder="Password..." required style="margin-bottom: 0;">
+        </div>
+        <div class="login-error" id="loginError"></div>
+        <button type="submit" class="login-form" style="width: 100%; padding: 12px; background: #F5A623; color: #0B1929; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; margin-bottom: 15px;">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admin Interface -->
+  <div id="adminInterface" style="display: none;">
+    <button class="logout-btn" onclick="handleLogout()">Logout</button>
+    <div class="container">
+      <header>
+        <h1>📝 Heidi's Content Manager</h1>
+        <p class="subtitle">Create posts and manage polls</p>
+      </header>
+
+    <div class="alert alert-success" id="successAlert"></div>
+    <div class="alert alert-error" id="errorAlert"></div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('posts')">Posts</button>
+      <button class="tab-btn" onclick="showTab('polls')">Polls</button>
+    </div>
+
+    <!-- POSTS TAB -->
+    <div id="posts" class="tab-content active">
+      <h2 style="margin-bottom: 30px; color: var(--gold);">Manage Posts</h2>
+
+      <form id="postForm" onsubmit="handlePostSubmit(event)">
+        <h3 style="color: var(--text); margin-bottom: 20px;">Create New Post</h3>
+
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="postTitle" placeholder="Post title..." required>
+        </div>
+
+        <div class="form-group">
+          <label>Content</label>
+          <textarea id="postContent" placeholder="Write your post here..." required></textarea>
+        </div>
+
+        <div class="button-group">
+          <button type="submit" class="btn-primary">Create Draft</button>
+          <button type="button" class="btn-secondary" onclick="generatePost()">✨ Generate with AI</button>
+        </div>
+      </form>
+
+      <hr style="border: none; border-top: 1px solid var(--border); margin: 40px 0;">
+
+      <h3 style="color: var(--text); margin-bottom: 20px;">Published Posts</h3>
+      <div id="postsList" class="posts-list">
+        <p style="color: var(--text-muted);">Loading posts...</p>
+      </div>
+    </div>
+
+    <!-- POLLS TAB -->
+    <div id="polls" class="tab-content">
+      <h2 style="margin-bottom: 30px; color: var(--gold);">Manage Polls</h2>
+
+      <form id="pollForm" onsubmit="handlePollSubmit(event)">
+        <h3 style="color: var(--text); margin-bottom: 20px;">Create New Poll</h3>
+
+        <div class="form-group">
+          <label>Question</label>
+          <input type="text" id="pollQuestion" placeholder="Ask a question..." required>
+        </div>
+
+        <div id="pollOptions">
+          <div class="form-group">
+            <label>Option 1</label>
+            <input type="text" class="poll-option" placeholder="Option..." required>
+          </div>
+          <div class="form-group">
+            <label>Option 2</label>
+            <input type="text" class="poll-option" placeholder="Option..." required>
+          </div>
+        </div>
+
+        <button type="button" class="btn-secondary" onclick="addPollOption()" style="margin-bottom: 20px;">+ Add Option</button>
+
+        <div class="button-group">
+          <button type="submit" class="btn-primary">Create Poll</button>
+        </div>
+      </form>
+
+      <hr style="border: none; border-top: 1px solid var(--border); margin: 40px 0;">
+
+      <h3 style="color: var(--text); margin-bottom: 20px;">Active Polls</h3>
+      <div id="pollsList" class="polls-list">
+        <p style="color: var(--text-muted);">Loading polls...</p>
+      </div>
+    </div>
+  </div>
+    </div>
+
+  <script>
+    const API_URL = 'http://localhost:5000/api';
+    let token = localStorage.getItem('token');
+
+    // Check auth on page load
+    function checkAuth() {
+      if (token) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('adminInterface').style.display = 'block';
+        loadPosts();
+        loadPolls();
+      } else {
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('adminInterface').style.display = 'none';
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      const errorEl = document.getElementById('loginError');
+
+      try {
+        const res = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          errorEl.textContent = data.message || 'Login failed';
+          errorEl.style.display = 'block';
+          return;
+        }
+
+        token = data.token;
+        localStorage.setItem('token', token);
+        document.getElementById('loginForm').reset();
+        errorEl.style.display = 'none';
+        checkAuth();
+      } catch (err) {
+        errorEl.textContent = 'Login error: ' + err.message;
+        errorEl.style.display = 'block';
+      }
+    }
+
+    function handleLogout() {
+      token = null;
+      localStorage.removeItem('token');
+      document.getElementById('loginForm').reset();
+      checkAuth();
+    }
+
+    function showTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabName).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    function showAlert(message, type = 'success') {
+      const alertEl = document.getElementById(`${type}Alert`);
+      alertEl.textContent = message;
+      alertEl.classList.add('show');
+      setTimeout(() => alertEl.classList.remove('show'), 5000);
+    }
+
+    async function handlePostSubmit(e) {
+      e.preventDefault();
+      try {
+        const res = await fetch(`${API_URL}/content/posts`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: document.getElementById('postTitle').value,
+            content: document.getElementById('postContent').value
+          })
+        });
+
+        if (!res.ok) throw new Error('Failed to create post');
+
+        document.getElementById('postForm').reset();
+        showAlert('Post created successfully!');
+        loadPosts();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    }
+
+    async function handlePollSubmit(e) {
+      e.preventDefault();
+      const options = Array.from(document.querySelectorAll('.poll-option')).map(el => el.value).filter(v => v);
+
+      try {
+        const res = await fetch(`${API_URL}/content/polls`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            question: document.getElementById('pollQuestion').value,
+            options: options
+          })
+        });
+
+        if (!res.ok) throw new Error('Failed to create poll');
+
+        document.getElementById('pollForm').reset();
+        showAlert('Poll created successfully!');
+        loadPolls();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    }
+
+    function addPollOption() {
+      const container = document.getElementById('pollOptions');
+      const count = container.children.length + 1;
+      const div = document.createElement('div');
+      div.className = 'form-group';
+      div.innerHTML = `
+        <label>Option ${count}</label>
+        <input type="text" class="poll-option" placeholder="Option...">
+      `;
+      container.appendChild(div);
+    }
+
+    async function loadPosts() {
+      try {
+        const res = await fetch(`${API_URL}/content/posts`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const { posts } = await res.json();
+
+        const html = posts.map(p => `
+          <div class="post-card">
+            <div class="post-info">
+              <h3>${p.title}</h3>
+              <p>${p.content.substring(0, 100)}...</p>
+              <span class="status-badge status-${p.published ? 'published' : 'draft'}">
+                ${p.published ? '✓ Published' : 'Draft'}
+              </span>
+            </div>
+            <div>
+              <button class="btn-secondary" onclick="togglePublish(${p.id}, ${!p.published})">
+                ${p.published ? 'Unpublish' : 'Publish'}
+              </button>
+            </div>
+          </div>
+        `).join('');
+
+        document.getElementById('postsList').innerHTML = html || '<p style="color: var(--text-muted);">No posts yet. Create one!</p>';
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadPolls() {
+      try {
+        const res = await fetch(`${API_URL}/content/polls`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const { polls } = await res.json();
+
+        const html = polls.map(p => `
+          <div class="poll-card">
+            <div class="post-info">
+              <h3>${p.question}</h3>
+              <p>${p.options ? Object.values(p.options).length : 0} options</p>
+            </div>
+          </div>
+        `).join('');
+
+        document.getElementById('pollsList').innerHTML = html || '<p style="color: var(--text-muted);">No polls yet. Create one!</p>';
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function togglePublish(postId, publish) {
+      try {
+        const res = await fetch(`${API_URL}/content/posts/${postId}/publish`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ published: publish })
+        });
+
+        if (!res.ok) throw new Error('Failed to update post');
+        showAlert(`Post ${publish ? 'published' : 'unpublished'}!`);
+        loadPosts();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    }
+
+    async function generatePost() {
+      showAlert('✨ AI generation coming soon!');
+    }
+
+    // Initialize on page load
+    checkAuth();
+  </script>
+</body>
+</html>

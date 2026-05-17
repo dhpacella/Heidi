@@ -10,7 +10,6 @@ const path = require('path');
 const session = require('express-session');
 const PgSession = require('connect-pg-simple')(session);
 const morgan = require('morgan');
-const logger = require('./lib/logger');
 const requestId = require('./middleware/requestId');
 
 const pool = require('./db/connection');
@@ -27,7 +26,17 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:3002',
+    'http://localhost:5000',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3002',
+    'http://127.0.0.1:5000',
+    'http://192.168.86.51:3002',
+    'http://192.168.86.51:3000',
+    process.env.CLIENT_URL || 'http://localhost:3000'
+  ],
   credentials: true
 }));
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -35,8 +44,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestId);
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms', {
-  stream: { write: (msg) => logger.info(msg.trim()) },
+  stream: { write: (msg) => console.info(msg.trim()) },
 }));
+
+// Named page routes — must come BEFORE static middleware to avoid dashboard.html conflict
+app.get('/', (req, res) => res.redirect('/login'));
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'login.html')));
+app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'heidi_voter_dashboard_final_27.html')));
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
@@ -84,11 +98,18 @@ app.post('/api/email/webhooks/ses', express.json({ type: '*/*' }), require('./ro
 // Email tracking endpoints (no auth — email clients need to access without a session)
 app.use('/api/email/track', require('./routes/emailTracking'));
 
-app.use('/api/ai', requireApiAuth, require('./routes/ai'));
-app.use('/api/assistant', requireApiAuth, require('./routes/assistant'));
+// Public voter content (no auth required)
+app.use('/api/public', require('./routes/publicContent'));
+
+// Claude AI and Assistant routes (auth handled per-route, not globally)
+app.use('/api/ai', require('./routes/ai'));
+app.use('/api/assistant', require('./routes/assistant'));
+app.use('/api/content', require('./routes/content'));
 app.use('/api/email', requireApiAuth, require('./routes/email'));
 app.use('/api/lists', requireApiAuth, require('./routes/lists'));
 app.use('/api/volunteers', requireApiAuth, require('./routes/volunteers'));
+app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/system-logs', require('./routes/system-logs'));
 
 app.get('/health', async (req, res) => {
   const start = Date.now();
@@ -99,7 +120,7 @@ app.get('/health', async (req, res) => {
     dbOk = true;
     dbLatencyMs = Date.now() - start;
   } catch (err) {
-    logger.error('Health check DB failure', { message: err.message });
+    console.error('Health check DB failure', { message: err.message });
   }
   res.status(dbOk ? 200 : 503).json({
     status: dbOk ? 'ok' : 'degraded',
@@ -156,18 +177,9 @@ app.post('/api/setup', async (req, res) => {
   }
 });
 
-// SPA Fallback Route - serve index.html for all non-API routes
-app.get('*', (req, res) => {
-  const indexPath = path.join(__dirname, '..', 'public', 'index.html');
-  if (require('fs').existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    res.status(404).json({ error: 'Not found' });
-  }
-});
 
 app.use((err, req, res, next) => {
-  logger.error('Unhandled error', {
+  console.error('Unhandled error', {
     requestId: req.id,
     method: req.method,
     url: req.originalUrl,
@@ -185,7 +197,7 @@ if (process.env.NODE_ENV === 'production') {
 const PORT = process.env.PORT || 5000;
 if (require.main === module) {
   app.listen(PORT, '0.0.0.0', async () => {
-    logger.info('Server started', { port: PORT, env: process.env.NODE_ENV });
+    console.log(`✅ Server started on port ${PORT} (${process.env.NODE_ENV || 'development'})`);
 
     // Initialize async pool (Secrets Manager, if needed)
     try {

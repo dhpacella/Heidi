@@ -38,6 +38,12 @@ router.post('/login', loginLimiter, async (req, res) => {
     }
 
     const token = signToken(user);
+
+    req.session.userId = user.id;
+    req.session.email  = user.email;
+    req.session.name   = user.name;
+    req.session.role   = user.role;
+
     await putMetric('LoginSuccess', 1);
     res.json({
       token,
@@ -82,6 +88,17 @@ router.get('/session', (req, res) => {
 router.post('/token', requireApiAuth, (req, res) => {
   const token = signToken(req.user);
   res.json({ token });
+});
+
+router.post('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Session destroy error:', err);
+      return res.status(500).json({ error: 'Logout failed' });
+    }
+    res.clearCookie('connect.sid');
+    res.json({ message: 'Logged out successfully' });
+  });
 });
 
 module.exports = router;

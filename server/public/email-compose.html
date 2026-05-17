@@ -41,26 +41,56 @@
       background: var(--navy);
       color: var(--text);
       transition: background-color 0.3s, color 0.3s;
+      overflow-x: hidden;
+    }
+
+    body {
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: .5;
     }
 
     .container {
       max-width: 1200px;
       margin: 0 auto;
       padding: 20px;
+      position: relative;
+      z-index: 1;
     }
 
     header {
-      background: var(--navy-mid);
-      border-bottom: 3px solid var(--gold);
+      background: linear-gradient(135deg, #0B1929 0%, #122338 40%, #1A3550 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
       padding: 20px 32px;
-      border-radius: 0;
-      margin: -20px -20px 30px -20px;
+      margin-bottom: 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
       gap: 20px;
       position: relative;
+      overflow: hidden;
+    }
+
+    header::before {
+      content: '';
+      position: absolute;
+      top: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 500px;
+      height: 200px;
+      background: radial-gradient(ellipse, rgba(245, 166, 35, 0.12) 0%, transparent 70%);
+      pointer-events: none;
     }
 
     header h1 {
@@ -71,13 +101,64 @@
       letter-spacing: 0.08em;
       color: var(--gold);
       flex: 1;
-      min-width: 250px;
+      min-width: 200px;
+      position: relative;
+      z-index: 1;
     }
 
     .header-left, .header-right {
       display: flex;
       gap: 12px;
       align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header top row (mobile only — contains hamburger) */
+    .header-top-row {
+      display: none;
+    }
+
+    /* Hamburger button — mobile only */
+    .hamburger-btn {
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 28px;
+      height: 20px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      z-index: 2;
+    }
+
+    .hamburger-btn span {
+      display: block;
+      width: 100%;
+      height: 2px;
+      background: var(--gold);
+      border-radius: 2px;
+      transition: all 0.3s;
+    }
+
+    /* Mobile nav dropdown */
+    .mobile-nav {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .mobile-nav.open {
+      display: flex;
+    }
+
+    .mobile-nav .btn {
+      width: 100%;
+      text-align: center;
     }
 
     .btn {
@@ -140,6 +221,12 @@
       border-radius: 12px;
       padding: 24px;
       margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      transition: box-shadow 0.2s;
+    }
+
+    .card:hover {
+      box-shadow: 0 8px 32px rgba(245, 166, 35, 0.1);
     }
 
     .card h2 {
@@ -150,6 +237,8 @@
       letter-spacing: 0.08em;
       color: var(--gold);
       margin-bottom: 16px;
+      border-left: 3px solid var(--gold);
+      padding-left: 12px;
     }
 
     .upload-area {
@@ -183,6 +272,11 @@
       margin: 16px 0;
       border-radius: 8px;
       font-size: 13px;
+    }
+
+    .table-scroll-wrapper {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .preview-table {
@@ -364,15 +458,54 @@
       color: var(--text-muted);
     }
 
+    /* ── Sender row & compose-mode toggle helper classes ── */
+    .sender-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      align-items: flex-end;
+    }
+
+    .sender-row > div {
+      flex: 1;
+    }
+
+    .compose-mode-toggle {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--surface-2);
+      border-radius: 6px;
+      margin-bottom: 16px;
+    }
+
+    .compose-mode-toggle label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .compose-mode-btns {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* ── 768px tablets ── */
     @media (max-width: 768px) {
       header {
-        flex-direction: column;
-        text-align: center;
+        padding: 16px 20px;
       }
 
       header h1 {
         flex: none;
         min-width: auto;
+        font-size: 26px;
       }
 
       .upload-area {
@@ -380,12 +513,124 @@
       }
 
       .template-buttons {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
       }
 
       .modal-content {
         width: 95%;
         padding: 24px;
+      }
+
+      .sender-row {
+        flex-wrap: wrap;
+      }
+    }
+
+    /* ── 600px phones ── */
+    @media (max-width: 600px) {
+      /* Show hamburger, hide desktop nav links */
+      .hamburger-btn {
+        display: flex;
+      }
+
+      .header-left,
+      .header-right {
+        display: none;
+      }
+
+      header {
+        flex-wrap: wrap;
+        padding: 14px 16px;
+        gap: 12px;
+      }
+
+      .header-top-row {
+        display: flex;
+        width: 100%;
+        justify-content: flex-end;
+        align-items: center;
+      }
+
+      /* Test tab: stack 3 inputs vertically */
+      .test-fields-row {
+        flex-direction: column;
+        gap: 0;
+      }
+
+      /* Sender row: stack vertically */
+      .sender-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .sender-row > div {
+        flex: none;
+      }
+
+      .sender-row .btn {
+        width: 100%;
+        text-align: center;
+      }
+
+      /* Template grid: 2 cols on phones, 1 on very small */
+      .template-buttons {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      /* Compose mode toggle: full width */
+      .compose-mode-toggle {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .compose-mode-btns {
+        width: 100%;
+      }
+
+      .compose-mode-btns button {
+        flex: 1;
+        text-align: center;
+      }
+
+      /* Toolbar wraps */
+      .toolbar {
+        flex-wrap: wrap;
+      }
+
+      /* Modal padding reduction */
+      .modal-content {
+        width: 95%;
+        padding: 18px 14px;
+      }
+
+      .container {
+        padding: 12px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      header h1 {
+        font-size: 22px;
+      }
+
+      /* Advanced options: stack query string + language selects */
+      .advanced-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      /* Tracking grid: stack Opens/Clicks sections */
+      .tracking-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
+    /* Very small screens (≤380px): 1-column template grid */
+    @media (max-width: 380px) {
+      .template-buttons {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -393,6 +638,7 @@
 <body>
   <div class="container">
     <header>
+      <!-- Desktop nav -->
       <div class="header-left">
         <a href="/dashboard" class="btn">← Dashboard</a>
         <a href="/email-history" class="btn">📜 History</a>
@@ -402,6 +648,26 @@
       </div>
       <h1>📧 Email Outreach</h1>
       <div class="header-right">
+        <button class="btn btn-dark-toggle" onclick="toggleTheme()">🌙 Dark</button>
+        <button class="btn btn-logout" onclick="logout()">Logout</button>
+      </div>
+
+      <!-- Mobile top row: title + hamburger -->
+      <div class="header-top-row">
+        <button class="hamburger-btn" onclick="toggleMobileNav()" aria-label="Menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+
+      <!-- Mobile nav dropdown -->
+      <div id="mobileNav" class="mobile-nav">
+        <a href="/dashboard" class="btn">← Dashboard</a>
+        <a href="/email-history" class="btn">📜 History</a>
+        <a href="/subscribers.html" class="btn">👥 Subscribers</a>
+        <a href="/campaign-reports.html" class="btn">📊 Reports</a>
+        <a href="/volunteers-manager.html" class="btn">🙋 Volunteers</a>
         <button class="btn btn-dark-toggle" onclick="toggleTheme()">🌙 Dark</button>
         <button class="btn btn-logout" onclick="logout()">Logout</button>
       </div>
@@ -428,16 +694,18 @@
           <button class="btn" id="dedupeBtn" onclick="removeDuplicates()" style="margin-left: 12px; padding: 6px 14px; font-size: 12px;">🧹 Remove Duplicates</button>
           <span id="dedupeInfo" style="margin-left: 12px; color: var(--gold); display: none;"></span>
         </div>
-        <table class="preview-table">
-          <thead>
-            <tr>
-              <th>Email</th>
-              <th>First Name</th>
-              <th>Last Name</th>
-            </tr>
-          </thead>
-          <tbody id="previewBody"></tbody>
-        </table>
+        <div class="table-scroll-wrapper">
+          <table class="preview-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+              </tr>
+            </thead>
+            <tbody id="previewBody"></tbody>
+          </table>
+        </div>
       </div>
       </div>
 
@@ -462,7 +730,7 @@
 
       <div id="tab-test-content" style="display: none;">
         <label style="display: block; margin-bottom: 12px; font-weight: 600;">Test With Manual Entry</label>
-        <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+        <div class="test-fields-row" style="display: flex; gap: 12px; margin-bottom: 16px;">
           <div style="flex: 1;">
             <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">Email Address</label>
             <input type="email" id="testEmail" placeholder="test@example.com" style="width: 100%; padding: 10px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px;">
@@ -479,22 +747,24 @@
         <button class="btn btn-primary" onclick="addTestRecipient()" style="width: 100%;">✓ Use for Testing</button>
         <div id="testRecipientInfo" style="background: rgba(245, 166, 35, 0.08); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-top: 16px; display: none;">
           <div style="color: var(--gold); font-weight: 600; margin-bottom: 8px;">1 test recipient</div>
-          <table class="preview-table">
-            <thead>
-              <tr>
-                <th>Email</th>
-                <th>First Name</th>
-                <th>Last Name</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><span id="testEmailDisplay">-</span></td>
-                <td><span id="testFirstNameDisplay">-</span></td>
-                <td><span id="testLastNameDisplay">-</span></td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-scroll-wrapper">
+            <table class="preview-table">
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>First Name</th>
+                  <th>Last Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span id="testEmailDisplay">-</span></td>
+                  <td><span id="testFirstNameDisplay">-</span></td>
+                  <td><span id="testLastNameDisplay">-</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -503,12 +773,12 @@
     <div class="card">
       <h2>✏️ Compose Email</h2>
 
-      <div style="display: flex; gap: 12px; margin-bottom: 16px; align-items: flex-end;">
-        <div style="flex: 1;">
+      <div class="sender-row">
+        <div>
           <label for="senderName" style="font-size: 12px;">Sender Name</label>
           <input type="text" id="senderName" placeholder="e.g., Heidi Campaign" style="margin-bottom: 0;">
         </div>
-        <div style="flex: 1;">
+        <div>
           <label for="senderEmail" style="font-size: 12px;">Sender Email</label>
           <input type="email" id="senderEmail" placeholder="e.g., hello@example.com" style="margin-bottom: 0;">
         </div>
@@ -555,9 +825,9 @@
       </div>
 
       <!-- HTML vs Text Toggle -->
-      <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--surface-2); border-radius: 6px;">
-        <label style="font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin: 0;">Compose Mode:</label>
-        <div style="display: flex; gap: 8px; align-items: center;">
+      <div class="compose-mode-toggle">
+        <label>Compose Mode:</label>
+        <div class="compose-mode-btns">
           <button class="mode-btn active" id="htmlModeBtn" onclick="switchMode('html')" style="padding: 6px 16px; font-size: 12px; font-weight: 600; background: var(--gold); color: var(--navy); border: none; border-radius: 4px; cursor: pointer; transition: all 0.2s;">
             📄 HTML
           </button>
@@ -585,7 +855,7 @@
       <textarea id="plainTextVersion" placeholder="Plain text version of this email" style="min-height: 100px; margin-bottom: 16px;"></textarea>
 
       <!-- Query String & Web Language -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+      <div class="advanced-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
         <div>
           <label for="queryString" style="font-size: 12px;">Query String</label>
           <input type="text" id="queryString" placeholder="eg. utm_source=newsletter&utm_medium=sendy&utm_ca" style="margin-bottom: 0; font-size: 11px;">
@@ -610,7 +880,7 @@
       </div>
 
       <!-- Tracking Options -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; padding: 12px; background: var(--surface-2); border-radius: 6px;">
+      <div class="tracking-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; padding: 12px; background: var(--surface-2); border-radius: 6px;">
         <div>
           <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 8px;">📖 Track Opens:</label>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -702,6 +972,10 @@
   </div>
 
   <script>
+    function toggleMobileNav() {
+      document.getElementById('mobileNav').classList.toggle('open');
+    }
+
     function toggleTheme() {
       document.body.classList.toggle('light-mode');
       const isDark = document.body.classList.contains('light-mode');

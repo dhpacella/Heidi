@@ -132,4 +132,19 @@ router.get('/history', requireRole('admin', 'campaign_manager'), async (req, res
   }
 });
 
+router.get('/stats/overview', requireRole('admin', 'campaign_manager'), async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM sms_blasts ORDER BY created_at DESC LIMIT 100');
+    const blasts = result.rows;
+    const totalCampaigns = blasts.length;
+    const totalSent = blasts.reduce((s, b) => s + (parseInt(b.recipient_count) || 0), 0);
+    const totalCost = blasts.reduce((s, b) => s + parseFloat(b.total_cost || 0), 0);
+    const sentCount = blasts.filter(b => b.status === 'sent').length;
+    const queuedCount = blasts.filter(b => b.status === 'queued').length;
+    res.json({ totalCampaigns, totalSent, totalCost: totalCost.toFixed(2), sentCount, queuedCount });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
