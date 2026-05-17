@@ -26,17 +26,28 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3002',
-    'http://localhost:5000',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:3002',
-    'http://127.0.0.1:5000',
-    'http://192.168.86.51:3002',
-    'http://192.168.86.51:3000',
-    process.env.CLIENT_URL || 'http://localhost:3000'
-  ],
+  origin: (origin, callback) => {
+    const allowed = [
+      'http://localhost:3000',
+      'http://localhost:3002',
+      'http://localhost:5000',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3002',
+      'http://127.0.0.1:5000',
+      'http://192.168.86.51:3002',
+      'http://192.168.86.51:3000',
+      'http://192.168.90.51:3002',
+      'https://dbgikokghbz7o.amplifyapp.com',
+      process.env.CLIENT_URL,
+      process.env.VOTER_SITE_URL,
+    ].filter(Boolean);
+    // Allow requests with no origin (mobile apps, curl) and any amplifyapp.com subdomain
+    if (!origin || allowed.includes(origin) || /\.amplifyapp\.com$/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: ${origin} not allowed`));
+    }
+  },
   credentials: true
 }));
 app.use(helmet({ contentSecurityPolicy: false }));
