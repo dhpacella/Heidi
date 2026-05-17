@@ -68,7 +68,8 @@ router.post('/login', loginLimiter, async (req, res) => {
 
     setSession(req, user);
     console.log('✅ Login successful:', { email, userId: user.id, role: user.role, sessionRole: req.session.role });
-    res.redirect('/dashboard');
+    const dest = user.role === 'campaign_manager' ? '/heidi' : '/dashboard';
+    res.redirect(dest);
   } catch (err) {
     console.error('❌ Login error:', err.message);
     res.status(500).send('Login failed');
@@ -188,6 +189,13 @@ router.get('/volunteer-leaderboard', requireSession, (req, res) => {
     return res.status(403).send('Access denied. Admin or Campaign Manager required.');
   }
   res.sendFile(path.join(PUBLIC_DIR, 'volunteer-leaderboard.html'));
+});
+
+router.get('/heidi', requireSession, (req, res) => {
+  if (!['admin', 'campaign_manager'].includes(req.session.role)) {
+    return res.redirect('/login');
+  }
+  res.sendFile(path.join(PUBLIC_DIR, 'heidi-portal.html'));
 });
 
 module.exports = router;

@@ -176,6 +176,7 @@
   <header>
     <h1>👥 Volunteer Manager</h1>
     <div class="header-right">
+      <a href="/heidi" class="btn btn-logout" style="text-decoration:none;">← Portal</a>
       <button class="btn btn-dark-toggle" onclick="toggleTheme()">🌙 Dark</button>
       <button class="btn btn-logout" onclick="logout()">Logout</button>
     </div>
@@ -262,6 +263,12 @@
   </div>
 
   <script>
+    // Auth check
+    (async function() {
+      const r = await fetch('/api/auth/me', { credentials: 'include' });
+      if (!r.ok) window.location.href = '/login';
+    })();
+
     let selectedVolId = null;
 
     function toggleTheme() {

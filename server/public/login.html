@@ -202,7 +202,7 @@
 
         localStorage.setItem('auth_token', data.token);
         localStorage.setItem('user_role', data.user.role);
-        window.location.href = '/dashboard';
+        window.location.href = (data.user.role === 'campaign_manager') ? '/heidi' : '/dashboard';
 
       } catch (err) {
         errEl.textContent = 'Connection error. Is the server running?';

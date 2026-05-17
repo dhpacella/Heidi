@@ -216,6 +216,35 @@ router.post('/polls', async (req, res) => {
   }
 });
 
+// DELETE /api/content/polls/:id
+router.delete('/polls/:id', async (req, res) => {
+  try {
+    const { rows } = await pool.query('DELETE FROM heidi_polls WHERE id = $1 RETURNING id', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Poll not found' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ Delete poll error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/content/polls/:id - toggle active
+router.patch('/polls/:id', async (req, res) => {
+  try {
+    const { active } = req.body;
+    if (typeof active !== 'boolean') return res.status(400).json({ error: 'active must be true or false' });
+    const { rows } = await pool.query(
+      'UPDATE heidi_polls SET active = $1 WHERE id = $2 RETURNING id, question, active',
+      [active, req.params.id]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'Poll not found' });
+    res.json({ poll: rows[0] });
+  } catch (err) {
+    console.error('❌ Toggle poll error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/content/generate-post - use Claude to draft a post
 router.post('/generate-post', async (req, res) => {
   try {

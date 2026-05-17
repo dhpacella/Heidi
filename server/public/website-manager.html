@@ -873,6 +873,8 @@
         <!-- Left Sidebar Navigation -->
         <div id="sidebarNav" class="sidebar-nav">
           <nav class="sidebar-inner">
+            <button class="sidebar-btn" onclick="showTab('posts')" style="display: block; width: 100%; padding: 12px 16px; text-align: left; background: none; border: none; border-bottom: 1px solid var(--border); color: var(--text); cursor: pointer; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='rgba(245,166,35,0.1)'" onmouseout="this.style.background='none'">📝 Updates</button>
+            <button class="sidebar-btn" onclick="showTab('polls')" style="display: block; width: 100%; padding: 12px 16px; text-align: left; background: none; border: none; border-bottom: 1px solid var(--border); color: var(--text); cursor: pointer; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='rgba(245,166,35,0.1)'" onmouseout="this.style.background='none'">📊 Polls</button>
             <button class="sidebar-btn active" onclick="showTab('builder')" style="display: block; width: 100%; padding: 12px 16px; text-align: left; background: none; border: none; border-bottom: 1px solid var(--border); color: var(--text); cursor: pointer; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='rgba(245,166,35,0.1)'" onmouseout="this.style.background='none'">🧱 Builder</button>
             <button class="sidebar-btn" onclick="showTab('pages')" style="display: block; width: 100%; padding: 12px 16px; text-align: left; background: none; border: none; border-bottom: 1px solid var(--border); color: var(--text); cursor: pointer; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='rgba(245,166,35,0.1)'" onmouseout="this.style.background='none'">📄 Pages</button>
             <button class="sidebar-btn" onclick="showTab('seo')" style="display: block; width: 100%; padding: 12px 16px; text-align: left; background: none; border: none; border-bottom: 1px solid var(--border); color: var(--text); cursor: pointer; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='rgba(245,166,35,0.1)'" onmouseout="this.style.background='none'">🔍 SEO</button>
@@ -1655,6 +1657,73 @@
         </div>
         </div>
       </div>
+
+      <!-- POSTS TAB -->
+      <div id="posts" class="tab-content">
+        <div class="section">
+          <h2>📝 Campaign Updates</h2>
+          <p style="color: var(--text-muted);">Write updates that appear on your voter website.</p>
+
+          <div style="background: var(--navy); border: 1px solid var(--border); border-radius: 6px; padding: 20px; margin-bottom: 20px;">
+            <h3 style="color: var(--gold); margin-top: 0;" id="postFormHeading">New Update</h3>
+            <input type="hidden" id="editPostId" value="" />
+            <div style="margin-bottom: 15px;">
+              <label style="display: block; color: var(--text-muted); margin-bottom: 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Title</label>
+              <input type="text" id="postTitle" placeholder="e.g., Road Improvement Progress" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 14px; box-sizing: border-box;" />
+            </div>
+            <div style="margin-bottom: 15px;">
+              <label style="display: block; color: var(--text-muted); margin-bottom: 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Content</label>
+              <textarea id="postContent" rows="8" placeholder="Write your update here..." style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 14px; resize: vertical; box-sizing: border-box; font-family: inherit;"></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button type="button" class="btn-primary" onclick="savePost(false)">💾 Save Draft</button>
+              <button type="button" class="btn-primary" style="background: #1DB87A;" onclick="savePost(true)">🚀 Publish Now</button>
+              <button type="button" class="btn-secondary" id="cancelEditBtn" onclick="cancelEditPost()" style="display:none;">✕ Cancel Edit</button>
+            </div>
+          </div>
+
+          <div style="background: var(--navy); border: 1px solid var(--border); border-radius: 6px; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+              <h3 style="color: var(--gold); margin: 0;">All Updates</h3>
+              <button type="button" class="btn-secondary" onclick="loadPosts()">🔄 Refresh</button>
+            </div>
+            <div id="postsList" style="color: var(--text-muted);">Loading...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POLLS TAB -->
+      <div id="polls" class="tab-content">
+        <div class="section">
+          <h2>📊 Community Polls</h2>
+          <p style="color: var(--text-muted);">Create polls that voters can respond to on your website.</p>
+
+          <div style="background: var(--navy); border: 1px solid var(--border); border-radius: 6px; padding: 20px; margin-bottom: 20px;">
+            <h3 style="color: var(--gold); margin-top: 0;">Create New Poll</h3>
+            <div style="margin-bottom: 15px;">
+              <label style="display: block; color: var(--text-muted); margin-bottom: 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Question</label>
+              <input type="text" id="pollQuestion" placeholder="e.g., Do you support widening 143rd Street?" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 14px; box-sizing: border-box;" />
+            </div>
+            <div id="pollOptionsContainer">
+              <label style="display: block; color: var(--text-muted); margin-bottom: 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Answer Options</label>
+              <input type="text" class="poll-option" placeholder="Option 1 (e.g., Yes)" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 14px; box-sizing: border-box; margin-bottom: 8px;" />
+              <input type="text" class="poll-option" placeholder="Option 2 (e.g., No)" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 14px; box-sizing: border-box; margin-bottom: 8px;" />
+            </div>
+            <button type="button" class="btn-secondary" onclick="addPollOption()" style="margin-bottom: 15px;">+ Add Option</button>
+            <br>
+            <button type="button" class="btn-primary" onclick="createPoll()">📊 Create Poll</button>
+          </div>
+
+          <div style="background: var(--navy); border: 1px solid var(--border); border-radius: 6px; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+              <h3 style="color: var(--gold); margin: 0;">All Polls</h3>
+              <button type="button" class="btn-secondary" onclick="loadPolls()">🔄 Refresh</button>
+            </div>
+            <div id="pollsList" style="color: var(--text-muted);">Loading...</div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -1664,7 +1733,7 @@
     script.src = 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js';
     document.head.appendChild(script);
 
-    const API_URL = 'http://localhost:5000/api';
+    const API_URL = '/api';
     let selectedTemplate = 'custom';
 
     // Tab switching function (must be defined early for onclick handlers)
@@ -1694,11 +1763,16 @@
     }
 
     function goBackToDashboard() {
-      window.location.href = 'http://localhost:5000/heidi_voter_dashboard_final_27.html';
+      window.location.href = '/heidi';
     }
 
-    function checkAuth() {
-      // Always show admin interface (local dev, no auth required)
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        if (!res.ok) { window.location.href = '/login'; return; }
+      } catch {
+        window.location.href = '/login'; return;
+      }
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('adminInterface').style.display = 'block';
     }
@@ -1756,7 +1830,7 @@
       localStorage.clear();
 
       // Redirect to login page
-      window.location.href = 'http://localhost:5000/login';
+      window.location.href = '/login';
     }
 
     function showAlert(message, type = 'success') {
@@ -1797,10 +1871,8 @@
       try {
         const res = await fetch(`${API_URL}/content/generate-component`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             prompt,
             template: selectedTemplate,
@@ -1843,10 +1915,8 @@ Route: ${route}`;
 
         const res = await fetch(`${API_URL}/content/generate-component`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             prompt,
             template: 'page',
@@ -1896,10 +1966,8 @@ Route: ${route}`;
 
         const res = await fetch(`${API_URL}/content/seo-audit`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             pageContent,
             pageTitle: `Heidi for Homer - ${page}`,
@@ -1943,10 +2011,8 @@ Route: ${route}`;
 
         const res = await fetch(`${API_URL}/content/seo-suggestions`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             pageContent,
             targetKeywords: keywords
@@ -2002,7 +2068,7 @@ Route: ${route}`;
         try {
           const res = await fetch(`${API_URL}/content/upload-image`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
+            credentials: 'include',
             body: formData
           });
 
@@ -2059,7 +2125,7 @@ Route: ${route}`;
       try {
         const res = await fetch(`${API_URL}/content/images/${filename}`, {
           method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
+          credentials: 'include'
         });
 
         if (!res.ok) throw new Error('Delete failed');
@@ -2074,7 +2140,7 @@ Route: ${route}`;
     async function loadSubscribers(retry = 0) {
       try {
         const res = await fetch(`${API_URL}/content/subscribers`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          credentials: 'include'
         });
 
         const data = await res.json();
@@ -2117,7 +2183,7 @@ Route: ${route}`;
       try {
         const res = await fetch(`${API_URL}/content/subscribers/${id}`, {
           method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
+          credentials: 'include'
         });
 
         if (!res.ok) throw new Error('Delete failed');
@@ -2283,7 +2349,7 @@ Route: ${route}`;
       try {
         showAlert('Exporting site as ZIP...');
         const res = await fetch(`${API_URL}/content/export-site`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          credentials: 'include'
         });
 
         if (!res.ok) throw new Error('Export failed');
@@ -2992,6 +3058,232 @@ ${body}
       overlay.classList.remove('active');
     }
 
+    // ── Posts Management ─────────────────────────────────────────────
+    async function loadPosts() {
+      const container = document.getElementById('postsList');
+      try {
+        const res = await fetch(`${API_URL}/content/posts`, { credentials: 'include' });
+        const data = await res.json();
+        if (!data.posts || data.posts.length === 0) {
+          container.innerHTML = '<p style="color:var(--text-muted);">No updates yet. Write your first one above!</p>';
+          return;
+        }
+        container.innerHTML = data.posts.map(p => {
+          const date = new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          const statusBadge = p.published
+            ? `<span style="background:#1DB87A;color:#fff;padding:2px 8px;border-radius:3px;font-size:11px;">Published</span>`
+            : `<span style="background:var(--text-muted);color:#fff;padding:2px 8px;border-radius:3px;font-size:11px;">Draft</span>`;
+          const excerpt = (p.content || '').replace(/\n/g, ' ').substring(0, 120);
+          return `
+            <div style="border:1px solid var(--border);border-radius:6px;padding:15px;margin-bottom:12px;background:var(--navy-light);">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+                <div>
+                  <strong style="color:var(--text);font-size:15px;">${p.title}</strong>
+                  <span style="color:var(--text-muted);font-size:12px;margin-left:10px;">${date}</span>
+                </div>
+                ${statusBadge}
+              </div>
+              <p style="color:var(--text-muted);font-size:13px;margin:0 0 12px;">${excerpt}${(p.content||'').length>120?'…':''}</p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button" class="btn-secondary" style="padding:5px 10px;font-size:12px;" onclick="editPost(${p.id})">✏️ Edit</button>
+                <button type="button" class="btn-secondary" style="padding:5px 10px;font-size:12px;background:${p.published?'#8B6A1A':'#1DB87A'};color:#fff;" onclick="togglePublish(${p.id},${!p.published})">${p.published?'⬇️ Unpublish':'🚀 Publish'}</button>
+                <button type="button" class="btn-secondary" style="padding:5px 10px;font-size:12px;background:var(--red);color:#fff;" onclick="deletePost(${p.id})">🗑 Delete</button>
+              </div>
+            </div>`;
+        }).join('');
+      } catch (err) {
+        container.innerHTML = `<p style="color:var(--red);">Error loading updates: ${err.message}</p>`;
+      }
+    }
+
+    async function savePost(publishNow) {
+      const title = document.getElementById('postTitle').value.trim();
+      const content = document.getElementById('postContent').value.trim();
+      const editId = document.getElementById('editPostId').value;
+      if (!title || !content) { showAlert('Title and content are required', 'error'); return; }
+      try {
+        let res;
+        if (editId) {
+          res = await fetch(`${API_URL}/content/posts/${editId}`, {
+            method: 'PUT', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, content })
+          });
+        } else {
+          res = await fetch(`${API_URL}/content/posts`, {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, content })
+          });
+        }
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        if (publishNow) {
+          const pubRes = await fetch(`${API_URL}/content/posts/${data.post.id}/publish`, {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ published: true })
+          });
+          if (!pubRes.ok) throw new Error('Saved but publish failed');
+        }
+        showAlert(editId ? 'Update saved!' : (publishNow ? 'Update published!' : 'Draft saved!'));
+        document.getElementById('postTitle').value = '';
+        document.getElementById('postContent').value = '';
+        cancelEditPost();
+        loadPosts();
+      } catch (err) {
+        showAlert('Error: ' + err.message, 'error');
+      }
+    }
+
+    async function editPost(id) {
+      try {
+        const res = await fetch(`${API_URL}/content/posts`, { credentials: 'include' });
+        const data = await res.json();
+        const post = (data.posts || []).find(p => p.id === id);
+        if (!post) { showAlert('Post not found', 'error'); return; }
+        document.getElementById('editPostId').value = id;
+        document.getElementById('postTitle').value = post.title;
+        document.getElementById('postContent').value = post.content;
+        document.getElementById('postFormHeading').textContent = 'Edit Update';
+        document.getElementById('cancelEditBtn').style.display = 'inline-block';
+        document.querySelector('#posts .section').scrollIntoView({ behavior: 'smooth' });
+      } catch (err) {
+        showAlert('Error: ' + err.message, 'error');
+      }
+    }
+
+    function cancelEditPost() {
+      document.getElementById('editPostId').value = '';
+      document.getElementById('postTitle').value = '';
+      document.getElementById('postContent').value = '';
+      document.getElementById('postFormHeading').textContent = 'New Update';
+      document.getElementById('cancelEditBtn').style.display = 'none';
+    }
+
+    async function togglePublish(id, publish) {
+      try {
+        const res = await fetch(`${API_URL}/content/posts/${id}/publish`, {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ published: publish })
+        });
+        if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+        showAlert(publish ? 'Update published!' : 'Update unpublished');
+        loadPosts();
+      } catch (err) {
+        showAlert('Error: ' + err.message, 'error');
+      }
+    }
+
+    async function deletePost(id) {
+      if (!confirm('Delete this update? This cannot be undone.')) return;
+      try {
+        const res = await fetch(`${API_URL}/content/posts/${id}`, { method: 'DELETE', credentials: 'include' });
+        if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+        showAlert('Update deleted');
+        loadPosts();
+      } catch (err) {
+        showAlert('Error: ' + err.message, 'error');
+      }
+    }
+
+    // ── Polls Management ─────────────────────────────────────────────
+    async function loadPolls() {
+      const container = document.getElementById('pollsList');
+      try {
+        const res = await fetch(`${API_URL}/content/polls`, { credentials: 'include' });
+        const data = await res.json();
+        if (!data.polls || data.polls.length === 0) {
+          container.innerHTML = '<p style="color:var(--text-muted);">No polls yet. Create your first one above!</p>';
+          return;
+        }
+        container.innerHTML = data.polls.map(p => {
+          const date = new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          const statusBadge = p.active
+            ? `<span style="background:#1DB87A;color:#fff;padding:2px 8px;border-radius:3px;font-size:11px;">Active</span>`
+            : `<span style="background:var(--text-muted);color:#fff;padding:2px 8px;border-radius:3px;font-size:11px;">Inactive</span>`;
+          const options = Array.isArray(p.options) ? p.options : JSON.parse(p.options || '[]');
+          return `
+            <div style="border:1px solid var(--border);border-radius:6px;padding:15px;margin-bottom:12px;background:var(--navy-light);">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+                <strong style="color:var(--text);font-size:15px;">${p.question}</strong>
+                ${statusBadge}
+              </div>
+              <p style="color:var(--text-muted);font-size:12px;margin:0 0 10px;">Options: ${options.join(' · ')} &nbsp;|&nbsp; Created ${date}</p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button" class="btn-secondary" style="padding:5px 10px;font-size:12px;background:${p.active?'#8B6A1A':'#1DB87A'};color:#fff;" onclick="togglePoll(${p.id},${!p.active})">${p.active?'⏸ Deactivate':'▶ Activate'}</button>
+                <button type="button" class="btn-secondary" style="padding:5px 10px;font-size:12px;background:var(--red);color:#fff;" onclick="deletePoll(${p.id})">🗑 Delete</button>
+              </div>
+            </div>`;
+        }).join('');
+      } catch (err) {
+        container.innerHTML = `<p style="color:var(--red);">Error loading polls: ${err.message}</p>`;
+      }
+    }
+
+    function addPollOption() {
+      const container = document.getElementById('pollOptionsContainer');
+      const count = container.querySelectorAll('.poll-option').length + 1;
+      if (count > 6) { showAlert('Maximum 6 options', 'error'); return; }
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'poll-option';
+      input.placeholder = `Option ${count}`;
+      input.style.cssText = 'width:100%;padding:10px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:14px;box-sizing:border-box;margin-bottom:8px;';
+      container.appendChild(input);
+    }
+
+    async function createPoll() {
+      const question = document.getElementById('pollQuestion').value.trim();
+      const optionEls = document.querySelectorAll('.poll-option');
+      const options = Array.from(optionEls).map(el => el.value.trim()).filter(Boolean);
+      if (!question) { showAlert('Question is required', 'error'); return; }
+      if (options.length < 2) { showAlert('At least 2 options required', 'error'); return; }
+      try {
+        const res = await fetch(`${API_URL}/content/polls`, {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question, options })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        showAlert('Poll created!');
+        document.getElementById('pollQuestion').value = '';
+        document.querySelectorAll('.poll-option').forEach((el, i) => { el.value = ''; });
+        loadPolls();
+      } catch (err) {
+        showAlert('Error: ' + err.message, 'error');
+      }
+    }
+
+    async function togglePoll(id, active) {
+      try {
+        const res = await fetch(`${API_URL}/content/polls/${id}`, {
+          method: 'PATCH', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ active })
+        });
+        if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+        showAlert(active ? 'Poll activated!' : 'Poll deactivated');
+        loadPolls();
+      } catch (err) {
+        showAlert('Error: ' + err.message, 'error');
+      }
+    }
+
+    async function deletePoll(id) {
+      if (!confirm('Delete this poll? All votes will be lost.')) return;
+      try {
+        const res = await fetch(`${API_URL}/content/polls/${id}`, { method: 'DELETE', credentials: 'include' });
+        if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+        showAlert('Poll deleted');
+        loadPolls();
+      } catch (err) {
+        showAlert('Error: ' + err.message, 'error');
+      }
+    }
+
     // Close sidebar when a nav item is clicked on mobile
     (function() {
       document.querySelectorAll('.sidebar-btn').forEach(btn => {
@@ -3013,7 +3305,14 @@ ${body}
     document.getElementById('colorBorder').addEventListener('change', (e) => { updateColorValue('border', e.target.value); updateThemePreview(); });
 
     console.log('Page loaded. Token from localStorage:', token ? 'exists' : 'not found');
-    checkAuth();
+    checkAuth().then(() => {
+      loadPosts();
+      loadPolls();
+      // Auto-open tab from URL hash (e.g. website-manager.html#posts)
+      const hash = location.hash.replace('#', '');
+      const validTabs = ['posts','polls','builder','pages','seo','images','style','preview','subscribers','emailCampaign','smsCampaign','analytics'];
+      if (hash && validTabs.includes(hash)) showTab(hash);
+    });
     // Auto-retry on failure, no initial delay
     loadImages();
     loadSubscribers();

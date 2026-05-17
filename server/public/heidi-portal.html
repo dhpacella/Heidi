@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campaign Portal — Heidi for Homer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Barlow', sans-serif;
+      background: #0B1929;
+      color: #EEF2F7;
+      min-height: 100vh;
+    }
+
+    /* ── Header ─────────────────────────────── */
+    .portal-header {
+      background: linear-gradient(135deg, #0B1929 0%, #122338 60%, #1A3550 100%);
+      border-bottom: 2px solid rgba(245,166,35,0.3);
+      padding: 18px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .portal-header-left h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(20px, 4vw, 28px);
+      font-weight: 700;
+      color: #F5A623;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .portal-header-left p {
+      color: #8BA3BE;
+      font-size: 13px;
+      margin-top: 2px;
+    }
+    .portal-header-right {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .btn-signout {
+      background: rgba(139,163,190,0.15);
+      color: #8BA3BE;
+      border: 1px solid #243D56;
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-family: 'Barlow', sans-serif;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-signout:hover { background: rgba(139,163,190,0.25); color: #EEF2F7; }
+
+    /* ── Stats row ───────────────────────────── */
+    .stats-row {
+      display: flex;
+      gap: 16px;
+      padding: 20px 24px;
+      flex-wrap: wrap;
+    }
+    .stat-pill {
+      background: #0D2137;
+      border: 1px solid #243D56;
+      border-radius: 8px;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 130px;
+    }
+    .stat-pill .stat-icon { font-size: 22px; }
+    .stat-pill .stat-label { font-size: 11px; color: #8BA3BE; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-pill .stat-value { font-size: 22px; font-weight: 700; color: #F5A623; line-height: 1.1; }
+
+    /* ── Tool grid ───────────────────────────── */
+    .section-label {
+      padding: 0 24px 10px;
+      font-size: 11px;
+      color: #8BA3BE;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      padding: 0 24px 24px;
+    }
+    .tool-card {
+      background: #0D2137;
+      border: 1px solid #243D56;
+      border-radius: 12px;
+      padding: 24px;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .tool-card:hover {
+      border-color: #F5A623;
+      background: #102740;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(245,166,35,0.1);
+    }
+    .tool-card-icon {
+      font-size: 32px;
+      width: 52px;
+      height: 52px;
+      background: rgba(245,166,35,0.1);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .tool-card-body {}
+    .tool-card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #EEF2F7;
+      margin-bottom: 4px;
+    }
+    .tool-card-desc {
+      font-size: 13px;
+      color: #8BA3BE;
+      line-height: 1.4;
+    }
+    .tool-card-arrow {
+      margin-left: auto;
+      color: #F5A623;
+      font-size: 18px;
+      align-self: center;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .tool-card:hover .tool-card-arrow { opacity: 1; transform: translateX(3px); }
+
+    /* ── Admin link ──────────────────────────── */
+    .admin-bar {
+      text-align: center;
+      padding: 16px 24px 32px;
+      border-top: 1px solid #243D56;
+      margin-top: 8px;
+    }
+    .admin-link {
+      color: #8BA3BE;
+      font-size: 13px;
+      text-decoration: none;
+    }
+    .admin-link:hover { color: #F5A623; }
+
+    @media (max-width: 600px) {
+      .tool-grid { grid-template-columns: 1fr; }
+      .stats-row { gap: 10px; }
+      .stat-pill { min-width: 100px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="portal-header">
+    <div class="portal-header-left">
+      <h1>Heidi for Homer</h1>
+      <p id="greeting">Campaign Manager Portal</p>
+    </div>
+    <div class="portal-header-right">
+      <form action="/logout" method="POST">
+        <button type="submit" class="btn-signout">Sign Out</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Stats row -->
+  <div class="stats-row" id="statsRow">
+    <div class="stat-pill">
+      <div class="stat-icon">👥</div>
+      <div>
+        <div class="stat-label">Volunteers</div>
+        <div class="stat-value" id="statVolunteers">—</div>
+      </div>
+    </div>
+    <div class="stat-pill">
+      <div class="stat-icon">📝</div>
+      <div>
+        <div class="stat-label">Updates Live</div>
+        <div class="stat-value" id="statPosts">—</div>
+      </div>
+    </div>
+    <div class="stat-pill">
+      <div class="stat-icon">📊</div>
+      <div>
+        <div class="stat-label">Active Polls</div>
+        <div class="stat-value" id="statPolls">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tool cards -->
+  <div class="section-label">Your Tools</div>
+  <div class="tool-grid">
+
+    <a class="tool-card" href="/website-manager.html#posts">
+      <div class="tool-card-icon">📝</div>
+      <div class="tool-card-body">
+        <div class="tool-card-title">Campaign Updates</div>
+        <div class="tool-card-desc">Write and publish news, events, and announcements to your voter website</div>
+      </div>
+      <div class="tool-card-arrow">›</div>
+    </a>
+
+    <a class="tool-card" href="/website-manager.html#polls">
+      <div class="tool-card-icon">📊</div>
+      <div class="tool-card-body">
+        <div class="tool-card-title">Community Polls</div>
+        <div class="tool-card-desc">Create polls so voters can share their opinions on Homer Glen issues</div>
+      </div>
+      <div class="tool-card-arrow">›</div>
+    </a>
+
+    <a class="tool-card" href="/volunteers">
+      <div class="tool-card-icon">👥</div>
+      <div class="tool-card-body">
+        <div class="tool-card-title">Volunteers</div>
+        <div class="tool-card-desc">Manage your volunteer team, assign canvassing areas, and track progress</div>
+      </div>
+      <div class="tool-card-arrow">›</div>
+    </a>
+
+    <a class="tool-card" href="/email-compose">
+      <div class="tool-card-icon">✉️</div>
+      <div class="tool-card-body">
+        <div class="tool-card-title">Email Blast</div>
+        <div class="tool-card-desc">Send campaign emails to voters and supporters with AI-assisted writing</div>
+      </div>
+      <div class="tool-card-arrow">›</div>
+    </a>
+
+    <a class="tool-card" href="/sms-compose">
+      <div class="tool-card-icon">📱</div>
+      <div class="tool-card-body">
+        <div class="tool-card-title">SMS Blast</div>
+        <div class="tool-card-desc">Send text messages to targeted precincts or your full voter list</div>
+      </div>
+      <div class="tool-card-arrow">›</div>
+    </a>
+
+    <a class="tool-card" href="/website-manager.html#builder">
+      <div class="tool-card-icon">🎨</div>
+      <div class="tool-card-body">
+        <div class="tool-card-title">Website Design</div>
+        <div class="tool-card-desc">Use AI to generate new pages and components for your voter website</div>
+      </div>
+      <div class="tool-card-arrow">›</div>
+    </a>
+
+    <a class="tool-card" href="/website-manager.html#images">
+      <div class="tool-card-icon">📸</div>
+      <div class="tool-card-body">
+        <div class="tool-card-title">Photos &amp; Images</div>
+        <div class="tool-card-desc">Upload and manage campaign photos for use on your website</div>
+      </div>
+      <div class="tool-card-arrow">›</div>
+    </a>
+
+    <a class="tool-card" href="/volunteer-leaderboard">
+      <div class="tool-card-icon">🏆</div>
+      <div class="tool-card-body">
+        <div class="tool-card-title">Volunteer Leaderboard</div>
+        <div class="tool-card-desc">See top performers and recognize your most active campaign volunteers</div>
+      </div>
+      <div class="tool-card-arrow">›</div>
+    </a>
+
+  </div>
+
+  <!-- Admin dashboard link (shown for admins only) -->
+  <div class="admin-bar" id="adminBar" style="display:none">
+    <a href="/dashboard" class="admin-link">⚙️ Full Admin Dashboard (voter data, analytics, system tools)</a>
+  </div>
+
+  <script>
+    async function init() {
+      // Verify session and load user info
+      try {
+        const r = await fetch('/api/auth/me', { credentials: 'include' });
+        if (!r.ok) { window.location.href = '/login'; return; }
+        const data = await r.json();
+        const user = data.user;
+        document.getElementById('greeting').textContent = `Welcome back, ${user.name || user.email}`;
+        if (user.role === 'admin') {
+          document.getElementById('adminBar').style.display = 'block';
+        }
+      } catch {
+        window.location.href = '/login';
+        return;
+      }
+
+      // Load stats in parallel
+      loadStats();
+    }
+
+    async function loadStats() {
+      try {
+        const [volRes, postsRes, pollsRes] = await Promise.all([
+          fetch('/api/volunteers', { credentials: 'include' }),
+          fetch('/api/content/posts', { credentials: 'include' }),
+          fetch('/api/content/polls', { credentials: 'include' }),
+        ]);
+
+        if (volRes.ok) {
+          const d = await volRes.json();
+          document.getElementById('statVolunteers').textContent = (d.volunteers || d).length ?? '—';
+        }
+        if (postsRes.ok) {
+          const d = await postsRes.json();
+          const published = (d.posts || []).filter(p => p.published).length;
+          document.getElementById('statPosts').textContent = published;
+        }
+        if (pollsRes.ok) {
+          const d = await pollsRes.json();
+          const active = (d.polls || []).filter(p => p.active).length;
+          document.getElementById('statPolls').textContent = active;
+        }
+      } catch {
+        // Stats are cosmetic — fail silently
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

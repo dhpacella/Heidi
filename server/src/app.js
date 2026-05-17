@@ -61,7 +61,8 @@ app.use(morgan(':method :url :status :res[content-length] - :response-time ms', 
 // Named page routes — must come BEFORE static middleware to avoid dashboard.html conflict
 app.get('/', (req, res) => res.redirect('/login'));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'login.html')));
-app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'heidi_voter_dashboard_final_27.html')));
+app.get('/dashboard/login', (req, res) => res.redirect('/login'));
+app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'dashboard.html')));
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
@@ -115,7 +116,7 @@ app.use('/api/public', require('./routes/publicContent'));
 // Claude AI and Assistant routes (auth handled per-route, not globally)
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/assistant', require('./routes/assistant'));
-app.use('/api/content', require('./routes/content'));
+app.use('/api/content', requireApiAuth, require('./routes/content'));
 app.use('/api/email', requireApiAuth, require('./routes/email'));
 app.use('/api/lists', requireApiAuth, require('./routes/lists'));
 app.use('/api/volunteers', requireApiAuth, require('./routes/volunteers'));
