@@ -162,7 +162,7 @@ router.post('/admin/assign', requireAdmin, async (req, res) => {
     } else if (preset === 'persuadable') {
       conditions.push('vt.heidi_score BETWEEN 5 AND 7');
     } else if (preset === 'sleeper_rs') {
-      conditions.push(`vt.party_affiliation ILIKE '%Lean R%' OR vt.party_affiliation ILIKE '%Strong R%'`);
+      conditions.push(`(vt.party_affiliation ILIKE '%Hard Republican%' OR vt.party_affiliation ILIKE '%Weak Republican%')`);
       conditions.push(`(vt.vote_history IS NULL OR vt.vote_history->>'VH23M' IS NULL OR vt.vote_history->>'VH23M' = '')`);
     } else if (preset === 'muni_swing') {
       conditions.push(`vt.party_affiliation ILIKE '%Swing%'`);
