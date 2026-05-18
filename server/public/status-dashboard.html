@@ -1330,9 +1330,11 @@
     const externalServices = [
       { name: 'Claude AI', icon: '🤖', endpoint: '/api/ai/health', description: 'Email generation & analysis', method: 'GET' },
       { name: 'Claude Assistant', icon: '💬', endpoint: '/api/assistant/health', description: 'AI chat widget', method: 'GET' },
-      { name: 'AI Website Editor', icon: '✨', endpoint: '/api/ai/website-chat', description: 'Content editor & AI tab', method: 'POST', testBody: { instruction: 'ping', currentContent: {} } },
-      { name: 'SEO Audit', icon: '🔍', endpoint: '/api/content/seo-audit', description: 'SEO analysis engine', method: 'POST', testBody: { pageContent: 'ping', pageTitle: 'Test' }, requiresAuth: true },
-      { name: 'SEO Suggestions', icon: '💡', endpoint: '/api/content/seo-suggestions', description: 'Fix suggestions engine', method: 'POST', testBody: { pageContent: 'ping' }, requiresAuth: true }
+      // AI Website Editor + SEO use the same Claude key — /api/ai/health covers them.
+      // Send empty bodies so validation fails (400) before Claude is ever called — no API cost.
+      { name: 'AI Website Editor', icon: '✨', endpoint: '/api/ai/website-chat', description: 'Content editor & AI tab', method: 'POST', testBody: {}, requiresAuth: true },
+      { name: 'SEO Audit', icon: '🔍', endpoint: '/api/content/seo-audit', description: 'SEO analysis engine', method: 'POST', testBody: {}, requiresAuth: true },
+      { name: 'SEO Suggestions', icon: '💡', endpoint: '/api/content/seo-suggestions', description: 'Fix suggestions engine', method: 'POST', testBody: {}, requiresAuth: true }
     ];
 
     async function checkExternalServices() {
@@ -1409,8 +1411,9 @@
         const res = await fetch(`${API_URL}${svc.endpoint}`, fetchOpts);
         const latency = Date.now() - start;
 
-        // Auth-required endpoints: 401 = endpoint reachable but needs login (counts as UP for infra check)
-        if (res.ok || (svc.requiresAuth && res.status === 401)) {
+        // Auth-required endpoints: 401 = reachable but needs login, 400 = reachable but missing fields.
+        // Both count as UP — they prove the route exists without triggering any AI/cost.
+        if (res.ok || (svc.requiresAuth && (res.status === 401 || res.status === 400))) {
           return { ok: true, time: latency };
         } else if (res.status === 503 || res.status === 500) {
           const data = await res.json().catch(() => ({}));
