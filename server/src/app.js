@@ -71,8 +71,9 @@ if (!sessionSecret && process.env.NODE_ENV === 'production') {
   throw new Error('SESSION_SECRET is required in production');
 }
 
-// Session middleware - use in-memory for now (will auto-migrate to DB once initialized)
+// Session middleware - PostgreSQL-backed so sessions survive server restarts/redeploys
 app.use(session({
+  store: new PgSession({ pool, tableName: 'session', createTableIfMissing: true }),
   secret: sessionSecret || 'dev-secret-change-me',
   resave: false,
   saveUninitialized: false,
