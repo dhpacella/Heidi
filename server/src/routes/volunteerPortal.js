@@ -222,6 +222,22 @@ router.post('/admin/assign', requireAdmin, async (req, res) => {
   }
 });
 
+// ── Admin: clear pending assignments for a volunteer ─────────────────────────
+router.delete('/admin/assign', requireAdmin, async (req, res) => {
+  const { volunteer_id } = req.body || {};
+  if (!volunteer_id) return res.status(400).json({ error: 'volunteer_id required' });
+
+  try {
+    const { rowCount } = await pool.query(
+      `DELETE FROM volunteer_assignments WHERE volunteer_id = $1 AND status = 'pending'`,
+      [volunteer_id]
+    );
+    res.json({ removed: rowCount });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Admin: canvassing results summary ─────────────────────────────────────────
 router.get('/admin/results', requireAdmin, async (req, res) => {
   try {

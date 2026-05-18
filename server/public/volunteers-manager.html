@@ -426,38 +426,52 @@
   .hnav{border-right:none!important;border-bottom:1px solid #243D56;padding:12px 16px!important;font-size:14px!important;}
 }</style>
 <script>(function(){var p=window.location.pathname;document.querySelectorAll('.hnav').forEach(function(a){if(p===a.dataset.path)a.classList.add('active');});})();</script>
+
+<!-- Add Volunteer Modal -->
+<div id="addModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10000;display:none;align-items:center;justify-content:center;">
+  <div style="background:#122338;border:1px solid rgba(245,166,35,.3);border-radius:10px;padding:30px;width:400px;max-width:90vw;">
+    <h2 style="color:#F5A623;font-size:18px;margin-bottom:20px;">➕ Add Volunteer</h2>
+    <div id="addModalMsg"></div>
+    <div class="form-group"><label>Full Name *</label><input id="newName" type="text" placeholder="Jane Smith"></div>
+    <div class="form-group"><label>Email *</label><input id="newEmail" type="email" placeholder="jane@example.com"></div>
+    <div class="form-group"><label>Phone</label><input id="newPhone" type="tel" placeholder="(555) 000-0000"></div>
+    <div class="form-group"><label>Precinct</label><select id="newPrecinct"><option value="">— No precinct assigned —</option></select></div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-primary" style="flex:1;" onclick="submitAddVolunteer()">Create Account</button>
+      <button class="btn" style="flex:1;" onclick="closeAddModal()">Cancel</button>
+    </div>
+    <p style="font-size:11px;color:#8BA3BE;margin-top:12px;">A temporary password will be emailed to the volunteer.</p>
+  </div>
+</div>
+
+<!-- Canvassing Results Modal -->
+<div id="resultsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10000;align-items:center;justify-content:center;">
+  <div style="background:#122338;border:1px solid rgba(245,166,35,.3);border-radius:10px;padding:30px;width:640px;max-width:95vw;max-height:85vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h2 style="color:#F5A623;font-size:18px;">📊 Canvassing Results</h2>
+      <button onclick="document.getElementById('resultsModal').style.display='none'" style="background:none;border:none;color:#8BA3BE;font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    <div id="resultsContent"><p style="color:#8BA3BE;">Loading...</p></div>
+  </div>
+</div>
+
 <div style="display:flex;flex:1;min-height:0;">
   <!-- Sidebar -->
   <div class="sidebar">
     <div class="sidebar-section">
-      <div class="sidebar-title">Campaign</div>
-      <button class="sidebar-item" onclick="window.location.href='/all-campaigns.html'">🏠 All campaigns</button>
-      <button class="sidebar-item" onclick="window.location.href='/email-compose.html'">➕ New campaign</button>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-title">Templates</div>
-      <button class="sidebar-item" onclick="window.location.href='/all-templates.html'">📋 All templates</button>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-title">Subscribers</div>
-      <button class="sidebar-item" onclick="window.location.href='/subscribers.html'">👥 View all</button>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-title">Configuration</div>
-      <button class="sidebar-item" onclick="window.location.href='/rules.html'">⚙️ Rules</button>
-    </div>
-
-    <div class="sidebar-section">
       <div class="sidebar-title">Volunteers</div>
-      <button class="sidebar-item active">🙋 Manage</button>
+      <button class="sidebar-item active" id="sideManage">🙋 Manage Walk Lists</button>
+      <button class="sidebar-item" onclick="openResultsModal()">📊 Canvassing Results</button>
+      <button class="sidebar-item" onclick="window.location.href='/volunteer-map.html'">🗺 Live Field Map</button>
     </div>
-
     <div class="sidebar-section">
-      <div class="sidebar-title">Reports</div>
-      <button class="sidebar-item" onclick="window.location.href='/campaign-reports.html'">📊 Campaign Analytics</button>
+      <div class="sidebar-title">Quick Stats</div>
+      <div id="sideStats" style="font-size:12px;color:#8BA3BE;padding:0 10px;line-height:1.8;">Loading...</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Navigation</div>
+      <button class="sidebar-item" onclick="window.location.href='/dashboard'">📊 Dashboard</button>
+      <button class="sidebar-item" onclick="window.location.href='/email-compose.html'">📧 Email</button>
     </div>
   </div>
 
@@ -466,8 +480,8 @@
     <div class="header" style="grid-column: 1 / -1;">
       <h1>🙋 Volunteer Manager</h1>
       <div class="header-buttons">
-        <button class="btn btn-primary" id="addVolunteerBtn">➕ Add Volunteer</button>
-        <button class="btn" id="refreshBtn">🔄 Refresh</button>
+        <button class="btn btn-primary" onclick="openAddModal()">➕ Add Volunteer</button>
+        <button class="btn" onclick="loadVolunteers()">🔄 Refresh</button>
       </div>
     </div>
 
@@ -479,213 +493,384 @@
     <!-- Right Panel: Detail -->
     <div class="detail-panel" id="detailPanel">
       <div class="empty-state">
-        <p>Select a volunteer to view details and assignments</p>
+        <p style="font-size:32px;margin-bottom:12px;">👈</p>
+        <p>Select a volunteer to assign walk lists and view progress</p>
       </div>
     </div>
   </div>
+</div>
 
-  <script>
-    const volunteers = [
-      {
-        id: 1,
-        name: 'Sarah Martinez',
-        phone: '(312) 555-0101',
-        precinct: 'Precinct 1',
-        status: 'active',
-        assigned: 24,
-        visited: 18,
-        assignments: [
-          { id: 1, voter_name: 'John Smith', address: '123 Main St', status: 'visited' },
-          { id: 2, voter_name: 'Jane Doe', address: '456 Oak Ave', status: 'visited' },
-          { id: 3, voter_name: 'Bob Johnson', address: '789 Pine Rd', status: 'pending' },
-          { id: 4, voter_name: 'Alice Williams', address: '321 Elm St', status: 'pending' },
-          { id: 5, voter_name: 'Charlie Brown', address: '654 Maple Dr', status: 'pending' },
-        ]
-      },
-      {
-        id: 2,
-        name: 'Marcus Thompson',
-        phone: '(312) 555-0102',
-        precinct: 'Precinct 2',
-        status: 'active',
-        assigned: 18,
-        visited: 12,
-        assignments: [
-          { id: 6, voter_name: 'Diana Prince', address: '987 Cedar Ln', status: 'visited' },
-          { id: 7, voter_name: 'Edward Norton', address: '147 Birch Ct', status: 'visited' },
-          { id: 8, voter_name: 'Fiona Green', address: '258 Spruce Way', status: 'pending' },
-        ]
-      },
-      {
-        id: 3,
-        name: 'Lisa Chen',
-        phone: '(312) 555-0103',
-        precinct: 'Precinct 1',
-        status: 'active',
-        assigned: 32,
-        visited: 15,
-        assignments: [
-          { id: 9, voter_name: 'George White', address: '369 Ash Blvd', status: 'visited' },
-          { id: 10, voter_name: 'Hannah Black', address: '741 Hickory St', status: 'pending' },
-        ]
-      },
-    ];
+<script>
+  let volunteers = [];
+  let precincts = [];
+  let selectedId = null;
 
-    let selectedVolunteer = null;
+  // ── Data loading ─────────────────────────────────────────────────────────────
 
-    function renderVolunteerList() {
-      const list = document.getElementById('volunteerList');
-      if (volunteers.length === 0) {
-        list.innerHTML = '<p style="color: var(--text-muted); font-size: 12px;">No volunteers yet</p>';
-        return;
-      }
-
-      list.innerHTML = volunteers.map(vol => {
-        const pct = vol.assigned > 0 ? Math.round((vol.visited / vol.assigned) * 100) : 0;
-        return `
-          <div class="volunteer-item ${selectedVolunteer?.id === vol.id ? 'selected' : ''}" onclick="selectVolunteer(${vol.id})">
-            <div class="volunteer-name">${vol.name}</div>
-            <div class="volunteer-phone">📱 ${vol.phone}</div>
-            <div class="progress-bar">
-              <div class="progress-fill" style="width: ${pct}%"></div>
-            </div>
-            <div class="progress-text">${vol.visited}/${vol.assigned} visited (${pct}%)</div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function selectVolunteer(id) {
-      selectedVolunteer = volunteers.find(v => v.id === id);
+  async function loadVolunteers() {
+    document.getElementById('volunteerList').innerHTML =
+      '<p style="color:var(--text-muted);font-size:12px;">Loading...</p>';
+    try {
+      const r = await fetch('/api/volunteers');
+      const data = await r.json();
+      volunteers = data.volunteers || [];
       renderVolunteerList();
-      renderDetailPanel();
+      updateSideStats();
+    } catch (e) {
+      document.getElementById('volunteerList').innerHTML =
+        '<p style="color:#FCA5A5;font-size:12px;">Failed to load volunteers.</p>';
+    }
+  }
+
+  async function loadPrecincts() {
+    try {
+      const r = await fetch('/api/precincts');
+      const data = await r.json();
+      precincts = data.precincts || data || [];
+    } catch (e) { precincts = []; }
+  }
+
+  // ── Sidebar stats ─────────────────────────────────────────────────────────────
+
+  function updateSideStats() {
+    const total = volunteers.length;
+    const totalAssigned = volunteers.reduce((s, v) => s + parseInt(v.assigned_count || 0), 0);
+    const totalVisited  = volunteers.reduce((s, v) => s + parseInt(v.visited_count  || 0), 0);
+    document.getElementById('sideStats').innerHTML =
+      `<b style="color:#EEF2F7">${total}</b> volunteers<br>` +
+      `<b style="color:#F5A623">${totalAssigned}</b> voters assigned<br>` +
+      `<b style="color:#1DB87A">${totalVisited}</b> doors knocked`;
+  }
+
+  // ── Volunteer list rendering ──────────────────────────────────────────────────
+
+  function renderVolunteerList() {
+    const list = document.getElementById('volunteerList');
+    if (!volunteers.length) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <p style="font-size:28px;margin-bottom:8px;">🙋</p>
+          <p>No volunteers yet. Add one to get started.</p>
+        </div>`;
+      return;
+    }
+    list.innerHTML = volunteers.map(vol => {
+      const assigned = parseInt(vol.assigned_count || 0);
+      const visited  = parseInt(vol.visited_count  || 0);
+      const pct = assigned > 0 ? Math.round((visited / assigned) * 100) : 0;
+      const fillColor = pct >= 75 ? '#1DB87A' : pct >= 40 ? '#F5A623' : '#4A90E2';
+      return `
+        <div class="volunteer-item ${selectedId === vol.id ? 'selected' : ''}" onclick="selectVolunteer(${vol.id})">
+          <div class="volunteer-name">${esc(vol.name)}</div>
+          <div class="volunteer-phone">${vol.precinct_name ? '📍 ' + esc(vol.precinct_name) + ' · ' : ''}${vol.phone ? '📱 ' + esc(vol.phone) : 'No phone'}</div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${pct}%;background:${fillColor}"></div>
+          </div>
+          <div class="progress-text">${visited}/${assigned} knocked (${pct}%)</div>
+        </div>`;
+    }).join('');
+  }
+
+  // ── Select volunteer & load detail ───────────────────────────────────────────
+
+  async function selectVolunteer(id) {
+    selectedId = id;
+    renderVolunteerList();
+    const panel = document.getElementById('detailPanel');
+    panel.innerHTML = '<p style="color:var(--text-muted);padding:20px;">Loading...</p>';
+
+    try {
+      const r = await fetch(`/api/volunteers/${id}`);
+      const data = await r.json();
+      renderDetailPanel(data.volunteer, data.assignments || []);
+    } catch (e) {
+      panel.innerHTML = '<p style="color:#FCA5A5;padding:20px;">Failed to load volunteer detail.</p>';
+    }
+  }
+
+  // ── Detail panel ─────────────────────────────────────────────────────────────
+
+  const PRESETS = [
+    { key: 'priority1',  label: '🏆 Priority 1',     desc: 'Heidi Score 8–10',             color: '#5DE0B0' },
+    { key: 'persuadable',label: '🤝 Persuadable',     desc: 'Score 5–7 swing voters',       color: '#F5A623' },
+    { key: 'sleeper_rs', label: '😴 Sleeper Rs',      desc: 'Lean/Strong R, skipped \'23',  color: '#7BB8F5' },
+    { key: 'muni_swing', label: '🗳 \'23 Swing',       desc: 'Swing voters who voted \'23',  color: '#B47BF5' },
+    { key: 'has_phone',  label: '📞 Has Phone',        desc: 'Score 5+, phone on file',      color: '#1DB87A' },
+    { key: 'all',        label: '📋 All Voters',       desc: 'Score 4+, all precincts',      color: '#8BA3BE' },
+  ];
+
+  function renderDetailPanel(vol, assignments) {
+    const assigned = parseInt(vol.assigned_count || assignments.length || 0);
+    const visited  = assignments.filter(a => a.status === 'visited').length;
+    const pending  = assigned - visited;
+
+    const precinctOptions = precincts.map(p =>
+      `<option value="${p.id}" ${vol.precinct_id == p.id ? 'selected' : ''}>${esc(p.name || p.precinct_name || p.precinct_code)}</option>`
+    ).join('');
+
+    const outcomeIcon = { supports: '💚', undecided: '🟡', not_home: '🚪', come_back: '🔁', opposes: '❌', bad_address: '🚫', skip: '⏭' };
+
+    document.getElementById('detailPanel').innerHTML = `
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+          <div>
+            <h2 style="font-size:20px;font-weight:700;color:var(--text);">${esc(vol.name)}</h2>
+            <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">${vol.precinct_name ? '📍 ' + esc(vol.precinct_name) : 'No precinct'} · ${vol.phone || 'No phone'}</p>
+          </div>
+          <button onclick="deleteVolunteer(${vol.id},'${esc(vol.name)}')" style="background:none;border:1px solid rgba(239,68,68,.4);color:#FCA5A5;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:12px;">🗑 Remove</button>
+        </div>
+
+        <div class="detail-header">
+          <div class="stat-box"><div class="stat-label">Assigned</div><div class="stat-value">${assigned}</div></div>
+          <div class="stat-box"><div class="stat-label" style="color:#1DB87A">Knocked</div><div class="stat-value" style="color:#1DB87A">${visited}</div></div>
+          <div class="stat-box"><div class="stat-label">Remaining</div><div class="stat-value" style="color:#F5A623">${pending}</div></div>
+        </div>
+
+        <!-- Assign Walk List -->
+        <div class="form-section">
+          <h3>📋 Assign Walk List</h3>
+          <div class="form-group">
+            <label>Precinct (optional — leave blank for all)</label>
+            <select id="assignPrecinct">
+              <option value="">— All precincts —</option>
+              ${precinctOptions}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Voter Preset</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">
+              ${PRESETS.map(p => `
+                <label style="display:flex;align-items:flex-start;gap:8px;padding:10px;border:1px solid rgba(255,255,255,.1);border-radius:6px;cursor:pointer;background:rgba(0,0,0,.2);">
+                  <input type="radio" name="preset" value="${p.key}" ${p.key === 'priority1' ? 'checked' : ''} style="width:auto;margin-top:2px;accent-color:${p.color}">
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:${p.color}">${p.label}</div>
+                    <div style="font-size:11px;color:#8BA3BE">${p.desc}</div>
+                  </div>
+                </label>`).join('')}
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Max Voters to Assign (up to 500)</label>
+            <input id="assignLimit" type="number" min="10" max="500" value="100" style="width:120px">
+          </div>
+          <div id="assignMsg" style="margin-bottom:10px;"></div>
+          <button class="btn btn-primary" onclick="assignWalkList(${vol.id})" style="width:100%;">⚡ Assign Walk List</button>
+        </div>
+
+        <!-- Assignments list -->
+        <div class="assignments-section">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3 style="margin:0;">Assigned Voters <span style="color:#8BA3BE;font-weight:400;">(${assignments.length})</span></h3>
+            ${assignments.length > 0 ? `<button onclick="clearAssignments(${vol.id})" style="background:none;border:1px solid rgba(239,68,68,.4);color:#FCA5A5;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:11px;">Clear All</button>` : ''}
+          </div>
+          ${assignments.length === 0
+            ? '<p style="color:var(--text-muted);font-size:12px;">No voters assigned yet. Use the form above to assign a walk list.</p>'
+            : assignments.slice(0, 100).map(a => {
+                const icon = outcomeIcon[a.outcome] || '⏳';
+                const statusClass = a.status === 'visited' ? 'status-visited' : 'status-pending';
+                return `
+                  <div class="assignment-item">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                      <div>
+                        <div class="assignment-name">${esc(a.first_name)} ${esc(a.last_name)}</div>
+                        <div class="assignment-address">${esc(a.address || '—')}</div>
+                        ${a.party_affiliation ? `<div style="font-size:10px;color:#8BA3BE;">${esc(a.party_affiliation)}</div>` : ''}
+                      </div>
+                      <div style="text-align:right;">
+                        <span class="assignment-status ${statusClass}">${icon} ${a.outcome || (a.status === 'visited' ? 'visited' : 'pending')}</span>
+                        ${a.heidi_score ? `<div style="font-size:10px;color:#F5A623;margin-top:4px;">Score: ${a.heidi_score}</div>` : ''}
+                      </div>
+                    </div>
+                  </div>`;
+              }).join('')
+            + (assignments.length > 100 ? `<p style="color:#8BA3BE;font-size:12px;text-align:center;padding:10px;">…and ${assignments.length - 100} more</p>` : '')
+          }
+        </div>
+      </div>`;
+  }
+
+  // ── Assign walk list ──────────────────────────────────────────────────────────
+
+  async function assignWalkList(volunteerId) {
+    const precinctId = document.getElementById('assignPrecinct').value;
+    const preset = document.querySelector('input[name="preset"]:checked')?.value || 'priority1';
+    const limit  = parseInt(document.getElementById('assignLimit').value) || 100;
+    const msgEl  = document.getElementById('assignMsg');
+
+    msgEl.innerHTML = '<span style="color:#8BA3BE;font-size:12px;">Assigning voters…</span>';
+
+    try {
+      const body = { volunteer_id: volunteerId, preset, limit };
+      if (precinctId) body.precinct_id = parseInt(precinctId);
+
+      const r = await fetch('/api/volunteer-portal/admin/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await r.json();
+
+      if (!r.ok) throw new Error(data.error || 'Assignment failed');
+      msgEl.innerHTML = `<div class="message success">✅ Assigned ${data.assigned} voters to walk list.</div>`;
+      await loadVolunteers();
+      await selectVolunteer(volunteerId);
+    } catch (e) {
+      msgEl.innerHTML = `<div class="message error">❌ ${e.message}</div>`;
+    }
+  }
+
+  // ── Clear assignments ─────────────────────────────────────────────────────────
+
+  async function clearAssignments(volunteerId) {
+    if (!confirm('Remove all pending assignments for this volunteer?')) return;
+    try {
+      const r = await fetch(`/api/volunteer-portal/admin/assign`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ volunteer_id: volunteerId })
+      });
+      await loadVolunteers();
+      await selectVolunteer(volunteerId);
+    } catch (e) { alert('Failed to clear: ' + e.message); }
+  }
+
+  // ── Delete volunteer ──────────────────────────────────────────────────────────
+
+  async function deleteVolunteer(id, name) {
+    if (!confirm(`Remove volunteer "${name}"? This will also remove their user account.`)) return;
+    try {
+      const r = await fetch(`/api/volunteers/${id}`, { method: 'DELETE' });
+      if (!r.ok) { const d = await r.json(); throw new Error(d.error); }
+      selectedId = null;
+      document.getElementById('detailPanel').innerHTML = '<div class="empty-state"><p>Volunteer removed.</p></div>';
+      await loadVolunteers();
+    } catch (e) { alert('Delete failed: ' + e.message); }
+  }
+
+  // ── Add volunteer modal ───────────────────────────────────────────────────────
+
+  function openAddModal() {
+    // Populate precinct dropdown in modal
+    const sel = document.getElementById('newPrecinct');
+    sel.innerHTML = '<option value="">— No precinct assigned —</option>' +
+      precincts.map(p => `<option value="${p.id}">${esc(p.name || p.precinct_name || p.precinct_code)}</option>`).join('');
+    document.getElementById('addModalMsg').innerHTML = '';
+    document.getElementById('newName').value = '';
+    document.getElementById('newEmail').value = '';
+    document.getElementById('newPhone').value = '';
+    document.getElementById('addModal').style.display = 'flex';
+  }
+
+  function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
+
+  async function submitAddVolunteer() {
+    const name     = document.getElementById('newName').value.trim();
+    const email    = document.getElementById('newEmail').value.trim();
+    const phone    = document.getElementById('newPhone').value.trim();
+    const precinct = document.getElementById('newPrecinct').value;
+    const msgEl    = document.getElementById('addModalMsg');
+
+    if (!name || !email) {
+      msgEl.innerHTML = '<div class="message error">Name and email are required.</div>';
+      return;
     }
 
-    function renderDetailPanel() {
-      const panel = document.getElementById('detailPanel');
+    msgEl.innerHTML = '<div class="message" style="background:rgba(74,144,226,.1);border:1px solid #4A90E2;color:#93C5FD;">Creating account…</div>';
 
-      if (!selectedVolunteer) {
-        panel.innerHTML = `
-          <div class="empty-state">
-            <p>Select a volunteer to view details and assignments</p>
+    try {
+      const r = await fetch('/api/volunteers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, phone: phone || null, precinct_id: precinct || null })
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Failed');
+
+      msgEl.innerHTML = `<div class="message success">
+        ✅ <b>${esc(name)}</b> added!<br>
+        Temp password: <b style="color:#F5A623;">${data.account?.tempPassword || '(emailed)'}</b><br>
+        <small style="color:#8BA3BE;">Share this password — they can change it after first login.</small>
+      </div>`;
+      await loadVolunteers();
+    } catch (e) {
+      msgEl.innerHTML = `<div class="message error">❌ ${e.message}</div>`;
+    }
+  }
+
+  // ── Canvassing results modal ──────────────────────────────────────────────────
+
+  async function openResultsModal() {
+    const modal = document.getElementById('resultsModal');
+    modal.style.display = 'flex';
+    document.getElementById('resultsContent').innerHTML = '<p style="color:#8BA3BE;">Loading…</p>';
+
+    try {
+      const r = await fetch('/api/volunteer-portal/admin/results');
+      const data = await r.json();
+      const { byOutcome, byVolunteer, topConcerns } = data;
+
+      const outcomeLabel = { supports:'💚 Supports', undecided:'🟡 Undecided', not_home:'🚪 Not Home', come_back:'🔁 Come Back', opposes:'❌ Opposes', bad_address:'🚫 Bad Address', skip:'⏭ Skip' };
+
+      document.getElementById('resultsContent').innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+          <div>
+            <h3 style="font-size:13px;color:#F5A623;text-transform:uppercase;margin-bottom:12px;">By Outcome</h3>
+            ${byOutcome.length === 0 ? '<p style="color:#8BA3BE;font-size:12px;">No data yet.</p>' :
+              byOutcome.map(o => `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);">
+                  <span style="font-size:13px;">${outcomeLabel[o.outcome] || o.outcome}</span>
+                  <span style="font-size:16px;font-weight:700;color:#F5A623;">${o.count}</span>
+                </div>`).join('')}
           </div>
-        `;
-        return;
-      }
-
-      const pendingCount = selectedVolunteer.assignments.filter(a => a.status === 'pending').length;
-      const visitedCount = selectedVolunteer.assignments.filter(a => a.status === 'visited').length;
-
-      panel.innerHTML = `
-        <div>
-          <h2 style="font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 20px;">${selectedVolunteer.name}</h2>
-
-          <div class="detail-header">
-            <div class="stat-box">
-              <div class="stat-label">Total Assigned</div>
-              <div class="stat-value">${selectedVolunteer.assigned}</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">Visited</div>
-              <div class="stat-value">${visitedCount}</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">Pending</div>
-              <div class="stat-value">${pendingCount}</div>
-            </div>
-          </div>
-
-          <div class="form-section">
-            <h3>Filter &amp; Assign Voters</h3>
-            <div class="form-group">
-              <label>Precinct</label>
-              <input type="text" placeholder="e.g., Precinct 1" value="${selectedVolunteer.precinct}">
-            </div>
-            <div class="form-group">
-              <label>Party</label>
-              <select>
-                <option>All Parties</option>
-                <option>Democrat</option>
-                <option>Republican</option>
-                <option>Independent</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Voted In Last N Years</label>
-              <input type="number" min="1" max="10" value="3">
-            </div>
-            <div class="button-group">
-              <button class="btn" onclick="assignVoters(false)">Add to Existing</button>
-              <button class="btn btn-primary" onclick="assignVoters(true)">Replace &amp; Assign</button>
-            </div>
-          </div>
-
-          <div class="assignments-section">
-            <h3>Assigned Voters</h3>
-            ${selectedVolunteer.assignments.length === 0 ?
-              '<p style="color: var(--text-muted); font-size: 12px;">No assignments yet</p>' :
-              selectedVolunteer.assignments
-                .sort((a, b) => a.status === 'pending' ? -1 : 1)
-                .map(a => `
-                  <div class="assignment-item">
-                    <div class="assignment-name">${a.voter_name}</div>
-                    <div class="assignment-address">${a.address}</div>
-                    <span class="assignment-status ${a.status === 'visited' ? 'status-visited' : 'status-pending'}">
-                      ${a.status === 'visited' ? '✅ Visited' : '⏳ Pending'}
-                    </span>
-                  </div>
-                `).join('')
-            }
+          <div>
+            <h3 style="font-size:13px;color:#F5A623;text-transform:uppercase;margin-bottom:12px;">Top Concerns</h3>
+            ${topConcerns.length === 0 ? '<p style="color:#8BA3BE;font-size:12px;">No concerns logged yet.</p>' :
+              topConcerns.map(c => `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);">
+                  <span style="font-size:13px;text-transform:capitalize;">${esc(c.concern.replace(/_/g,' '))}</span>
+                  <span style="font-size:14px;font-weight:700;color:#7BB8F5;">${c.count}</span>
+                </div>`).join('')}
           </div>
         </div>
-      `;
+        <h3 style="font-size:13px;color:#F5A623;text-transform:uppercase;margin-bottom:12px;">By Volunteer</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr style="color:#8BA3BE;text-align:left;">
+            <th style="padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.1);">Volunteer</th>
+            <th style="padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.1);text-align:right;">Assigned</th>
+            <th style="padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.1);text-align:right;">Contacted</th>
+            <th style="padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.1);text-align:right;">💚 Supports</th>
+            <th style="padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.1);text-align:right;">🟡 Undecided</th>
+          </tr></thead>
+          <tbody>
+            ${byVolunteer.length === 0
+              ? '<tr><td colspan="5" style="padding:20px;text-align:center;color:#8BA3BE;">No canvassing data yet.</td></tr>'
+              : byVolunteer.map(v => `
+                <tr style="border-bottom:1px solid rgba(255,255,255,.05);">
+                  <td style="padding:8px 6px;font-weight:600;">${esc(v.name)}</td>
+                  <td style="padding:8px 6px;text-align:right;color:#8BA3BE;">${v.assigned}</td>
+                  <td style="padding:8px 6px;text-align:right;color:#F5A623;">${v.contacted}</td>
+                  <td style="padding:8px 6px;text-align:right;color:#1DB87A;">${v.supports}</td>
+                  <td style="padding:8px 6px;text-align:right;color:#FCD34D;">${v.undecided}</td>
+                </tr>`).join('')}
+          </tbody>
+        </table>`;
+    } catch (e) {
+      document.getElementById('resultsContent').innerHTML =
+        `<p style="color:#FCA5A5;">Failed to load results: ${e.message}</p>`;
     }
+  }
 
-    function assignVoters(replace) {
-      if (!selectedVolunteer) return;
-      const action = replace ? 'Replace and reassign' : 'Add';
-      alert(`${action} voters for ${selectedVolunteer.name}.\n\nFull assignment API coming soon!`);
-    }
+  // ── Utility ───────────────────────────────────────────────────────────────────
 
-    function addVolunteer() {
-      const name = prompt('Volunteer name:');
-      if (name) {
-        const phone = prompt('Phone number:');
-        const precinct = prompt('Precinct:');
-        if (phone && precinct) {
-          volunteers.push({
-            id: Math.max(...volunteers.map(v => v.id), 0) + 1,
-            name,
-            phone,
-            precinct,
-            status: 'active',
-            assigned: 0,
-            visited: 0,
-            assignments: []
-          });
-          renderVolunteerList();
-          alert(`✅ Added volunteer: ${name}`);
-        }
-      }
-    }
+  function esc(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
 
-    function refreshVolunteers() {
-      const items = document.querySelectorAll('.volunteer-item');
-      items.forEach((item, i) => {
-        item.style.opacity = '0.5';
-        setTimeout(() => { item.style.opacity = '1'; }, 100 + (i * 50));
-      });
-      console.log('✅ Volunteers refreshed');
-    }
+  // ── Init ──────────────────────────────────────────────────────────────────────
 
-    // Event listeners
-    document.getElementById('addVolunteerBtn').addEventListener('click', addVolunteer);
-    document.getElementById('refreshBtn').addEventListener('click', refreshVolunteers);
-
-    // Initialize
-    renderVolunteerList();
-    renderDetailPanel();
-  </script>
+  Promise.all([loadVolunteers(), loadPrecincts()]);
+</script>
 </div><!-- end sidebar+main wrapper -->
 </body>
 </html>
