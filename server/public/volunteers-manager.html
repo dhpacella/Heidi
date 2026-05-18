@@ -25,6 +25,7 @@
       background: var(--navy);
       color: var(--text);
       display: flex;
+      flex-direction: column;
       min-height: 100vh;
     }
 
@@ -395,6 +396,7 @@
 </nav>
 <style>.hnav{font-family:'Barlow',sans-serif;font-size:12px;font-weight:600;color:#8BA3BE;text-decoration:none;padding:0 14px;white-space:nowrap;display:flex;align-items:center;border-right:1px solid #243D56;transition:color .15s,background .15s;letter-spacing:.04em;}.hnav:hover{color:#F5A623;background:rgba(245,166,35,.06);}.hnav.active{color:#F5A623;background:rgba(245,166,35,.1);}</style>
 <script>(function(){var p=window.location.pathname;document.querySelectorAll('.hnav').forEach(function(a){if(p===a.dataset.path)a.classList.add('active');});})();</script>
+<div style="display:flex;flex:1;min-height:0;">
   <!-- Sidebar -->
   <div class="sidebar">
     <div class="sidebar-section">
@@ -656,5 +658,6 @@
     renderVolunteerList();
     renderDetailPanel();
   </script>
+</div><!-- end sidebar+main wrapper -->
 </body>
 </html>
