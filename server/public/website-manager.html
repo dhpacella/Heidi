@@ -832,6 +832,19 @@
   </style>
 </head>
 <body>
+<nav style="background:#0B1929;border-bottom:2px solid #F5A623;display:flex;align-items:stretch;position:sticky;top:0;z-index:9999;box-shadow:0 2px 16px rgba(0,0,0,.5);">
+  <a href="/dashboard" style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;color:#F5A623;text-decoration:none;padding:0 18px;letter-spacing:.06em;white-space:nowrap;border-right:1px solid #243D56;display:flex;align-items:center;">🗳 HEIDI HQ</a>
+  <div style="display:flex;overflow-x:auto;align-items:stretch;flex:1;">
+    <a href="/dashboard" class="hnav" data-path="/dashboard">📊 Dashboard</a>
+    <a href="/email-compose.html" class="hnav" data-path="/email-compose.html">📧 Email</a>
+    <a href="/sms-compose.html" class="hnav" data-path="/sms-compose.html">📱 SMS</a>
+    <a href="/volunteers-manager.html" class="hnav" data-path="/volunteers-manager.html">👥 Volunteers</a>
+    <a href="/content-manager.html" class="hnav" data-path="/content-manager.html">📝 Website</a>
+    <a href="/status-dashboard.html" class="hnav" data-path="/status-dashboard.html">📡 Monitor</a>
+  </div>
+</nav>
+<style>.hnav{font-family:'Barlow',sans-serif;font-size:12px;font-weight:600;color:#8BA3BE;text-decoration:none;padding:0 14px;white-space:nowrap;display:flex;align-items:center;border-right:1px solid #243D56;transition:color .15s,background .15s;letter-spacing:.04em;}.hnav:hover{color:#F5A623;background:rgba(245,166,35,.06);}.hnav.active{color:#F5A623;background:rgba(245,166,35,.1);}</style>
+<script>(function(){var p=window.location.pathname;document.querySelectorAll('.hnav').forEach(function(a){if(p===a.dataset.path)a.classList.add('active');});})();</script>
   <!-- Hamburger button (mobile only) -->
   <button id="sidebarToggle" class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Open navigation">&#9776;</button>
 
@@ -2312,8 +2325,8 @@ Route: ${route}`;
 
     function loadPreview() {
       const page = document.getElementById('previewPageSelect').value;
-      const port = window.location.hostname === 'localhost' ? '3002' : window.location.origin;
-      const pageUrl = `http://localhost:3002/${page}`;
+      const voterSiteBase = 'https://main.dbgikokghbz7o.amplifyapp.com';
+      const pageUrl = page === '' ? voterSiteBase : `${voterSiteBase}/${page}`;
 
       const iframe = document.getElementById('previewIframe');
       iframe.src = pageUrl;
@@ -2328,7 +2341,8 @@ Route: ${route}`;
 
     function openInNewTab() {
       const page = document.getElementById('previewPageSelect').value;
-      window.open(`http://localhost:3002/${page}`, '_blank');
+      const voterSiteBase = 'https://main.dbgikokghbz7o.amplifyapp.com';
+      window.open(page === '' ? voterSiteBase : `${voterSiteBase}/${page}`, '_blank');
     }
 
     function previewComponent() {
