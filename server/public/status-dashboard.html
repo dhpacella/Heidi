@@ -591,11 +591,11 @@
         <h3>Environment</h3>
         <div class="metric">
           <span>Backend</span>
-          <span class="metric-value">localhost:5000</span>
+          <span class="metric-value">heidi-production-55ef.up.railway.app</span>
         </div>
         <div class="metric">
           <span>Frontend</span>
-          <span class="metric-value">localhost:3002</span>
+          <span class="metric-value">main.dbgikokghbz7o.amplifyapp.com</span>
         </div>
         <div class="metric">
           <span>Database</span>
@@ -692,14 +692,14 @@
   </div>
 
   <script>
-    const API_URL = 'http://localhost:5000';
+    const API_URL = window.location.origin;
     let autoCheckInterval = null;
     const activityLogs = [];
 
     const endpoints = [
       { name: 'Health', path: '/health', method: 'GET', public: true },
       { name: 'Website Manager', path: '/website-manager.html', method: 'GET', public: true },
-      { name: 'Voter Website', path: 'http://localhost:3002', method: 'GET', public: true },
+      { name: 'Voter Website', path: 'https://main.dbgikokghbz7o.amplifyapp.com', method: 'GET', public: true },
       { name: 'Analytics', path: '/api/analytics/summary', method: 'GET', public: true },
       { name: 'System Logs', path: '/api/system-logs?limit=5', method: 'GET', public: true }
     ];
