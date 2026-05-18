@@ -102,6 +102,94 @@ router.get('/', async (req, res) => {
   }
 });
 
+// ── Win Analysis (live DB counts) ────────────────────────────────────────────
+router.get('/win-analysis', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        COUNT(*)                                                              AS total,
+        COUNT(*) FILTER (WHERE party_affiliation ILIKE '%Strong R%'
+                           OR  party_affiliation ILIKE '%Lean R%')           AS base_r,
+        COUNT(*) FILTER (WHERE party_affiliation ILIKE '%Swing%')            AS swing,
+        COUNT(*) FILTER (WHERE party_affiliation ILIKE '%Lean D%'
+                           OR  party_affiliation ILIKE '%Strong D%')         AS base_d,
+        COUNT(*) FILTER (WHERE party_affiliation ILIKE '%New Reg%')          AS new_reg,
+        COUNT(*) FILTER (WHERE vote_frequency >= 4)                          AS high_freq,
+        COUNT(*) FILTER (WHERE phone IS NOT NULL AND phone != '')            AS has_phone,
+        COUNT(*) FILTER (
+          WHERE vote_history IS NOT NULL
+            AND vote_history->>'VH23M' IS NOT NULL
+            AND vote_history->>'VH23M' != ''
+        )                                                                     AS voted_2023_muni,
+        COUNT(*) FILTER (
+          WHERE vote_history IS NOT NULL
+            AND vote_history->>'VH24G' IS NOT NULL
+            AND vote_history->>'VH24G' != ''
+        )                                                                     AS voted_2024_gen,
+        COUNT(*) FILTER (WHERE heidi_score >= 8)                             AS score_priority,
+        COUNT(*) FILTER (WHERE heidi_score BETWEEN 5 AND 7)                  AS score_persuadable,
+        COUNT(*) FILTER (WHERE heidi_score IS NOT NULL AND heidi_score < 5)  AS score_opposition,
+        COUNT(*) FILTER (
+          WHERE heidi_score >= 6
+            AND (vote_history IS NULL
+              OR vote_history->>'VH23M' IS NULL
+              OR vote_history->>'VH23M' = '')
+        )                                                                     AS sleepers,
+        COUNT(*) FILTER (WHERE heidi_score IS NOT NULL)                      AS scores_computed
+      FROM voters
+    `);
+    const d = rows[0];
+    const int = (v) => parseInt(v, 10) || 0;
+    res.json({
+      total:             int(d.total),
+      base_r:            int(d.base_r),
+      swing:             int(d.swing),
+      base_d:            int(d.base_d),
+      new_reg:           int(d.new_reg),
+      high_freq:         int(d.high_freq),
+      has_phone:         int(d.has_phone),
+      voted_2023_muni:   int(d.voted_2023_muni),
+      voted_2024_gen:    int(d.voted_2024_gen),
+      score_priority:    int(d.score_priority),
+      score_persuadable: int(d.score_persuadable),
+      score_opposition:  int(d.score_opposition),
+      sleepers:          int(d.sleepers),
+      scores_computed:   int(d.scores_computed),
+    });
+  } catch (err) {
+    console.error('Win analysis error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Compute Heidi Scores ──────────────────────────────────────────────────────
+router.post('/compute-scores', requireRole('admin'), async (req, res) => {
+  try {
+    const result = await pool.query(`
+      UPDATE voters SET heidi_score = GREATEST(1, LEAST(10, ROUND((
+        COALESCE(vote_frequency, 1)
+        + CASE
+            WHEN party_affiliation ILIKE '%Strong R%' THEN 4
+            WHEN party_affiliation ILIKE '%Lean R%'   THEN 3
+            WHEN party_affiliation ILIKE '%Swing%'    THEN 2
+            WHEN party_affiliation ILIKE '%Lean D%'   THEN 1
+            WHEN party_affiliation ILIKE '%Strong D%' THEN 0
+            WHEN party_affiliation ILIKE '%New Reg%'  THEN 1
+            ELSE 1
+          END
+        + CASE WHEN vote_history->>'VH23M' IS NOT NULL AND vote_history->>'VH23M' != '' THEN 2 ELSE 0 END
+        + CASE WHEN vote_history->>'VH24G' IS NOT NULL AND vote_history->>'VH24G' != '' THEN 1 ELSE 0 END
+        + CASE WHEN vote_history->>'VH22G' IS NOT NULL AND vote_history->>'VH22G' != '' THEN 1 ELSE 0 END
+        + CASE WHEN phone IS NOT NULL AND phone != '' THEN 1 ELSE 0 END
+      ) * 10.0 / 14)))
+    `);
+    res.json({ updated: result.rowCount });
+  } catch (err) {
+    console.error('Compute scores error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
@@ -342,100 +430,6 @@ router.post('/export', async (req, res) => {
   } catch (err) {
     console.error('Voter export error:', err);
     res.status(500).json({ error: 'Failed to export voters' });
-  }
-});
-
-// ── Win Analysis (live DB counts) ────────────────────────────────────────────
-router.get('/win-analysis', async (req, res) => {
-  try {
-    const { rows } = await pool.query(`
-      SELECT
-        COUNT(*)                                                              AS total,
-        COUNT(*) FILTER (WHERE party_affiliation ILIKE '%Strong R%'
-                           OR  party_affiliation ILIKE '%Lean R%')           AS base_r,
-        COUNT(*) FILTER (WHERE party_affiliation ILIKE '%Swing%')            AS swing,
-        COUNT(*) FILTER (WHERE party_affiliation ILIKE '%Lean D%'
-                           OR  party_affiliation ILIKE '%Strong D%')         AS base_d,
-        COUNT(*) FILTER (WHERE party_affiliation ILIKE '%New Reg%')          AS new_reg,
-        COUNT(*) FILTER (WHERE vote_frequency >= 4)                          AS high_freq,
-        COUNT(*) FILTER (WHERE phone IS NOT NULL AND phone != '')            AS has_phone,
-        COUNT(*) FILTER (
-          WHERE vote_history IS NOT NULL
-            AND vote_history->>'VH23M' IS NOT NULL
-            AND vote_history->>'VH23M' != ''
-        )                                                                     AS voted_2023_muni,
-        COUNT(*) FILTER (
-          WHERE vote_history IS NOT NULL
-            AND vote_history->>'VH24G' IS NOT NULL
-            AND vote_history->>'VH24G' != ''
-        )                                                                     AS voted_2024_gen,
-        COUNT(*) FILTER (
-          WHERE heidi_score >= 8
-        )                                                                     AS score_priority,
-        COUNT(*) FILTER (
-          WHERE heidi_score BETWEEN 5 AND 7
-        )                                                                     AS score_persuadable,
-        COUNT(*) FILTER (
-          WHERE heidi_score IS NOT NULL AND heidi_score < 5
-        )                                                                     AS score_opposition,
-        COUNT(*) FILTER (
-          WHERE heidi_score >= 6
-            AND (vote_history IS NULL
-              OR vote_history->>'VH23M' IS NULL
-              OR vote_history->>'VH23M' = '')
-        )                                                                     AS sleepers,
-        COUNT(*) FILTER (WHERE heidi_score IS NOT NULL)                      AS scores_computed
-      FROM voters
-    `);
-    const d = rows[0];
-    const int = (v) => parseInt(v, 10) || 0;
-    res.json({
-      total:           int(d.total),
-      base_r:          int(d.base_r),
-      swing:           int(d.swing),
-      base_d:          int(d.base_d),
-      new_reg:         int(d.new_reg),
-      high_freq:       int(d.high_freq),
-      has_phone:       int(d.has_phone),
-      voted_2023_muni: int(d.voted_2023_muni),
-      voted_2024_gen:  int(d.voted_2024_gen),
-      score_priority:  int(d.score_priority),
-      score_persuadable: int(d.score_persuadable),
-      score_opposition:  int(d.score_opposition),
-      sleepers:        int(d.sleepers),
-      scores_computed: int(d.scores_computed),
-    });
-  } catch (err) {
-    console.error('Win analysis error:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ── Compute Heidi Scores ──────────────────────────────────────────────────────
-router.post('/compute-scores', requireRole('admin'), async (req, res) => {
-  try {
-    const result = await pool.query(`
-      UPDATE voters SET heidi_score = GREATEST(1, LEAST(10, ROUND((
-        COALESCE(vote_frequency, 1)
-        + CASE
-            WHEN party_affiliation ILIKE '%Strong R%' THEN 4
-            WHEN party_affiliation ILIKE '%Lean R%'   THEN 3
-            WHEN party_affiliation ILIKE '%Swing%'    THEN 2
-            WHEN party_affiliation ILIKE '%Lean D%'   THEN 1
-            WHEN party_affiliation ILIKE '%Strong D%' THEN 0
-            WHEN party_affiliation ILIKE '%New Reg%'  THEN 1
-            ELSE 1
-          END
-        + CASE WHEN vote_history->>'VH23M' IS NOT NULL AND vote_history->>'VH23M' != '' THEN 2 ELSE 0 END
-        + CASE WHEN vote_history->>'VH24G' IS NOT NULL AND vote_history->>'VH24G' != '' THEN 1 ELSE 0 END
-        + CASE WHEN vote_history->>'VH22G' IS NOT NULL AND vote_history->>'VH22G' != '' THEN 1 ELSE 0 END
-        + CASE WHEN phone IS NOT NULL AND phone != '' THEN 1 ELSE 0 END
-      ) * 10.0 / 14)))
-    `);
-    res.json({ updated: result.rowCount });
-  } catch (err) {
-    console.error('Compute scores error:', err);
-    res.status(500).json({ error: err.message });
   }
 });
 
