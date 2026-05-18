@@ -42,7 +42,7 @@ app.use(cors({
       process.env.VOTER_SITE_URL,
     ].filter(Boolean);
     // Allow requests with no origin (mobile apps, curl), amplifyapp.com subdomains, and heidiforhomer.com
-    if (!origin || allowed.includes(origin) || /\.amplifyapp\.com$/.test(origin) || /\.heidiforhomer\.com$/.test(origin) || origin === 'https://heidiforhomer.com') {
+    if (!origin || allowed.includes(origin) || /\.amplifyapp\.com$/.test(origin) || /\.heidiforhomer\.com$/.test(origin) || origin === 'https://heidiforhomer.com' || /\.railway\.app$/.test(origin)) {
       callback(null, true);
     } else {
       callback(new Error(`CORS: ${origin} not allowed`));

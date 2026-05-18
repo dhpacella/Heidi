@@ -1481,7 +1481,7 @@
         const res = await fetch('/api/email/templates', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, subject, htmlBody })
+          body: JSON.stringify({ name, subject, html_body: htmlBody })
         });
 
         const data = await res.json();
