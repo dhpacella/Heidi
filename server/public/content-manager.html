@@ -287,25 +287,7 @@
   </style>
 </head>
 <body>
-  <!-- Login Screen -->
-  <div id="loginScreen" class="login-screen">
-    <div class="login-form">
-      <h2>Content Manager</h2>
-      <p>Sign in to manage posts and polls</p>
-      <form id="loginForm" onsubmit="handleLogin(event)">
-        <div style="margin-bottom: 15px;">
-          <input type="email" id="loginEmail" placeholder="Email address..." required style="margin-bottom: 0;">
-        </div>
-        <div style="margin-bottom: 15px;">
-          <input type="password" id="loginPassword" placeholder="Password..." required style="margin-bottom: 0;">
-        </div>
-        <div class="login-error" id="loginError"></div>
-        <button type="submit" class="login-form" style="width: 100%; padding: 12px; background: #F5A623; color: #0B1929; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; margin-bottom: 15px;">Sign In</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Admin Interface -->
+  <!-- Admin Interface (shown after session auth check) -->
   <div id="adminInterface" style="display: none;">
     <button class="logout-btn" onclick="handleLogout()">Logout</button>
     <nav style="background:#0B1929;border-bottom:2px solid #F5A623;display:flex;align-items:stretch;box-shadow:0 2px 16px rgba(0,0,0,.5);margin-bottom:0;">
@@ -559,58 +541,24 @@
 
   <script>
     const API_URL = window.location.origin + '/api';
-    let token = localStorage.getItem('token');
 
-    // Check auth on page load
-    function checkAuth() {
-      if (token) {
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('adminInterface').style.display = 'block';
-        loadPosts();
-        loadPolls();
-        loadPageContent();
-      } else {
-        document.getElementById('loginScreen').style.display = 'flex';
-        document.getElementById('adminInterface').style.display = 'none';
-      }
-    }
-
-    async function handleLogin(e) {
-      e.preventDefault();
-      const email = document.getElementById('loginEmail').value;
-      const password = document.getElementById('loginPassword').value;
-      const errorEl = document.getElementById('loginError');
-
+    // Check auth on page load — use session cookie like all other admin pages
+    async function checkAuth() {
       try {
-        const res = await fetch(`${API_URL}/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          errorEl.textContent = data.message || 'Login failed';
-          errorEl.style.display = 'block';
-          return;
-        }
-
-        token = data.token;
-        localStorage.setItem('token', token);
-        document.getElementById('loginForm').reset();
-        errorEl.style.display = 'none';
-        checkAuth();
-      } catch (err) {
-        errorEl.textContent = 'Login error: ' + err.message;
-        errorEl.style.display = 'block';
+        const res = await fetch(`${API_URL}/auth/me`, { credentials: 'include' });
+        if (!res.ok) { window.location.href = '/login'; return; }
+      } catch {
+        window.location.href = '/login'; return;
       }
+      document.getElementById('adminInterface').style.display = 'block';
+      loadPosts();
+      loadPolls();
+      loadPageContent();
     }
 
-    function handleLogout() {
-      token = null;
-      localStorage.removeItem('token');
-      document.getElementById('loginForm').reset();
-      checkAuth();
+    async function handleLogout() {
+      await fetch('/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+      window.location.href = '/login';
     }
 
     function showTab(tabName) {
@@ -632,10 +580,8 @@
       try {
         const res = await fetch(`${API_URL}/content/posts`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             title: document.getElementById('postTitle').value,
             content: document.getElementById('postContent').value
@@ -659,10 +605,8 @@
       try {
         const res = await fetch(`${API_URL}/content/polls`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             question: document.getElementById('pollQuestion').value,
             options: options
@@ -694,7 +638,7 @@
     async function loadPosts() {
       try {
         const res = await fetch(`${API_URL}/content/posts`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
         const { posts } = await res.json();
 
@@ -724,7 +668,7 @@
     async function loadPolls() {
       try {
         const res = await fetch(`${API_URL}/content/polls`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
         const { polls } = await res.json();
 
@@ -747,10 +691,8 @@
       try {
         const res = await fetch(`${API_URL}/content/posts/${postId}/publish`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ published: publish })
         });
 
@@ -821,13 +763,13 @@
       try {
         // Fetch current content to send as context
         const contentRes = await fetch(`${API_URL}/content/site-content`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
         const { content } = await contentRes.json();
 
         const res = await fetch(`${API_URL}/ai/website-chat`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          credentials: 'include', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ instruction, currentContent: content })
         });
 
@@ -876,7 +818,7 @@
     async function loadPageContent() {
       try {
         const res = await fetch(`${API_URL}/content/site-content`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
         const { content } = await res.json();
         if (!content) return;
@@ -920,7 +862,7 @@
       try {
         const res = await fetch(`${API_URL}/content/site-content`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          credentials: 'include', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ content })
         });
         if (!res.ok) throw new Error('Save failed');
