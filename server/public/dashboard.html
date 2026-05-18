@@ -839,6 +839,10 @@ tr:hover td{background:var(--surface);}
     <button class="preset" onclick="applyPreset('clean_walk')" style="border-color:rgba(255,128,128,.3);color:#FF8080">⛔ Clean walk list</button>
     <button class="preset" onclick="applyPreset('new_voter')" style="border-color:rgba(245,166,35,.4);color:#F5A623">🌙 New voter welcome</button>
     <button class="preset" onclick="applyPreset('persuasion_gold')" style="border-color:rgba(123,184,245,.4);color:#7BB8F5">🎯 Persuasion gold</button>
+    <button class="preset" onclick="applyPreset('priority1')" style="border-color:rgba(93,224,176,.5);color:#5DE0B0;font-weight:700">🏆 Priority 1 (Score 8–10)</button>
+    <button class="preset" onclick="applyPreset('sleeper_rs')" style="border-color:rgba(245,166,35,.5);color:#F5A623">😴 Sleeper Rs (missed '23)</button>
+    <button class="preset" onclick="applyPreset('muni_persuade')" style="border-color:rgba(123,184,245,.5);color:#7BB8F5">🗳 '23 Muni Swing voters</button>
+    <button class="preset" onclick="applyPreset('phone_blitz')" style="border-color:rgba(29,184,122,.5);color:#1DB87A">📞 Phone blitz (score 5+)</button>
     <button class="preset" onclick="clearAll()">✕ Clear all</button>
   </div>
 </div>
@@ -1318,6 +1322,48 @@ tr:hover td{background:var(--surface);}
 
 <!-- STRATEGY TAB -->
 <div id="tab-strategy" style="display:none">
+
+  <!-- Live Voter Intelligence -->
+  <div style="background:linear-gradient(135deg,rgba(29,184,122,.12),rgba(245,166,35,.06));border:1px solid rgba(29,184,122,.35);border-radius:12px;padding:18px 20px;margin-bottom:18px">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <div>
+        <div style="font-size:15px;font-weight:700;color:#fff">🗂 Live Voter Universe — Railway Database</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px" id="live-data-ts">Loading...</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" onclick="loadLiveAnalysis()" style="font-size:12px;padding:7px 14px">↻ Refresh</button>
+        <button class="btn btn-p" id="compute-scores-btn" onclick="computeHeidiScores()" style="font-size:12px;padding:7px 14px">⚡ Compute Heidi Scores</button>
+      </div>
+    </div>
+
+    <!-- Universe stats -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px" id="live-stats-grid">
+      <div style="text-align:center;color:var(--text-muted);font-size:12px;padding:16px">Loading voter data...</div>
+    </div>
+
+    <!-- Heidi Score breakdown -->
+    <div id="score-breakdown" style="display:none">
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Heidi Score Distribution</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <div style="background:rgba(29,184,122,.15);border:1px solid rgba(29,184,122,.4);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:20px;font-weight:700;color:#5DE0B0" id="score-p1">—</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px">🏆 Priority 1 (8–10)</div>
+          <div style="font-size:10px;color:#5DE0B0;margin-top:2px">Base + reliable voters</div>
+        </div>
+        <div style="background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.35);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:20px;font-weight:700;color:#F5A623" id="score-p2">—</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px">🎯 Persuadable (5–7)</div>
+          <div style="font-size:10px;color:#F5A623;margin-top:2px">Win these = win the race</div>
+        </div>
+        <div style="background:rgba(255,80,80,.08);border:1px solid rgba(255,80,80,.25);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:20px;font-weight:700;color:#FF8080" id="score-p3">—</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px">⛔ Opposition (1–4)</div>
+          <div style="font-size:10px;color:#FF8080;margin-top:2px">Don't waste resources</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="strat-grid">
 
     <!-- Workback Calendar -->
@@ -2179,6 +2225,11 @@ function applyPreset(p){
     clean_walk:{party:[2,3,4],seg:[0,1,2,3]},
     new_voter:{intel:["newreg"],party:[2,3,4]},
     persuasion_gold:{intel:["split"],party:[2,3,4],freq:[2,5],contact:["mob"]},
+    // Heidi score presets (use existing filter combos as best approximation)
+    priority1:{party:[0,1],seg:[0,1,2],freq:[3,5]},
+    sleeper_rs:{party:[0,1],intel:["gotv"],seg:[3],freq:[2,4]},
+    muni_persuade:{party:[2],elec:[6],seg:[1,2,3]},
+    phone_blitz:{party:[0,1,2],contact:["mob"],freq:[2,5]},
   }[p];
   if(!ps)return;
   if(ps.seg)ps.seg.forEach(v=>{fSeg.add(v);const cls=["on","on-g","on-a","on-r","on"][v];document.querySelector(`.chip[data-g="seg"][data-v="${v}"]`)?.classList.add(cls);});
@@ -3438,6 +3489,7 @@ function initStrategy(){
   updateScenario();
   renderCapacityWeeks();
   updateCapacity();
+  if (!window._liveVoters) loadLiveAnalysis();
 }
 
 function renderCalendar(){
@@ -3458,6 +3510,69 @@ function renderCalendar(){
   }).join('');
 }
 
+// ── Live voter intelligence ───────────────────────────────────────
+async function loadLiveAnalysis() {
+  try {
+    const r = await fetch('/api/voters/win-analysis', { credentials: 'include' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    window._liveVoters = d;
+
+    const fmt = n => n.toLocaleString();
+    const pct = (n, tot) => tot ? ' (' + Math.round(n/tot*100) + '%)' : '';
+    const tot = d.total;
+
+    document.getElementById('live-data-ts').textContent =
+      `${fmt(tot)} registered voters · as of ${new Date().toLocaleTimeString()}`;
+
+    const statsHtml = [
+      { label: 'Total Registered',     val: fmt(tot),                      color: '#EEF2F7' },
+      { label: '🔴 Republican Base',    val: fmt(d.base_r) + pct(d.base_r,tot),   color: '#F5A623' },
+      { label: '⚖ Swing Voters',       val: fmt(d.swing)  + pct(d.swing, tot),   color: '#7BB8F5' },
+      { label: '🔵 Democrat Base',      val: fmt(d.base_d) + pct(d.base_d,tot),   color: '#8BA3BE' },
+      { label: '🆕 New Registrants',   val: fmt(d.new_reg),                color: '#C5D4E3' },
+      { label: '📞 Have Phone',         val: fmt(d.has_phone) + pct(d.has_phone,tot), color: '#5DE0B0' },
+      { label: '🗳 Voted 2023 Muni',   val: fmt(d.voted_2023_muni) + pct(d.voted_2023_muni,tot), color: '#5DE0B0' },
+      { label: '😴 Sleeper Rs',         val: fmt(d.sleepers) + pct(d.sleepers,tot), color: '#F5A623' },
+      { label: '⭐ High Freq (4-5)',    val: fmt(d.high_freq) + pct(d.high_freq,tot), color: '#EEF2F7' },
+    ].map(s => `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:15px;font-weight:700;color:${s.color}">${s.val}</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:3px">${s.label}</div>
+      </div>`).join('');
+    document.getElementById('live-stats-grid').innerHTML = statsHtml;
+
+    if (d.scores_computed > 0) {
+      document.getElementById('score-p1').textContent = fmt(d.score_priority) + pct(d.score_priority, d.scores_computed);
+      document.getElementById('score-p2').textContent = fmt(d.score_persuadable) + pct(d.score_persuadable, d.scores_computed);
+      document.getElementById('score-p3').textContent = fmt(d.score_opposition) + pct(d.score_opposition, d.scores_computed);
+      document.getElementById('score-breakdown').style.display = 'block';
+      document.getElementById('compute-scores-btn').textContent = '⚡ Recompute Scores';
+    }
+
+    updateScenario();
+  } catch (err) {
+    document.getElementById('live-data-ts').textContent = '⚠ Could not load live data — ' + err.message;
+  }
+}
+
+async function computeHeidiScores() {
+  const btn = document.getElementById('compute-scores-btn');
+  btn.textContent = '⏳ Computing...';
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/voters/compute-scores', { method: 'POST', credentials: 'include' });
+    const d = await r.json();
+    btn.textContent = '✅ ' + (d.updated || 0).toLocaleString() + ' scored';
+    await loadLiveAnalysis();
+  } catch (err) {
+    btn.textContent = '⚠ Error';
+    console.error(err);
+  } finally {
+    setTimeout(() => { btn.textContent = '⚡ Recompute Scores'; btn.disabled = false; }, 3000);
+  }
+}
+
 // ── Win scenario modeler ──────────────────────────────────────────
 function updateScenario(){
   const turnout  = +(document.getElementById('sc-turnout')?.value   || 28)/100;
@@ -3470,10 +3585,10 @@ function updateScenario(){
   document.getElementById('sc-swing-conv-val').textContent = Math.round(swingPct*100)+'%';
   document.getElementById('sc-gotv-act-val').textContent   = Math.round(gotvAct*100)+'%';
 
-  const totalReg  = 17300;
-  const demVoters = 4467;
-  const swingVoters = 5323;
-  const gotvSleepers = 7375;
+  const totalReg     = window._liveVoters?.total    || 17300;
+  const demVoters    = window._liveVoters?.base_d   || 4467;
+  const swingVoters  = window._liveVoters?.swing    || 5323;
+  const gotvSleepers = window._liveVoters?.sleepers || 7375;
 
   const cast      = Math.round(totalReg * turnout);
   const winNum    = Math.floor(cast / 2) + 1;
