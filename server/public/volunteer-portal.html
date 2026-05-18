@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Heidi for Homer — Volunteer Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Barlow',sans-serif;background:#0B1929;color:#EEF2F7;min-height:100vh;overscroll-behavior:none}
+
+/* GPS gate */
+#gps-gate{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px 20px;text-align:center;background:linear-gradient(135deg,#0B1929,#122338)}
+#gps-gate h1{font-family:'Barlow Condensed',sans-serif;font-size:28px;color:#F5A623;margin-bottom:12px}
+#gps-gate p{color:#8BA3BE;font-size:15px;line-height:1.6;max-width:340px;margin-bottom:24px}
+#gps-gate .icon{font-size:64px;margin-bottom:20px}
+#gps-retry-btn{background:#F5A623;color:#0B1929;border:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:700;font-family:'Barlow',sans-serif;cursor:pointer;width:100%;max-width:300px}
+
+/* App shell */
+#app{display:none;flex-direction:column;min-height:100vh}
+
+/* Top bar */
+#topbar{background:#0B1929;border-bottom:2px solid #F5A623;padding:0 16px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;flex-shrink:0}
+#topbar-name{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:#F5A623;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+#topbar-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+#gps-dot{width:8px;height:8px;border-radius:50%;background:#1DB87A;flex-shrink:0;box-shadow:0 0 6px #1DB87A}
+#gps-dot.off{background:#FF6060;box-shadow:0 0 6px #FF6060}
+#logout-btn{background:rgba(245,166,35,.15);border:1px solid rgba(245,166,35,.4);color:#F5A623;padding:6px 12px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif}
+
+/* Progress bar */
+#progress-bar-wrap{background:#0D2137;padding:10px 16px;border-bottom:1px solid #1A3550;flex-shrink:0}
+#progress-label{display:flex;justify-content:space-between;font-size:12px;color:#8BA3BE;margin-bottom:6px}
+#progress-label span:last-child{color:#1DB87A;font-weight:600}
+#progress-track{height:6px;background:#1A3550;border-radius:3px;overflow:hidden}
+#progress-fill{height:100%;background:linear-gradient(90deg,#1DB87A,#5DE0B0);border-radius:3px;transition:width .5s}
+#precinct-label{font-size:11px;color:#8BA3BE;margin-top:5px}
+
+/* Tab bar */
+#tabbar{display:flex;background:#0D2137;border-bottom:1px solid #1A3550;flex-shrink:0}
+.vtab{flex:1;padding:11px 4px;text-align:center;font-size:12px;font-weight:600;color:#8BA3BE;cursor:pointer;border:none;background:none;font-family:'Barlow',sans-serif;border-bottom:2px solid transparent;transition:color .2s,border-color .2s}
+.vtab.on{color:#F5A623;border-bottom-color:#F5A623}
+
+/* Content panels */
+#panel-list,#panel-map,#panel-results{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#panel-map{overflow:hidden;position:relative}
+#map-container{height:100%;min-height:400px}
+
+/* Walk list */
+.voter-card{background:#122338;border-bottom:1px solid #1A3550;padding:14px 16px;display:flex;align-items:flex-start;gap:12px;cursor:pointer;transition:background .15s;position:relative}
+.voter-card:active{background:#1A3550}
+.voter-card.done{opacity:.6}
+.voter-card.done .vc-name{text-decoration:line-through}
+.vc-num{width:28px;height:28px;border-radius:50%;background:#1A3550;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#8BA3BE;flex-shrink:0;margin-top:2px}
+.vc-num.done-icon{background:rgba(29,184,122,.2);color:#1DB87A}
+.vc-body{flex:1;min-width:0}
+.vc-name{font-size:15px;font-weight:600;color:#EEF2F7;margin-bottom:3px}
+.vc-addr{font-size:12px;color:#8BA3BE;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vc-tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600}
+.tag-score-high{background:rgba(29,184,122,.2);color:#5DE0B0}
+.tag-score-mid{background:rgba(245,166,35,.15);color:#F5A623}
+.tag-score-low{background:rgba(139,163,190,.15);color:#8BA3BE}
+.tag-party{background:rgba(123,184,245,.12);color:#7BB8F5}
+.tag-freq{background:rgba(93,224,176,.12);color:#5DE0B0}
+.vc-outcome{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:20px}
+.empty-state{text-align:center;padding:60px 20px;color:#8BA3BE}
+.empty-state h2{color:#F5A623;font-size:20px;margin-bottom:10px}
+
+/* Contact modal */
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;overflow-y:auto;padding:20px}
+#modal-overlay.open{display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:500px){#modal-overlay.open{align-items:center}}
+#modal{background:#0D2137;border-radius:16px 16px 0 0;width:100%;max-width:480px;padding:20px 20px 32px;border-top:3px solid #F5A623}
+@media(min-width:500px){#modal{border-radius:16px;border-top:none;border:1px solid #243D56}}
+#modal-voter-name{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:#F5A623;margin-bottom:3px}
+#modal-voter-addr{font-size:13px;color:#8BA3BE;margin-bottom:18px}
+.modal-section-label{font-size:11px;font-weight:700;color:#8BA3BE;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.outcome-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+.outcome-btn{padding:12px 8px;border-radius:10px;border:2px solid transparent;background:#122338;color:#EEF2F7;font-size:13px;font-weight:600;font-family:'Barlow',sans-serif;cursor:pointer;text-align:center;transition:all .15s;line-height:1.3}
+.outcome-btn:active{transform:scale(.97)}
+.outcome-btn.sel{border-color:#F5A623;background:rgba(245,166,35,.12)}
+.outcome-btn[data-outcome="supports"].sel{border-color:#1DB87A;background:rgba(29,184,122,.15)}
+.outcome-btn[data-outcome="opposes"].sel{border-color:#FF6060;background:rgba(255,96,96,.12)}
+.outcome-btn[data-outcome="not_home"].sel{border-color:#7BB8F5;background:rgba(123,184,245,.12)}
+.concerns-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:16px}
+.concern-chip{padding:8px 10px;border-radius:8px;border:1px solid #243D56;background:#122338;color:#C5D4E3;font-size:12px;cursor:pointer;text-align:center;transition:all .15s;font-family:'Barlow',sans-serif}
+.concern-chip.sel{border-color:#F5A623;background:rgba(245,166,35,.12);color:#F5A623;font-weight:600}
+#modal-notes{width:100%;padding:10px 12px;background:#122338;border:1px solid #243D56;border-radius:8px;color:#EEF2F7;font-size:14px;font-family:'Barlow',sans-serif;resize:none;height:72px;outline:none;margin-bottom:16px}
+#modal-notes:focus{border-color:#F5A623}
+#modal-save-btn{width:100%;padding:14px;background:#F5A623;color:#0B1929;border:none;border-radius:10px;font-size:16px;font-weight:700;font-family:'Barlow',sans-serif;cursor:pointer;margin-bottom:10px}
+#modal-save-btn:disabled{opacity:.5;cursor:default}
+#modal-cancel-btn{width:100%;padding:12px;background:transparent;color:#8BA3BE;border:1px solid #243D56;border-radius:10px;font-size:14px;font-weight:600;font-family:'Barlow',sans-serif;cursor:pointer}
+
+/* Results panel */
+.result-section{padding:16px}
+.result-section h3{font-size:13px;font-weight:700;color:#8BA3BE;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
+.outcome-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #1A3550}
+.outcome-row:last-child{border-bottom:none}
+.outcome-row .icon{font-size:22px;width:30px;text-align:center}
+.outcome-row .label{flex:1;font-size:14px;font-weight:600}
+.outcome-row .count{font-size:16px;font-weight:700;color:#F5A623}
+.concern-bar-row{margin-bottom:8px}
+.concern-bar-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
+.concern-bar-track{height:5px;background:#1A3550;border-radius:3px;overflow:hidden}
+.concern-bar-fill{height:100%;background:#F5A623;border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- GPS Gate -->
+<div id="gps-gate">
+  <div class="icon">📍</div>
+  <h1>GPS Required</h1>
+  <p id="gps-gate-msg">The volunteer portal requires your GPS location to show your walk list and track canvassing progress. Please enable location access in your browser settings and tap Retry.</p>
+  <button id="gps-retry-btn" onclick="initGPS()">📍 Enable Location & Continue</button>
+</div>
+
+<!-- Main App -->
+<div id="app">
+
+  <!-- Top bar -->
+  <div id="topbar">
+    <div id="topbar-name">🌳 Volunteer Portal</div>
+    <div id="topbar-right">
+      <div id="gps-dot" title="GPS Active"></div>
+      <button id="logout-btn" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div id="progress-bar-wrap">
+    <div id="progress-label">
+      <span id="progress-text">Loading walk list...</span>
+      <span id="progress-pct">0%</span>
+    </div>
+    <div id="progress-track"><div id="progress-fill" style="width:0%"></div></div>
+    <div id="precinct-label"></div>
+  </div>
+
+  <!-- Tab bar -->
+  <div id="tabbar">
+    <button class="vtab on" onclick="showPanel('list')">📋 Walk List</button>
+    <button class="vtab" onclick="showPanel('map')">🗺 Map</button>
+    <button class="vtab" onclick="showPanel('results')">📊 My Results</button>
+  </div>
+
+  <!-- Walk list -->
+  <div id="panel-list">
+    <div class="empty-state"><p>Loading...</p></div>
+  </div>
+
+  <!-- Map -->
+  <div id="panel-map" style="display:none">
+    <div id="map-container"></div>
+  </div>
+
+  <!-- My results -->
+  <div id="panel-results" style="display:none">
+    <div class="result-section">
+      <h3>Contact Outcomes</h3>
+      <div id="results-outcomes"></div>
+    </div>
+    <div class="result-section">
+      <h3>Top Voter Concerns</h3>
+      <div id="results-concerns"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Contact modal -->
+<div id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div id="modal">
+    <div id="modal-voter-name">Voter Name</div>
+    <div id="modal-voter-addr">Address</div>
+
+    <div class="modal-section-label">What happened at this door?</div>
+    <div class="outcome-grid">
+      <button class="outcome-btn" data-outcome="supports"   onclick="selectOutcome('supports')">✅ Supports Heidi<br><small style="font-weight:400;opacity:.8">Will vote for her</small></button>
+      <button class="outcome-btn" data-outcome="undecided"  onclick="selectOutcome('undecided')">💛 Undecided<br><small style="font-weight:400;opacity:.8">Needs more info</small></button>
+      <button class="outcome-btn" data-outcome="not_home"   onclick="selectOutcome('not_home')">🚪 Not Home<br><small style="font-weight:400;opacity:.8">Left door hanger</small></button>
+      <button class="outcome-btn" data-outcome="come_back"  onclick="selectOutcome('come_back')">🔄 Come Back<br><small style="font-weight:400;opacity:.8">Follow up needed</small></button>
+      <button class="outcome-btn" data-outcome="opposes"    onclick="selectOutcome('opposes')">❌ Opposes<br><small style="font-weight:400;opacity:.8">Don't revisit</small></button>
+      <button class="outcome-btn" data-outcome="bad_address" onclick="selectOutcome('bad_address')">📭 Bad Address<br><small style="font-weight:400;opacity:.8">Wrong/vacant</small></button>
+    </div>
+
+    <div class="modal-section-label">Voter concerns (select all that apply)</div>
+    <div class="concerns-grid">
+      <div class="concern-chip" onclick="toggleConcern(this)" data-concern="open_space">🌳 Open Space / Trees</div>
+      <div class="concern-chip" onclick="toggleConcern(this)" data-concern="143rd_street">🛑 143rd St Widening</div>
+      <div class="concern-chip" onclick="toggleConcern(this)" data-concern="farmland">🚜 Farmland</div>
+      <div class="concern-chip" onclick="toggleConcern(this)" data-concern="small_business">🏪 Small Business</div>
+      <div class="concern-chip" onclick="toggleConcern(this)" data-concern="property_tax">💰 Property Taxes</div>
+      <div class="concern-chip" onclick="toggleConcern(this)" data-concern="public_safety">🚔 Public Safety</div>
+      <div class="concern-chip" onclick="toggleConcern(this)" data-concern="development">🏗 Development</div>
+      <div class="concern-chip" onclick="toggleConcern(this)" data-concern="transparency">📋 Transparency</div>
+      <div class="concern-chip" onclick="toggleConcern(this)" data-concern="schools">🎒 Schools / Youth</div>
+      <div class="concern-chip" onclick="toggleConcern(this)" data-concern="other">💬 Other</div>
+    </div>
+
+    <div class="modal-section-label">Notes (optional)</div>
+    <textarea id="modal-notes" placeholder="Any details about the conversation..."></textarea>
+
+    <button id="modal-save-btn" onclick="saveContact()" disabled>Select an outcome to save</button>
+    <button id="modal-cancel-btn" onclick="closeModal()">Cancel</button>
+  </div>
+</div>
+
+<script>
+const API = '';
+let volunteer = null;
+let assignments = [];
+let myMap = null;
+let myMarker = null;
+let gpsWatchId = null;
+let currentLat = null, currentLon = null;
+let activeAssignmentId = null;
+let selectedOutcome = null;
+let selectedConcerns = new Set();
+let mapInitialized = false;
+
+// ── GPS ───────────────────────────────────────────────────────────────────────
+async function initGPS() {
+  document.getElementById('gps-retry-btn').textContent = '⏳ Requesting location...';
+  document.getElementById('gps-retry-btn').disabled = true;
+
+  if (!navigator.geolocation) {
+    showGPSGate('Your browser does not support GPS. Please use Chrome or Safari on your phone.');
+    return;
+  }
+
+  try {
+    const pos = await new Promise((resolve, reject) =>
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true, timeout: 15000, maximumAge: 0
+      })
+    );
+    currentLat = pos.coords.latitude;
+    currentLon = pos.coords.longitude;
+    startGPSWatch();
+    document.getElementById('gps-gate').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    pingLocation(pos.coords);
+    loadPortalData();
+  } catch (err) {
+    const msg = err.code === 1
+      ? 'Location access was denied. To use this portal, open your browser settings, allow location access for this site, then tap Retry.'
+      : 'Could not get your location. Make sure GPS is enabled on your device and tap Retry.';
+    showGPSGate(msg);
+  }
+}
+
+function showGPSGate(msg) {
+  document.getElementById('gps-gate-msg').textContent = msg;
+  const btn = document.getElementById('gps-retry-btn');
+  btn.textContent = '📍 Enable Location & Continue';
+  btn.disabled = false;
+}
+
+function startGPSWatch() {
+  gpsWatchId = navigator.geolocation.watchPosition(
+    pos => {
+      currentLat = pos.coords.latitude;
+      currentLon = pos.coords.longitude;
+      pingLocation(pos.coords);
+      if (myMarker) myMarker.setLatLng([currentLat, currentLon]);
+    },
+    err => {
+      console.warn('GPS watch error:', err);
+      document.getElementById('gps-dot').classList.add('off');
+    },
+    { enableHighAccuracy: true, maximumAge: 15000 }
+  );
+}
+
+async function pingLocation(coords) {
+  document.getElementById('gps-dot').classList.remove('off');
+  try {
+    await fetch(`${API}/api/volunteer-portal/location`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat: coords.latitude, lon: coords.longitude, accuracy: coords.accuracy })
+    });
+  } catch (e) {}
+}
+
+// ── Data ──────────────────────────────────────────────────────────────────────
+async function loadPortalData() {
+  try {
+    const r = await fetch(`${API}/api/volunteer-portal/me`, { credentials: 'include' });
+    if (r.status === 401) { window.location.href = '/login'; return; }
+    const data = await r.json();
+    volunteer = data.volunteer;
+    assignments = data.assignments || [];
+
+    document.getElementById('topbar-name').textContent = `🌳 ${volunteer.name}`;
+    updateProgress(data.stats);
+    renderWalkList();
+    renderResults();
+    if (mapInitialized) renderMapMarkers();
+  } catch (err) {
+    document.getElementById('panel-list').innerHTML =
+      `<div class="empty-state"><h2>⚠ Error</h2><p>${err.message}</p></div>`;
+  }
+}
+
+function updateProgress(stats) {
+  const { total, contacted, remaining } = stats;
+  const pct = total > 0 ? Math.round(contacted / total * 100) : 0;
+  document.getElementById('progress-text').textContent =
+    `${contacted} of ${total} contacted · ${remaining} remaining`;
+  document.getElementById('progress-pct').textContent = pct + '%';
+  document.getElementById('progress-fill').style.width = pct + '%';
+  if (volunteer?.precinct_name) {
+    document.getElementById('precinct-label').textContent =
+      `Precinct: ${volunteer.precinct_name}`;
+  }
+}
+
+// ── Walk list ─────────────────────────────────────────────────────────────────
+const OUTCOME_ICONS = {
+  supports: '✅', undecided: '💛', not_home: '🚪',
+  come_back: '🔄', opposes: '❌', bad_address: '📭', skip: '⏭'
+};
+
+function renderWalkList() {
+  const el = document.getElementById('panel-list');
+  if (!assignments.length) {
+    el.innerHTML = `<div class="empty-state">
+      <h2>No Walk List Yet</h2>
+      <p>Your campaign manager hasn't assigned any voters yet. Check back soon!</p>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = assignments.map((a, i) => {
+    const done = !!a.outcome;
+    const score = a.heidi_score;
+    const scoreTag = score >= 8 ? `<span class="tag tag-score-high">★ Score ${score}</span>`
+                   : score >= 5 ? `<span class="tag tag-score-mid">★ Score ${score}</span>`
+                   : score     ? `<span class="tag tag-score-low">★ ${score}</span>` : '';
+    const partyShort = (a.party_affiliation || '').replace(/^\d+\s*-\s*/, '').split(' ').slice(-1)[0];
+    const partyTag = partyShort ? `<span class="tag tag-party">${partyShort}</span>` : '';
+    const freqTag = a.vote_frequency ? `<span class="tag tag-freq">Freq ${a.vote_frequency}</span>` : '';
+    const outcomeIcon = done ? `<span class="vc-outcome">${OUTCOME_ICONS[a.outcome] || '✓'}</span>` : '';
+
+    return `<div class="voter-card${done?' done':''}" onclick="openModal(${i})">
+      <div class="vc-num${done?' done-icon':''}">${done ? '✓' : i+1}</div>
+      <div class="vc-body">
+        <div class="vc-name">${a.last_name}, ${a.first_name}</div>
+        <div class="vc-addr">${a.address || 'No address'}</div>
+        <div class="vc-tags">${scoreTag}${partyTag}${freqTag}</div>
+      </div>
+      ${outcomeIcon}
+    </div>`;
+  }).join('');
+}
+
+// ── Map ───────────────────────────────────────────────────────────────────────
+function showPanel(name) {
+  ['list','map','results'].forEach(p => {
+    document.getElementById(`panel-${p}`).style.display = p === name ? (p === 'map' ? 'block' : 'block') : 'none';
+  });
+  document.querySelectorAll('.vtab').forEach((t, i) => {
+    t.classList.toggle('on', ['list','map','results'][i] === name);
+  });
+  if (name === 'map') initMap();
+}
+
+function initMap() {
+  if (mapInitialized) return;
+  mapInitialized = true;
+  const startLat = currentLat || 41.62;
+  const startLon = currentLon || -88.02;
+  myMap = L.map('map-container', { zoomControl: true }).setView([startLat, startLon], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 19
+  }).addTo(myMap);
+
+  // Volunteer position marker
+  if (currentLat) {
+    myMarker = L.circleMarker([currentLat, currentLon], {
+      radius: 10, fillColor: '#1DB87A', color: '#fff', weight: 2,
+      fillOpacity: 0.9
+    }).addTo(myMap).bindPopup('📍 You are here');
+  }
+  renderMapMarkers();
+  setTimeout(() => myMap.invalidateSize(), 100);
+}
+
+function renderMapMarkers() {
+  if (!myMap) return;
+  assignments.forEach(a => {
+    if (!a.latitude || !a.longitude) return;
+    const done = !!a.outcome;
+    const color = done ? (a.outcome === 'supports' ? '#1DB87A' : '#8BA3BE') : '#F5A623';
+    L.circleMarker([a.latitude, a.longitude], {
+      radius: 7, fillColor: color, color: '#0B1929', weight: 1, fillOpacity: 0.85
+    }).addTo(myMap)
+      .bindPopup(`<b>${a.last_name}, ${a.first_name}</b><br>${a.address || ''}`);
+  });
+}
+
+// ── Contact modal ─────────────────────────────────────────────────────────────
+function openModal(idx) {
+  const a = assignments[idx];
+  activeAssignmentId = a.id;
+  selectedOutcome = a.outcome || null;
+  selectedConcerns = new Set(a.concerns_list || []);
+
+  document.getElementById('modal-voter-name').textContent = `${a.first_name} ${a.last_name}`;
+  document.getElementById('modal-voter-addr').textContent = a.address || 'No address on file';
+  document.getElementById('modal-notes').value = a.notes || '';
+
+  // Reset outcome buttons
+  document.querySelectorAll('.outcome-btn').forEach(btn => {
+    btn.classList.toggle('sel', btn.dataset.outcome === selectedOutcome);
+  });
+
+  // Reset concern chips
+  document.querySelectorAll('.concern-chip').forEach(chip => {
+    chip.classList.toggle('sel', selectedConcerns.has(chip.dataset.concern));
+  });
+
+  updateSaveBtn();
+  document.getElementById('modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  activeAssignmentId = null;
+  selectedOutcome = null;
+  selectedConcerns = new Set();
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+function selectOutcome(outcome) {
+  selectedOutcome = outcome;
+  document.querySelectorAll('.outcome-btn').forEach(btn => {
+    btn.classList.toggle('sel', btn.dataset.outcome === outcome);
+  });
+  updateSaveBtn();
+}
+
+function toggleConcern(el) {
+  const c = el.dataset.concern;
+  if (selectedConcerns.has(c)) { selectedConcerns.delete(c); el.classList.remove('sel'); }
+  else { selectedConcerns.add(c); el.classList.add('sel'); }
+}
+
+function updateSaveBtn() {
+  const btn = document.getElementById('modal-save-btn');
+  btn.disabled = !selectedOutcome;
+  btn.textContent = selectedOutcome ? 'Save Contact' : 'Select an outcome to save';
+}
+
+async function saveContact() {
+  const btn = document.getElementById('modal-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  try {
+    const r = await fetch(`${API}/api/volunteer-portal/contact/${activeAssignmentId}`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        outcome: selectedOutcome,
+        concerns: [...selectedConcerns],
+        notes: document.getElementById('modal-notes').value.trim()
+      })
+    });
+    if (!r.ok) throw new Error('Save failed');
+
+    // Update local state
+    const a = assignments.find(x => x.id === activeAssignmentId);
+    if (a) {
+      a.outcome = selectedOutcome;
+      a.concerns_list = [...selectedConcerns];
+      a.notes = document.getElementById('modal-notes').value.trim();
+    }
+
+    closeModal();
+    const contacted = assignments.filter(x => x.outcome && x.outcome !== 'pending').length;
+    updateProgress({ total: assignments.length, contacted, remaining: assignments.length - contacted });
+    renderWalkList();
+    renderResults();
+    if (mapInitialized) { myMap.eachLayer(l => { if (l !== myMarker && l._latlng) myMap.removeLayer(l); }); renderMapMarkers(); }
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = '⚠ Error — Tap to retry';
+    alert('Could not save: ' + err.message);
+  }
+}
+
+// ── Results panel ─────────────────────────────────────────────────────────────
+function renderResults() {
+  const outcomeConfig = [
+    { key: 'supports',    icon: '✅', label: 'Supports Heidi' },
+    { key: 'undecided',   icon: '💛', label: 'Undecided' },
+    { key: 'not_home',    icon: '🚪', label: 'Not Home' },
+    { key: 'come_back',   icon: '🔄', label: 'Come Back' },
+    { key: 'opposes',     icon: '❌', label: 'Opposes' },
+    { key: 'bad_address', icon: '📭', label: 'Bad Address' },
+  ];
+  const counts = {};
+  const concernCounts = {};
+  assignments.forEach(a => {
+    if (a.outcome) counts[a.outcome] = (counts[a.outcome] || 0) + 1;
+    (a.concerns_list || []).forEach(c => { concernCounts[c] = (concernCounts[c] || 0) + 1; });
+  });
+
+  document.getElementById('results-outcomes').innerHTML = outcomeConfig.map(o =>
+    `<div class="outcome-row">
+      <div class="icon">${o.icon}</div>
+      <div class="label">${o.label}</div>
+      <div class="count">${counts[o.key] || 0}</div>
+    </div>`
+  ).join('');
+
+  const maxConcern = Math.max(1, ...Object.values(concernCounts));
+  const concernLabels = {
+    open_space:'🌳 Open Space',  '143rd_street':'🛑 143rd St',
+    farmland:'🚜 Farmland',       small_business:'🏪 Small Business',
+    property_tax:'💰 Property Tax', public_safety:'🚔 Public Safety',
+    development:'🏗 Development',  transparency:'📋 Transparency',
+    schools:'🎒 Schools',          other:'💬 Other'
+  };
+  const sortedConcerns = Object.entries(concernCounts).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('results-concerns').innerHTML = sortedConcerns.length
+    ? sortedConcerns.map(([k,v]) => `
+        <div class="concern-bar-row">
+          <div class="concern-bar-label"><span>${concernLabels[k]||k}</span><span>${v}</span></div>
+          <div class="concern-bar-track"><div class="concern-bar-fill" style="width:${Math.round(v/maxConcern*100)}%"></div></div>
+        </div>`).join('')
+    : '<p style="color:#8BA3BE;font-size:13px">No concerns logged yet.</p>';
+}
+
+// ── Logout ────────────────────────────────────────────────────────────────────
+async function doLogout() {
+  if (gpsWatchId !== null) {
+    navigator.geolocation.clearWatch(gpsWatchId);
+    gpsWatchId = null;
+  }
+  document.getElementById('gps-dot').classList.add('off');
+  try {
+    await fetch('/logout', { method: 'POST', credentials: 'include' });
+  } catch (e) {}
+  window.location.href = '/login';
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+initGPS();
+</script>
+</body>
+</html>

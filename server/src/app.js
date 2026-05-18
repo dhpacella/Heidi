@@ -136,6 +136,7 @@ app.use('/api/content', requireApiAuth, require('./routes/content'));
 app.use('/api/email', requireApiAuth, require('./routes/email'));
 app.use('/api/lists', requireApiAuth, require('./routes/lists'));
 app.use('/api/volunteers', requireApiAuth, require('./routes/volunteers'));
+app.use('/api/volunteer-portal', require('./routes/volunteerPortal'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/system-logs', require('./routes/system-logs'));
 
