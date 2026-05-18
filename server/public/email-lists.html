@@ -381,6 +381,18 @@
       .segment-actions .btn {
         flex: 1;
       }
+      input, select, textarea { font-size: 16px !important; }
+      .header-right { flex-wrap: wrap; gap: 8px; }
+      .header-right .btn { flex: 1; text-align: center; }
+      .container { padding: 12px; }
+      table { font-size: 12px; }
+      th, td { padding: 8px 6px; }
+    }
+    @media (max-width: 480px) {
+      header { padding: 16px; }
+      header h1 { font-size: 22px; }
+      .modal-actions { flex-direction: column; }
+      .modal-actions .btn { width: 100%; text-align: center; }
     }
   </style>
 </head>
@@ -396,6 +408,8 @@
     <a href="/volunteers-manager.html" class="hnav" data-path="/volunteers-manager.html">👥 Volunteers</a>
     <a href="/content-manager.html" class="hnav" data-path="/content-manager.html">📝 Website</a>
     <a href="/status-dashboard.html" class="hnav" data-path="/status-dashboard.html">📡 Monitor</a>
+    <a href="/blacklist.html" class="hnav" data-path="/blacklist.html">🚫 Blacklist</a>
+    <a href="/housekeeping.html" class="hnav" data-path="/housekeeping.html">⚙️ Housekeeping</a>
   </div>
   <button class="hnav-hamburger" onclick="document.getElementById('hnavMenu').classList.toggle('hnav-open')" aria-label="Menu">☰</button>
 </nav>

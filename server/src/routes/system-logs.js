@@ -27,16 +27,23 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET /api/system-logs - Retrieve system logs with pagination
+// GET /api/system-logs - Retrieve system logs with pagination and optional status filter
 router.get('/', async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 100, 1000);
     const offset = parseInt(req.query.offset) || 0;
+    const status = req.query.status;
 
-    const result = await pool.query(
-      'SELECT id, check_type, status, message, details, created_at FROM system_logs ORDER BY created_at DESC LIMIT $1 OFFSET $2',
-      [limit, offset]
-    );
+    let query, params;
+    if (status) {
+      query = 'SELECT id, check_type, status, message, details, created_at FROM system_logs WHERE status = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3';
+      params = [status, limit, offset];
+    } else {
+      query = 'SELECT id, check_type, status, message, details, created_at FROM system_logs ORDER BY created_at DESC LIMIT $1 OFFSET $2';
+      params = [limit, offset];
+    }
+
+    const result = await pool.query(query, params);
 
     // Parse JSON details if they exist
     const logs = result.rows.map(log => ({

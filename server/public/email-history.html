@@ -320,6 +320,16 @@
         width: 100%;
         justify-content: space-between;
       }
+      input, select, textarea { font-size: 16px !important; }
+      .container { padding: 12px; }
+      .btn { padding: 8px 12px; font-size: 12px; }
+    }
+    @media (max-width: 480px) {
+      .header-left, .header-right { flex-wrap: wrap; gap: 8px; }
+      .header-left a, .header-right a, .header-left button, .header-right button { flex: 1; text-align: center; }
+      table { font-size: 11px; }
+      th, td { padding: 6px 4px; }
+      header h1 { font-size: 20px; }
     }
   </style>
 </head>
@@ -335,6 +345,8 @@
     <a href="/volunteers-manager.html" class="hnav" data-path="/volunteers-manager.html">👥 Volunteers</a>
     <a href="/content-manager.html" class="hnav" data-path="/content-manager.html">📝 Website</a>
     <a href="/status-dashboard.html" class="hnav" data-path="/status-dashboard.html">📡 Monitor</a>
+    <a href="/blacklist.html" class="hnav" data-path="/blacklist.html">🚫 Blacklist</a>
+    <a href="/housekeeping.html" class="hnav" data-path="/housekeeping.html">⚙️ Housekeeping</a>
   </div>
   <button class="hnav-hamburger" onclick="document.getElementById('hnavMenu').classList.toggle('hnav-open')" aria-label="Menu">☰</button>
 </nav>

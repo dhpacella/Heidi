@@ -673,6 +673,28 @@ tr:hover td{background:var(--surface);}
   .dash-topbar{display:flex;}
   .app{padding-top:.75rem;}
   .dash-banner-btns{display:none!important;}
+  .banner-inner{flex-wrap:wrap;}
+  .filter-grid{grid-template-columns:1fr!important;}
+  .ex-grid{grid-template-columns:1fr!important;}
+  .gg-stat-row{grid-template-columns:repeat(2,1fr)!important;}
+  .tg-hero{grid-template-columns:repeat(2,1fr)!important;}
+  .oi-grid{grid-template-columns:1fr 1fr!important;}
+  .strat-grid{grid-template-columns:1fr!important;}
+  .btn-row{flex-direction:column;}
+  .results-bar{flex-direction:column;align-items:flex-start;}
+  .pager{flex-direction:column;gap:8px;align-items:flex-start;}
+  table{font-size:11px;}
+  th,td{padding:6px 4px;}
+  input,select,textarea{font-size:16px!important;}
+  .scen-label{min-width:auto;}
+  .cal-date{min-width:60px;}
+  .app{padding:0.5rem;}
+}
+@media (max-width:480px){
+  .gg-stat-row{grid-template-columns:1fr!important;}
+  .tg-hero{grid-template-columns:1fr!important;}
+  .oi-grid{grid-template-columns:1fr!important;}
+  .days{font-size:28px;}
 }
 
 </style>
@@ -755,8 +777,6 @@ tr:hover td{background:var(--surface);}
 
   <div class="dash-nav-section">Admin</div>
   <a href="/admin-users.html" class="dash-nav-link"><span class="ni">🔐</span>Users</a>
-  <a href="/blacklist.html" class="dash-nav-link"><span class="ni">🚫</span>Blacklist</a>
-  <a href="/housekeeping.html" class="dash-nav-link"><span class="ni">⚙️</span>Housekeeping</a>
 
   <div class="dash-drawer-footer">
     <form method="POST" action="/logout">

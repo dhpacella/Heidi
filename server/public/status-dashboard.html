@@ -516,6 +516,26 @@
       padding-top: 16px;
       border-top: 1px solid var(--border);
     }
+
+    @media (max-width: 768px) {
+      body { padding: 12px 10px; }
+      .banner { flex-direction: column; align-items: flex-start; gap: 12px; padding: 20px; }
+      .banner-title { font-size: 26px; }
+      .banner-right { align-items: flex-start; text-align: left; }
+      .controls { border-radius: 10px; padding: 10px; gap: 8px; }
+      .controls button { flex: 1 1 auto; padding: 8px 12px; font-size: 12px; }
+      .grid { grid-template-columns: 1fr !important; }
+      .db-sub-grid { grid-template-columns: 1fr !important; }
+      .endpoint-grid { grid-template-columns: 1fr 1fr !important; }
+      .card { padding: 16px; }
+      input, select, textarea { font-size: 16px !important; }
+    }
+    @media (max-width: 480px) {
+      .banner-title { font-size: 20px; }
+      .controls { flex-direction: column; }
+      .controls button { width: 100%; }
+      .endpoint-grid { grid-template-columns: 1fr !important; }
+    }
   </style>
 </head>
 <body>
@@ -553,7 +573,6 @@
         <div class="banner-eyebrow">System Monitor</div>
         <div class="banner-title">
           System Status
-          <span class="live-dot"></span>
         </div>
         <div class="banner-subtitle">Real-time monitoring of Heidi for Homer backend &amp; APIs</div>
       </div>
@@ -706,6 +725,24 @@
           <span class="log-time">Loading...</span>
           <span class="log-message">Initializing...</span>
         </div>
+      </div>
+    </div>
+
+    <!-- Railway Error Logs -->
+    <div class="card full-width" style="margin-bottom: 20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <h3 style="margin:0;">🚂 Railway Error Logs</h3>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="railwayLogLevel" style="background:#1A3550;color:#EEF2F7;border:1px solid #243D56;border-radius:6px;padding:4px 10px;font-family:'Barlow',sans-serif;font-size:12px;">
+            <option value="">All (error + warn)</option>
+            <option value="error" selected>Errors only</option>
+            <option value="warn">Warnings only</option>
+          </select>
+          <button onclick="loadRailwayLogs()" style="background:#1A3550;border:1px solid #243D56;color:#F5A623;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:12px;font-family:'Barlow',sans-serif;">↻ Refresh</button>
+        </div>
+      </div>
+      <div class="logs" id="railwayLogContainer" style="max-height:300px;overflow-y:auto;font-family:monospace;font-size:12px;">
+        <div style="color:#8BA3BE;padding:8px;">Loading Railway logs...</div>
       </div>
     </div>
 
@@ -1467,11 +1504,33 @@
       }
     }
 
+    async function loadRailwayLogs() {
+      const container = document.getElementById('railwayLogContainer');
+      const level = document.getElementById('railwayLogLevel').value;
+      container.innerHTML = '<div style="color:#8BA3BE;padding:8px;">Loading...</div>';
+      try {
+        const url = `${API_URL}/api/system/error-logs?limit=100${level ? '&level=' + level : ''}`;
+        const res = await fetch(url, { credentials: 'include' });
+        if (!res.ok) { container.innerHTML = `<div style="color:#E03434;padding:8px;">Error ${res.status} — are you logged in?</div>`; return; }
+        const logs = await res.json();
+        if (!logs.length) { container.innerHTML = '<div style="color:#1DB87A;padding:8px;">✅ No errors found</div>'; return; }
+        container.innerHTML = logs.map(e => {
+          const color = e.level === 'error' ? '#E03434' : '#F59E0B';
+          const time = new Date(e.ts).toLocaleTimeString();
+          const escaped = e.msg.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          return `<div style="border-bottom:1px solid #243D56;padding:6px 8px;"><span style="color:#8BA3BE;margin-right:8px;">${time}</span><span style="color:${color};font-weight:600;margin-right:8px;">[${e.level.toUpperCase()}]</span><span style="color:#EEF2F7;word-break:break-all;">${escaped}</span></div>`;
+        }).join('');
+      } catch (err) {
+        container.innerHTML = `<div style="color:#E03434;padding:8px;">Failed to load: ${err.message}</div>`;
+      }
+    }
+
     // Initial load
     addLog('📊 Dashboard initialized', 'info');
     loadLogs();
     detectActiveDatabase();
     checkAllApis();
+    loadRailwayLogs();
     autoCheckInterval = setInterval(checkAllApis, 30000);
   </script>
 </body>

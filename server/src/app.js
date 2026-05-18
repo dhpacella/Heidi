@@ -3,6 +3,21 @@ if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
 }
 
+// In-memory circular buffer for Railway error logs (last 200 entries)
+const ERROR_LOG_MAX = 200;
+const errorLogBuffer = [];
+function pushErrorLog(level, args) {
+  const msg = args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ');
+  errorLogBuffer.push({ ts: new Date().toISOString(), level, msg });
+  if (errorLogBuffer.length > ERROR_LOG_MAX) errorLogBuffer.shift();
+}
+const _origError = console.error.bind(console);
+const _origWarn = console.warn.bind(console);
+console.error = (...args) => { pushErrorLog('error', args); _origError(...args); };
+console.warn = (...args) => { pushErrorLog('warn', args); _origWarn(...args); };
+process.on('uncaughtException', (err) => { pushErrorLog('error', [`UncaughtException: ${err.stack || err.message}`]); });
+process.on('unhandledRejection', (reason) => { pushErrorLog('error', [`UnhandledRejection: ${reason?.stack || reason}`]); });
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -123,6 +138,15 @@ app.use('/api/lists', requireApiAuth, require('./routes/lists'));
 app.use('/api/volunteers', requireApiAuth, require('./routes/volunteers'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/system-logs', require('./routes/system-logs'));
+
+// In-process error log buffer (Railway stdout/stderr capture)
+app.get('/api/system/error-logs', requireApiAuth, (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 100, ERROR_LOG_MAX);
+  const level = req.query.level; // 'error' | 'warn' | undefined (all)
+  let entries = errorLogBuffer.slice().reverse(); // newest first
+  if (level) entries = entries.filter(e => e.level === level);
+  res.json(entries.slice(0, limit));
+});
 
 app.get('/health', async (req, res) => {
   const start = Date.now();
