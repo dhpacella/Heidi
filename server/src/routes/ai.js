@@ -119,4 +119,47 @@ router.post('/analyze-campaign', async (req, res) => {
   }
 });
 
+router.post('/website-chat', async (req, res) => {
+  try {
+    const { instruction, currentContent } = req.body;
+    if (!instruction) return res.status(400).json({ error: 'Instruction required' });
+
+    const systemPrompt = `You are a website content editor for Heidi Pacella's 2027 Homer Glen mayoral campaign.
+
+The website has these editable fields (use exact dot-notation keys):
+- hero.headline — main hero heading
+- hero.subtext — hero paragraph below the heading
+- about.para1, about.para2, about.para3 — the three About Heidi paragraphs
+- platform[0].title, platform[0].text — first platform pillar
+- platform[1].title, platform[1].text — second platform pillar
+- platform[2].title, platform[2].text — third platform pillar
+- cta.headline — call-to-action section heading
+- cta.text — call-to-action paragraph
+
+Campaign tone rules:
+- Positive, community-focused messaging only — never attack or mention opponents
+- Emphasize historic preservation, open land, natural character of Homer Glen
+- Homer Glen motto: "Community and Nature in Harmony"
+- Professional but warm and approachable tone
+- Keep text concise — headlines under 10 words, paragraphs under 60 words
+
+Respond ONLY with valid JSON in this exact format (no markdown, no extra text):
+{"changes": [{"key": "hero.headline", "value": "new text"}], "message": "Brief plain-English explanation of what you changed and why"}
+Only include fields that actually need to change.`;
+
+    const userMessage = `Current content:\n${JSON.stringify(currentContent, null, 2)}\n\nInstruction: ${instruction}`;
+
+    let response = await askClaude(systemPrompt, userMessage);
+    response = response.trim();
+    if (response.startsWith('```')) {
+      response = response.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+    }
+    const parsed = JSON.parse(response);
+    res.json(parsed);
+  } catch (err) {
+    console.error('Website chat error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

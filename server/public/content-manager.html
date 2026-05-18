@@ -321,6 +321,7 @@
       <button class="tab-btn active" onclick="showTab('pagecontent')">🎨 Page Content</button>
       <button class="tab-btn" onclick="showTab('posts')">Posts</button>
       <button class="tab-btn" onclick="showTab('polls')">Polls</button>
+      <button class="tab-btn" onclick="showTab('aieditor')" style="background:linear-gradient(135deg,#1a4a3a,#0f2d1f);color:#c9a84c;border-color:#c9a84c;">✨ AI Editor</button>
     </div>
 
     <!-- PAGE CONTENT TAB -->
@@ -465,6 +466,42 @@
       <div id="postsList" class="posts-list">
         <p style="color: var(--text-muted);">Loading posts...</p>
       </div>
+    </div>
+
+    <!-- AI EDITOR TAB -->
+    <div id="aieditor" class="tab-content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <h2 style="color:var(--gold);margin:0;">✨ AI Website Editor</h2>
+        <span style="color:var(--text-muted);font-size:13px;">Tell Claude what to change — it updates the live site.</span>
+      </div>
+
+      <div style="background:var(--navy-mid);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px;font-size:13px;color:var(--text-muted);line-height:1.6;">
+        <strong style="color:var(--gold);">How it works:</strong> Type an instruction below. Claude will suggest content changes. Review the changes, then click <strong style="color:var(--green);">Apply & Save</strong> to push them live — or <strong style="color:#ff6b6b;">Discard</strong> to ignore.
+        <br><br>
+        <strong style="color:var(--text);">Examples:</strong> "Make the hero headline focus on Homer Glen's history" &nbsp;·&nbsp; "Rewrite the About section to sound warmer" &nbsp;·&nbsp; "Update platform pillar 1 to mention farmland preservation"
+      </div>
+
+      <!-- Chat history -->
+      <div id="aiChatHistory" style="background:var(--navy);border:1px solid var(--border);border-radius:8px;padding:16px;min-height:200px;max-height:400px;overflow-y:auto;margin-bottom:16px;display:flex;flex-direction:column;gap:14px;">
+        <div style="color:var(--text-muted);font-size:13px;text-align:center;margin:auto;">Your conversation with Claude will appear here.</div>
+      </div>
+
+      <!-- Pending changes preview -->
+      <div id="aiChangesPreview" style="display:none;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.3);border-radius:8px;padding:16px;margin-bottom:16px;">
+        <p style="color:var(--gold);font-size:13px;font-weight:700;margin:0 0 12px;">Proposed changes — review before applying:</p>
+        <div id="aiChangesList" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button onclick="applyAiChanges()" style="background:#1a7a4a;color:#fff;border:none;padding:10px 22px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;">Apply & Save</button>
+          <button onclick="discardAiChanges()" style="background:rgba(255,107,107,0.15);color:#ff6b6b;border:1px solid rgba(255,107,107,0.3);padding:10px 22px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;">Discard</button>
+        </div>
+      </div>
+
+      <!-- Input area -->
+      <div style="display:flex;gap:10px;align-items:flex-end;">
+        <textarea id="aiInstruction" placeholder="Tell Claude what to change on the website..." style="flex:1;min-height:80px;background:var(--navy-mid);border:1px solid var(--border);border-radius:6px;padding:12px;color:var(--text);font-size:14px;font-family:inherit;resize:vertical;" onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){sendAiInstruction();}"></textarea>
+        <button onclick="sendAiInstruction()" id="aiSendBtn" style="background:var(--gold);color:#fff;border:none;padding:12px 24px;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;height:fit-content;">Send ↵</button>
+      </div>
+      <p style="color:var(--text-muted);font-size:12px;margin-top:8px;">Ctrl+Enter to send</p>
     </div>
 
     <!-- POLLS TAB -->
@@ -714,6 +751,112 @@
 
     async function generatePost() {
       showAlert('✨ AI generation coming soon!');
+    }
+
+    // --- AI Editor ---
+    let pendingAiChanges = [];
+
+    const AI_FIELD_LABELS = {
+      'hero.headline': 'Hero Headline',
+      'hero.tagline': 'Hero Tagline',
+      'hero.subtext': 'Hero Subtext',
+      'about.para1': 'About — Paragraph 1',
+      'about.para2': 'About — Paragraph 2',
+      'about.para3': 'About — Paragraph 3',
+      'platform[0].title': 'Platform Pillar 1 — Title',
+      'platform[0].text': 'Platform Pillar 1 — Text',
+      'platform[1].title': 'Platform Pillar 2 — Title',
+      'platform[1].text': 'Platform Pillar 2 — Text',
+      'platform[2].title': 'Platform Pillar 3 — Title',
+      'platform[2].text': 'Platform Pillar 3 — Text',
+      'cta.headline': 'CTA Headline',
+      'cta.text': 'CTA Text',
+    };
+
+    function aiKeyToFieldId(key) {
+      return key.replace(/\[(\d+)\]\./g, '_$1_').replace(/\./g, '_');
+    }
+
+    function addChatMessage(role, text) {
+      const history = document.getElementById('aiChatHistory');
+      const isEmpty = history.querySelector('[data-placeholder]');
+      if (isEmpty) isEmpty.remove();
+
+      const isUser = role === 'user';
+      const div = document.createElement('div');
+      div.style.cssText = `display:flex;flex-direction:column;align-items:${isUser ? 'flex-end' : 'flex-start'};`;
+      div.innerHTML = `
+        <div style="max-width:85%;background:${isUser ? 'var(--gold)' : 'var(--navy-mid)'};color:${isUser ? '#fff' : 'var(--text)'};padding:12px 16px;border-radius:${isUser ? '12px 12px 2px 12px' : '12px 12px 12px 2px'};font-size:14px;line-height:1.6;">${text}</div>
+        <span style="font-size:11px;color:var(--text-muted);margin-top:4px;">${isUser ? 'You' : 'Claude'}</span>`;
+      history.appendChild(div);
+      history.scrollTop = history.scrollHeight;
+    }
+
+    async function sendAiInstruction() {
+      const input = document.getElementById('aiInstruction');
+      const instruction = input.value.trim();
+      if (!instruction) return;
+
+      const btn = document.getElementById('aiSendBtn');
+      btn.disabled = true;
+      btn.textContent = 'Thinking...';
+
+      addChatMessage('user', instruction);
+      input.value = '';
+      discardAiChanges();
+
+      try {
+        // Fetch current content to send as context
+        const contentRes = await fetch(`${API_URL}/content/site-content`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const { content } = await contentRes.json();
+
+        const res = await fetch(`${API_URL}/ai/website-chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ instruction, currentContent: content })
+        });
+
+        if (!res.ok) throw new Error(`AI error: ${res.status}`);
+        const data = await res.json();
+
+        addChatMessage('claude', data.message || 'Here are the suggested changes:');
+
+        if (data.changes && data.changes.length > 0) {
+          pendingAiChanges = data.changes;
+          const preview = document.getElementById('aiChangesPreview');
+          const list = document.getElementById('aiChangesList');
+          list.innerHTML = data.changes.map(c => `
+            <div style="background:var(--navy);border:1px solid var(--border);border-radius:6px;padding:12px;">
+              <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">${AI_FIELD_LABELS[c.key] || c.key}</div>
+              <div style="font-size:13px;color:var(--text);line-height:1.5;">${c.value}</div>
+            </div>`).join('');
+          preview.style.display = 'block';
+        }
+      } catch (err) {
+        addChatMessage('claude', 'Sorry, something went wrong: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Send ↵';
+      }
+    }
+
+    function applyAiChanges() {
+      pendingAiChanges.forEach(({ key, value }) => {
+        const fieldId = aiKeyToFieldId(key);
+        const el = document.getElementById(fieldId);
+        if (el) el.value = value;
+      });
+      discardAiChanges();
+      savePageContent();
+      addChatMessage('claude', 'Changes applied and saved to your live website!');
+    }
+
+    function discardAiChanges() {
+      pendingAiChanges = [];
+      document.getElementById('aiChangesPreview').style.display = 'none';
+      document.getElementById('aiChangesList').innerHTML = '';
     }
 
     // --- Page Content ---
