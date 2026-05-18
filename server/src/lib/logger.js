@@ -245,6 +245,14 @@ class Logger {
     }
   }
 
+  static warn(message, details = {}) {
+    console.warn(`[WARN] ${message}`, details);
+  }
+
+  static info(message, details = {}) {
+    console.info(`[INFO] ${message}`, details);
+  }
+
   static async getLogStats(hoursAgo = 24) {
     try {
       const result = await pool.query(
