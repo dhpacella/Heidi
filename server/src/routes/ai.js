@@ -1,6 +1,6 @@
 const express = require('express');
 const { askClaude } = require('../lib/aiClient');
-const { requireRole } = require('../middleware/auth');
+const { requireApiAuth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -22,8 +22,8 @@ router.get('/health', async (req, res) => {
   }
 });
 
-// All endpoints require admin or campaign_manager role
-router.use(requireRole('admin', 'campaign_manager'));
+// All endpoints below require a valid session or JWT, then an admin/campaign_manager role
+router.use(requireApiAuth, requireRole('admin', 'campaign_manager'));
 
 router.post('/generate-email', async (req, res) => {
   try {
