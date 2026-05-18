@@ -385,7 +385,7 @@
 <body>
 <nav style="background:#0B1929;border-bottom:2px solid #F5A623;display:flex;align-items:stretch;position:sticky;top:0;z-index:9999;box-shadow:0 2px 16px rgba(0,0,0,.5);">
   <a href="/dashboard" style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;color:#F5A623;text-decoration:none;padding:0 18px;letter-spacing:.06em;white-space:nowrap;border-right:1px solid #243D56;display:flex;align-items:center;">🗳 HEIDI HQ</a>
-  <div style="display:flex;overflow-x:auto;align-items:stretch;flex:1;">
+  <div id="hnavMenu" style="display:flex;overflow-x:auto;align-items:stretch;flex:1;">
     <a href="/dashboard" class="hnav" data-path="/dashboard">📊 Dashboard</a>
     <a href="/email-compose.html" class="hnav" data-path="/email-compose.html">📧 Email</a>
     <a href="/sms-compose.html" class="hnav" data-path="/sms-compose.html">📱 SMS</a>
@@ -393,8 +393,16 @@
     <a href="/content-manager.html" class="hnav" data-path="/content-manager.html">📝 Website</a>
     <a href="/status-dashboard.html" class="hnav" data-path="/status-dashboard.html">📡 Monitor</a>
   </div>
+  <button class="hnav-hamburger" onclick="document.getElementById('hnavMenu').classList.toggle('hnav-open')" aria-label="Menu">☰</button>
 </nav>
-<style>.hnav{font-family:'Barlow',sans-serif;font-size:12px;font-weight:600;color:#8BA3BE;text-decoration:none;padding:0 14px;white-space:nowrap;display:flex;align-items:center;border-right:1px solid #243D56;transition:color .15s,background .15s;letter-spacing:.04em;}.hnav:hover{color:#F5A623;background:rgba(245,166,35,.06);}.hnav.active{color:#F5A623;background:rgba(245,166,35,.1);}</style>
+<style>.hnav{font-family:'Barlow',sans-serif;font-size:12px;font-weight:600;color:#8BA3BE;text-decoration:none;padding:0 14px;white-space:nowrap;display:flex;align-items:center;border-right:1px solid #243D56;transition:color .15s,background .15s;letter-spacing:.04em;}.hnav:hover{color:#F5A623;background:rgba(245,166,35,.06);}.hnav.active{color:#F5A623;background:rgba(245,166,35,.1);}
+.hnav-hamburger{display:none;background:none;border:none;color:#F5A623;font-size:22px;padding:0 16px;cursor:pointer;align-items:center;margin-left:auto;}
+@media(max-width:680px){
+  .hnav-hamburger{display:flex;}
+  #hnavMenu{display:none!important;position:absolute;top:44px;left:0;right:0;flex-direction:column!important;background:#0B1929;border-bottom:2px solid #F5A623;z-index:9998;box-shadow:0 4px 20px rgba(0,0,0,.6);}
+  #hnavMenu.hnav-open{display:flex!important;}
+  .hnav{border-right:none!important;border-bottom:1px solid #243D56;padding:12px 16px!important;font-size:14px!important;}
+}</style>
 <script>(function(){var p=window.location.pathname;document.querySelectorAll('.hnav').forEach(function(a){if(p===a.dataset.path)a.classList.add('active');});})();</script>
 <div style="display:flex;flex:1;min-height:0;">
   <!-- Sidebar -->
