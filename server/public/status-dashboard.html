@@ -1329,7 +1329,10 @@
 
     const externalServices = [
       { name: 'Claude AI', icon: '🤖', endpoint: '/api/ai/health', description: 'Email generation & analysis', method: 'GET' },
-      { name: 'Claude Assistant', icon: '💬', endpoint: '/api/assistant/health', description: 'AI chat widget', method: 'GET' }
+      { name: 'Claude Assistant', icon: '💬', endpoint: '/api/assistant/health', description: 'AI chat widget', method: 'GET' },
+      { name: 'AI Website Editor', icon: '✨', endpoint: '/api/ai/website-chat', description: 'Content editor & AI tab', method: 'POST', testBody: { instruction: 'ping', currentContent: {} } },
+      { name: 'SEO Audit', icon: '🔍', endpoint: '/api/content/seo-audit', description: 'SEO analysis engine', method: 'POST', testBody: { pageContent: 'ping', pageTitle: 'Test' }, requiresAuth: true },
+      { name: 'SEO Suggestions', icon: '💡', endpoint: '/api/content/seo-suggestions', description: 'Fix suggestions engine', method: 'POST', testBody: { pageContent: 'ping' }, requiresAuth: true }
     ];
 
     async function checkExternalServices() {
@@ -1395,13 +1398,19 @@
     async function testExternalService(svc) {
       try {
         const start = Date.now();
-        const res = await fetch(`${API_URL}${svc.endpoint}`, {
+        const fetchOpts = {
           method: svc.method || 'GET',
           credentials: 'include'
-        });
+        };
+        if (svc.testBody) {
+          fetchOpts.headers = { 'Content-Type': 'application/json' };
+          fetchOpts.body = JSON.stringify(svc.testBody);
+        }
+        const res = await fetch(`${API_URL}${svc.endpoint}`, fetchOpts);
         const latency = Date.now() - start;
 
-        if (res.ok) {
+        // Auth-required endpoints: 401 = endpoint reachable but needs login (counts as UP for infra check)
+        if (res.ok || (svc.requiresAuth && res.status === 401)) {
           return { ok: true, time: latency };
         } else if (res.status === 503 || res.status === 500) {
           const data = await res.json().catch(() => ({}));
