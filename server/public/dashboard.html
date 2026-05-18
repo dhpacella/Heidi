@@ -570,10 +570,178 @@ tr:hover td{background:var(--surface);}
   }
 }
 
+/* ══════════════════════════════════════════
+   MOBILE NAV — top bar + slide-in drawer
+   ══════════════════════════════════════════ */
+
+/* Top bar — hidden on desktop, sticky on mobile */
+.dash-topbar{
+  display:none;
+  position:sticky;top:0;z-index:300;
+  background:#0B1929;border-bottom:1px solid var(--border);
+  height:54px;align-items:center;justify-content:space-between;
+  padding:0 14px;gap:12px;
+}
+.dash-topbar-title{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:17px;font-weight:800;color:var(--gold);
+  text-transform:uppercase;letter-spacing:.04em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.dash-hamburger-btn{
+  background:none;border:none;cursor:pointer;
+  display:flex;flex-direction:column;gap:5px;padding:6px;flex-shrink:0;
+}
+.dash-hamburger-btn span{
+  display:block;width:22px;height:2px;background:var(--text);
+  border-radius:1px;transition:transform .2s,opacity .2s;
+}
+.dash-hamburger-btn.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px);}
+.dash-hamburger-btn.open span:nth-child(2){opacity:0;}
+.dash-hamburger-btn.open span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px);}
+.dash-topbar-signout{
+  font-size:11px;padding:6px 12px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+  border-radius:6px;color:var(--text-muted);cursor:pointer;
+  font-family:'Barlow',sans-serif;font-weight:600;flex-shrink:0;
+}
+
+/* Overlay */
+.dash-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.55);z-index:400;
+  opacity:0;transition:opacity .25s;
+}
+.dash-overlay.open{display:block;opacity:1;}
+
+/* Drawer */
+.dash-drawer{
+  position:fixed;top:0;left:-290px;width:285px;height:100%;
+  background:#0B1929;border-right:1px solid var(--border);
+  z-index:500;transition:left .25s ease;
+  overflow-y:auto;display:flex;flex-direction:column;
+  -webkit-overflow-scrolling:touch;
+}
+.dash-drawer.open{left:0;}
+.dash-drawer-hd{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.dash-drawer-hd-title{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:16px;font-weight:800;color:var(--gold);
+  text-transform:uppercase;letter-spacing:.04em;
+}
+.dash-drawer-close{
+  background:none;border:none;color:var(--text-muted);
+  cursor:pointer;font-size:18px;padding:4px 6px;line-height:1;
+}
+.dash-drawer-close:hover{color:var(--text);}
+.dash-nav-section{
+  padding:12px 16px 4px;
+  font-size:10px;font-weight:700;color:var(--text-muted);
+  text-transform:uppercase;letter-spacing:.08em;
+}
+.dash-nav-link{
+  display:flex;align-items:center;gap:11px;
+  padding:12px 16px;color:var(--text);text-decoration:none;
+  font-size:14px;font-weight:600;font-family:'Barlow',sans-serif;
+  border-bottom:1px solid rgba(36,61,86,.4);
+  transition:background .12s,color .12s;
+}
+.dash-nav-link:hover,.dash-nav-link.active{
+  background:rgba(245,166,35,.08);color:var(--gold);
+}
+.dash-nav-link .ni{font-size:16px;flex-shrink:0;width:22px;text-align:center;}
+.dash-nav-link.current{
+  background:rgba(245,166,35,.12);color:var(--gold);
+  border-left:3px solid var(--gold);padding-left:13px;
+}
+.dash-drawer-footer{
+  margin-top:auto;padding:16px;border-top:1px solid var(--border);flex-shrink:0;
+}
+.dash-drawer-signout{
+  width:100%;padding:11px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);
+  border-radius:8px;color:var(--text-muted);cursor:pointer;
+  font-family:'Barlow',sans-serif;font-weight:600;font-size:13px;
+  transition:background .15s,color .15s;
+}
+.dash-drawer-signout:hover{background:rgba(255,255,255,.12);color:var(--text);}
+
+@media (max-width:768px){
+  .dash-topbar{display:flex;}
+  .app{padding-top:.75rem;}
+  .dash-banner-btns{display:none!important;}
+}
+
 </style>
 </head>
 <body>
-<a href="/content-manager.html" style="position:fixed;top:20px;right:20px;background:#FF0000;color:#FFFFFF;padding:15px 25px;border-radius:6px;font-weight:bold;text-decoration:none;z-index:9999;font-family:Barlow,sans-serif;font-size:16px;box-shadow:0 4px 12px rgba(0,0,0,0.3)">📝 MANAGER</a>
+
+<!-- ── Mobile top bar (hidden on desktop) ── -->
+<div class="dash-topbar">
+  <button class="dash-hamburger-btn" id="dashHamburger" onclick="dashOpenDrawer()" aria-label="Open navigation">
+    <span></span><span></span><span></span>
+  </button>
+  <span class="dash-topbar-title">🗳 Heidi Dashboard</span>
+  <form method="POST" action="/logout" style="margin:0">
+    <button type="submit" class="dash-topbar-signout">Sign out</button>
+  </form>
+</div>
+
+<!-- ── Drawer overlay ── -->
+<div class="dash-overlay" id="dashOverlay" onclick="dashCloseDrawer()"></div>
+
+<!-- ── Slide-in nav drawer ── -->
+<div class="dash-drawer" id="dashDrawer">
+  <div class="dash-drawer-hd">
+    <span class="dash-drawer-hd-title">🌳 Heidi for Homer</span>
+    <button class="dash-drawer-close" onclick="dashCloseDrawer()">✕</button>
+  </div>
+
+  <div class="dash-nav-section">Main</div>
+  <a href="/dashboard.html" class="dash-nav-link current"><span class="ni">🗳</span>Voter Dashboard</a>
+  <a href="/status-dashboard.html" class="dash-nav-link"><span class="ni">📊</span>Status</a>
+  <a href="/claude-assistant.html" class="dash-nav-link"><span class="ni">🤖</span>AI Assistant</a>
+
+  <div class="dash-nav-section">Email Outreach</div>
+  <a href="/email-compose.html" class="dash-nav-link"><span class="ni">✉️</span>Compose Email</a>
+  <a href="/all-campaigns.html" class="dash-nav-link"><span class="ni">📋</span>All Campaigns</a>
+  <a href="/email-history.html" class="dash-nav-link"><span class="ni">📜</span>Email History</a>
+  <a href="/all-templates.html" class="dash-nav-link"><span class="ni">📑</span>Templates</a>
+  <a href="/email-lists.html" class="dash-nav-link"><span class="ni">👥</span>Email Lists</a>
+
+  <div class="dash-nav-section">SMS</div>
+  <a href="/sms-compose.html" class="dash-nav-link"><span class="ni">📱</span>Compose SMS</a>
+  <a href="/sms-history.html" class="dash-nav-link"><span class="ni">📜</span>SMS History</a>
+
+  <div class="dash-nav-section">Volunteers</div>
+  <a href="/volunteers-manager.html" class="dash-nav-link"><span class="ni">👤</span>Volunteer Manager</a>
+  <a href="/volunteer-leaderboard.html" class="dash-nav-link"><span class="ni">🏆</span>Leaderboard</a>
+  <a href="/volunteer-map.html" class="dash-nav-link"><span class="ni">🗺️</span>Volunteer Map</a>
+
+  <div class="dash-nav-section">Website & Content</div>
+  <a href="/website-manager.html" class="dash-nav-link"><span class="ni">🌐</span>Website Manager</a>
+  <a href="/content-manager.html" class="dash-nav-link"><span class="ni">📝</span>Content Manager</a>
+
+  <div class="dash-nav-section">Reports</div>
+  <a href="/campaign-reports.html" class="dash-nav-link"><span class="ni">📈</span>Campaign Reports</a>
+  <a href="/subscribers.html" class="dash-nav-link"><span class="ni">📧</span>Subscribers</a>
+  <a href="/map.html" class="dash-nav-link"><span class="ni">🗺</span>Precinct Map</a>
+
+  <div class="dash-nav-section">Admin</div>
+  <a href="/admin-users.html" class="dash-nav-link"><span class="ni">🔐</span>Users</a>
+  <a href="/blacklist.html" class="dash-nav-link"><span class="ni">🚫</span>Blacklist</a>
+  <a href="/housekeeping.html" class="dash-nav-link"><span class="ni">⚙️</span>Housekeeping</a>
+
+  <div class="dash-drawer-footer">
+    <form method="POST" action="/logout">
+      <button type="submit" class="dash-drawer-signout">Sign out</button>
+    </form>
+  </div>
+</div>
+
 <div class="app">
 
 <div class="banner">
@@ -587,7 +755,7 @@ tr:hover td{background:var(--surface);}
     <div class="banner-right">
       <div class="days" id="days">—</div>
       <div class="dayslbl">days to election</div>
-      <div style="display:flex;gap:8px;margin-top:12px">
+      <div class="dash-banner-btns" style="display:flex;gap:8px;margin-top:12px">
         <button onclick="window.open('/status-dashboard.html', '_blank')" style="font-size:11px;padding:6px 12px;background:rgba(30,100,200,.2);border:1px solid rgba(30,100,200,.4);border-radius:6px;color:#1E64C8;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s" onmouseover="this.style.background='rgba(30,100,200,.3)'" onmouseout="this.style.background='rgba(30,100,200,.2)'">📊 Status</button>
         <button onclick="window.location.href='/content-manager.html'" style="font-size:11px;padding:6px 12px;background:rgba(245,166,35,.2);border:1px solid rgba(245,166,35,.4);border-radius:6px;color:#F5A623;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s" onmouseover="this.style.background='rgba(245,166,35,.3)'" onmouseout="this.style.background='rgba(245,166,35,.2)'">📝 Manager</button>
         <form method="POST" action="/logout" style="margin:0">
@@ -606,7 +774,11 @@ tr:hover td{background:var(--surface);}
   <button class="tab" onclick="sw('groundgame')">🏆 Ground game</button>
   <button class="tab" onclick="sw('targeting')">🎯 Smart targeting</button>
   <button class="tab" onclick="sw('opponent')">🔍 Opponent intel</button>
+  <button class="tab" onclick="sw('electionnight')" style="color:#5DE0B0">🗳 Election Night</button>
   <button class="tab" onclick="sw('strategy')">📅 Strategy</button>
+  <button class="tab" onclick="sw('referrals')">📬 Voter Referrals</button>
+  <button class="tab" onclick="window.location.href='/status-dashboard.html'" style="margin-left:auto">📊 Monitor</button>
+  <button class="tab" onclick="window.location.href='/website-manager.html'">📝 Website Manager</button>
 </div>
 
 <!-- FILTER TAB -->
@@ -735,6 +907,8 @@ tr:hover td{background:var(--surface);}
   <div class="btn-row">
     <button class="btn" onclick="sw('map')">View on map ↗</button>
     <button class="btn btn-p" onclick="sw('export')">Export this list ↗</button>
+    <button class="btn" id="sms-btn" onclick="openSmsCompose()" style="background:rgba(29,184,122,.15);color:#1DB87A">💬 SMS Outreach ↗</button>
+    <button class="btn" id="email-btn" onclick="openEmailCompose()" style="background:rgba(30,100,200,.15);color:#1E64C8">📧 Email Outreach ↗</button>
   </div>
 </div>
 <div class="table-wrap">
@@ -1163,6 +1337,102 @@ tr:hover td{background:var(--surface);}
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- ELECTION NIGHT TAB -->
+<div id="tab-electionnight" style="display:none">
+  <div style="background:linear-gradient(90deg,rgba(93,224,176,.15),rgba(245,166,35,.05));border:1px solid rgba(93,224,176,.4);border-radius:12px;padding:16px 20px;margin-bottom:1.25rem;display:flex;gap:14px;align-items:flex-start">
+    <div style="font-size:28px;color:#5DE0B0">🗳</div>
+    <div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:#fff">Election Night War Room — April 6, 2027</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.5">Log precinct vote totals as Will County posts them. The dashboard projects the final margin based on which precincts are still out and how Heidi-friendly they are. Polls close at 7pm.</div>
+    </div>
+  </div>
+  <div id="en-content"></div>
+</div>
+
+<!-- REFERRALS TAB -->
+<div id="tab-referrals" style="display:none">
+  <div class="filter-panel">
+    <div class="fp-title">Referral Stats</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px;margin-bottom:16px;">
+      <div style="background:var(--surface-2);border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:14px;font-weight:700;color:var(--gold);" id="ref-total">0</div>
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-top:4px;">Total Referrals</div>
+      </div>
+      <div style="background:var(--surface-2);border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:14px;font-weight:700;color:var(--text);" id="ref-sent">0</div>
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-top:4px;">Sent</div>
+      </div>
+      <div style="background:var(--surface-2);border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:14px;font-weight:700;color:var(--gold-light);" id="ref-opened">0</div>
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-top:4px;">Opened</div>
+      </div>
+      <div style="background:var(--surface-2);border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:14px;font-weight:700;color:#F9AA34;" id="ref-clicked">0</div>
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-top:4px;">Clicked</div>
+      </div>
+      <div style="background:var(--surface-2);border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:14px;font-weight:700;color:var(--green);" id="ref-interested">0</div>
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-top:4px;">Interested</div>
+      </div>
+      <div style="background:var(--surface-2);border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:14px;font-weight:700;color:#1DB87A;" id="ref-converted">0</div>
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-top:4px;">Converted</div>
+      </div>
+    </div>
+    <div style="text-align:center;padding:12px;background:var(--navy);border-radius:8px;">
+      <div style="font-size:18px;font-weight:700;color:var(--gold);" id="ref-conversion-rate">0%</div>
+      <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-top:4px;">Conversion Rate</div>
+    </div>
+  </div>
+  <div class="filter-panel">
+    <div class="fp-title">Filters</div>
+    <div class="filter-grid" style="grid-template-columns:repeat(3,1fr);gap:16px;">
+      <div class="fg">
+        <div class="flabel">Status</div>
+        <div class="chip-row">
+          <span class="chip on" data-status="all" onclick="filterReferrals('status','all',this)">All</span>
+          <span class="chip" data-status="sent" onclick="filterReferrals('status','sent',this)">Sent</span>
+          <span class="chip" data-status="interested" onclick="filterReferrals('status','interested',this)">Interested</span>
+          <span class="chip" data-status="converted" onclick="filterReferrals('status','converted',this)">Converted</span>
+        </div>
+      </div>
+      <div class="fg">
+        <div class="flabel">Contact Method</div>
+        <div class="chip-row">
+          <span class="chip on" data-method="all" onclick="filterReferrals('method','all',this)">All</span>
+          <span class="chip" data-method="email" onclick="filterReferrals('method','email',this)">Email</span>
+          <span class="chip" data-method="sms" onclick="filterReferrals('method','sms',this)">SMS</span>
+          <span class="chip" data-method="both" onclick="filterReferrals('method','both',this)">Both</span>
+        </div>
+      </div>
+      <div class="fg">
+        <div class="flabel">Search</div>
+        <input type="text" id="ref-search" placeholder="Name or email" oninput="applyReferralFilters()">
+      </div>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:90px;">Date</th>
+          <th style="width:120px;">Referred By</th>
+          <th style="width:150px;">Referred Person</th>
+          <th style="width:120px;">Email</th>
+          <th style="width:100px;">Phone</th>
+          <th style="width:80px;">Method</th>
+          <th style="width:100px;">Status</th>
+          <th style="width:150px;">Notes</th>
+          <th style="width:100px;">Action</th>
+        </tr>
+      </thead>
+      <tbody id="referrals-tbody">
+        <tr><td colspan="9" style="text-align:center;color:var(--text-muted);">Loading referrals...</td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
@@ -1879,14 +2149,16 @@ function applyPreset(p){
   applyFilters();
 }
 function sw(t){
-  ["filters","upload","map","export","groundgame","targeting","opponent","strategy"].forEach(id=>document.getElementById("tab-"+id).style.display=id===t?"block":"none");
-  document.querySelectorAll(".tab").forEach((el,i)=>el.classList.toggle("on",["filters","upload","map","export","groundgame","targeting","opponent","strategy"][i]===t));
+  ["filters","upload","map","export","groundgame","targeting","opponent","electionnight","strategy","referrals"].forEach(id=>document.getElementById("tab-"+id).style.display=id===t?"block":"none");
+  document.querySelectorAll(".tab").forEach((el,i)=>el.classList.toggle("on",["filters","upload","map","export","groundgame","targeting","opponent","electionnight","strategy","referrals"][i]===t));
   if(t==="map"){initMap();refreshMap();}
   if(t==="export"){renderWalkPreview();updateExportSummary();}
   if(t==="groundgame"){initGroundGame();}
   if(t==="targeting"){initTargeting();}
   if(t==="opponent"){initOpponent();}
+  if(t==="electionnight"){renderElectionResults();}
   if(t==="strategy"){initStrategy();}
+  if(t==="referrals"){initReferrals();}
 }
 
 // Upload and auto-detection functions
@@ -3963,5 +4235,208 @@ renderTable();updateExportSummary();renderWalkPreview();
     assistant.init();
   }
 })();
+</script>
+
+<script>
+// ── SMS / Email outreach ───────────────────────
+function buildFilterSummary(){
+  const parts=[];
+  if(typeof fPrec!=='undefined'&&fPrec)parts.push(fPrec);
+  const partyLabels=['Hard Rep','Weak Rep','Swing','Weak Dem','Hard Dem'];
+  if(typeof fParty!=='undefined'&&fParty.size>0)parts.push(Array.from(fParty).map(i=>partyLabels[i]).join(' + '));
+  if(typeof fName!=='undefined'&&fName)parts.push('Name: '+fName);
+  return parts.length>0?parts.join(' · '):'All voters';
+}
+function openSmsCompose(){
+  if(typeof VP==='undefined'||typeof filtered==='undefined'){window.location.href='/sms-compose';return;}
+  const withPhone=filtered.filter(i=>VP[i]);
+  if(withPhone.length===0){alert('No voters with phone numbers match the current filters.');return;}
+  if(withPhone.length>500&&!confirm('You are about to send SMS to '+withPhone.length.toLocaleString()+' voters. Continue?'))return;
+  const targets=withPhone.map(i=>({name:VN[i],phone:VP[i]}));
+  sessionStorage.setItem('sms_targets',JSON.stringify(targets));
+  sessionStorage.setItem('sms_filter_summary',buildFilterSummary());
+  window.location.href='/sms-compose';
+}
+function openEmailCompose(){
+  if(typeof filtered==='undefined'){window.location.href='/email-compose';return;}
+  sessionStorage.setItem('email_filter_summary',buildFilterSummary());
+  sessionStorage.setItem('email_filtered_count',filtered.length);
+  window.location.href='/email-compose';
+}
+
+// ── Election Night ─────────────────────────────
+function loadElectionResults(){try{return JSON.parse(localStorage.getItem('heidi_election_results')||'{}');}catch(e){return{};}}
+function saveElectionResults(data){localStorage.setItem('heidi_election_results',JSON.stringify(data));renderElectionResults();}
+function setPrecinctResult(prec,heidiVotes,oppVotes,reported){
+  const data=loadElectionResults();
+  data[prec]={heidi:parseInt(heidiVotes)||0,opp:parseInt(oppVotes)||0,reported:!!reported,ts:Date.now()};
+  saveElectionResults(data);
+}
+function clearElectionResults(){
+  if(!confirm('Clear all election night results? This cannot be undone.'))return;
+  localStorage.removeItem('heidi_election_results');
+  renderElectionResults();
+}
+function renderElectionResults(){
+  const wrap=document.getElementById('en-content');
+  if(!wrap)return;
+  const data=loadElectionResults();
+  const totalPrecincts=PRECS.length;
+  let totalH=0,totalO=0,reportedCount=0,remainingH=0,remainingO=0;
+  const precRows=PRECS.map((p,pidx)=>{
+    const r=data[p]||{heidi:0,opp:0,reported:false};
+    if(r.reported){totalH+=r.heidi;totalO+=r.opp;reportedCount++;}
+    const precVoters=[];
+    if(typeof VR!=='undefined'){for(let i=0;i<VR.length;i++){if(VR[i][5]===pidx)precVoters.push(i);}}
+    const demSwing=precVoters.filter(i=>[2,3,4].includes(VR[i][1])).length;
+    const projected=Math.round(demSwing*0.35);
+    return{prec:p,idx:pidx,heidi:r.heidi,opp:r.opp,reported:r.reported,projected,voters:precVoters.length};
+  });
+  precRows.forEach(p=>{if(!p.reported){remainingH+=p.projected;remainingO+=Math.round(p.voters*0.35-p.projected);}});
+  const totalCast=totalH+totalO,margin=totalH-totalO;
+  const projTotal=totalH+remainingH,projOppTotal=totalO+remainingO,projMargin=projTotal-projOppTotal;
+  wrap.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:1rem">
+      <div style="background:rgba(93,224,176,.08);border:1px solid rgba(93,224,176,.4);border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:10px;font-weight:700;color:#5DE0B0;text-transform:uppercase;letter-spacing:.08em">HEIDI</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:38px;font-weight:800;color:#5DE0B0;line-height:1">${totalH.toLocaleString()}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${totalCast?((totalH/totalCast)*100).toFixed(1):0}%</div>
+      </div>
+      <div style="background:rgba(255,77,109,.08);border:1px solid rgba(255,77,109,.4);border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:10px;font-weight:700;color:#FF4D6D;text-transform:uppercase;letter-spacing:.08em">NEITZKE-TROIKE</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:38px;font-weight:800;color:#FF4D6D;line-height:1">${totalO.toLocaleString()}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${totalCast?((totalO/totalCast)*100).toFixed(1):0}%</div>
+      </div>
+      <div style="background:${margin>=0?'rgba(93,224,176,.12)':'rgba(255,77,109,.12)'};border:2px solid ${margin>=0?'#5DE0B0':'#FF4D6D'};border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:10px;font-weight:700;color:${margin>=0?'#5DE0B0':'#FF4D6D'};text-transform:uppercase;letter-spacing:.08em">${margin>=0?'LEADING':'TRAILING'}</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:38px;font-weight:800;color:${margin>=0?'#5DE0B0':'#FF4D6D'};line-height:1">${margin>=0?'+':''}${margin.toLocaleString()}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${reportedCount}/${totalPrecincts} precincts in</div>
+      </div>
+    </div>
+    ${reportedCount>0?`<div style="background:linear-gradient(135deg,${projMargin>=0?'rgba(93,224,176,.08)':'rgba(255,77,109,.08)'} 0%,var(--surface) 60%);border:1px solid ${projMargin>=0?'rgba(93,224,176,.3)':'rgba(255,77,109,.3)'};border-radius:12px;padding:14px;margin-bottom:1rem"><div style="font-size:11px;font-weight:700;color:${projMargin>=0?'#5DE0B0':'#FF4D6D'};text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">📊 Projection</div><div style="display:flex;gap:16px;align-items:baseline;flex-wrap:wrap"><div><span style="font-size:24px;font-weight:800;color:${projMargin>=0?'#5DE0B0':'#FF4D6D'}">${projMargin>=0?'WIN':'LOSE'}</span> by ~${Math.abs(projMargin).toLocaleString()} votes</div></div></div>`:''}
+    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+      <button onclick="enterPrecinctResult()" class="btn btn-p" style="font-size:12px">+ Log precinct result</button>
+      <button onclick="exportElectionNight()" class="btn" style="font-size:12px">Export ↗</button>
+      <button onclick="clearElectionResults()" class="btn" style="font-size:12px;color:#FF8080;border-color:rgba(255,128,128,.4)">Clear all</button>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">📍 Per-precinct results</div>
+      <div style="overflow-x:auto"><table style="width:100%;font-size:12px;border-collapse:collapse;min-width:520px">
+        <thead><tr style="border-bottom:1px solid var(--border)">
+          <th style="text-align:left;padding:6px 8px;font-size:10px;color:var(--text-muted);text-transform:uppercase">Precinct</th>
+          <th style="text-align:right;padding:6px 8px;font-size:10px;color:var(--text-muted)">Reg.</th>
+          <th style="text-align:right;padding:6px 8px;font-size:10px;color:#5DE0B0">Heidi</th>
+          <th style="text-align:right;padding:6px 8px;font-size:10px;color:#FF4D6D">Opp</th>
+          <th style="text-align:right;padding:6px 8px;font-size:10px;color:var(--text-muted)">Margin</th>
+          <th style="text-align:center;padding:6px 8px;font-size:10px;color:var(--text-muted)">Status</th>
+        </tr></thead>
+        <tbody>${precRows.map(p=>{const m=p.heidi-p.opp;return`<tr style="border-bottom:1px solid rgba(36,61,86,.4);${p.reported?'':'opacity:0.6'}"><td style="padding:6px 8px;font-weight:600">${p.prec.replace('HOMER PCT ','Pct ')}</td><td style="text-align:right;padding:6px 8px;color:var(--text-muted)">${p.voters.toLocaleString()}</td><td style="text-align:right;padding:6px 8px;color:#5DE0B0;font-weight:700">${p.reported?p.heidi.toLocaleString():'—'}</td><td style="text-align:right;padding:6px 8px;color:#FF4D6D;font-weight:700">${p.reported?p.opp.toLocaleString():'—'}</td><td style="text-align:right;padding:6px 8px;font-weight:700;color:${p.reported?(m>=0?'#5DE0B0':'#FF4D6D'):'var(--text-muted)'}">${p.reported?(m>=0?'+':'')+m:'—'}</td><td style="text-align:center;padding:6px 8px"><button onclick="enterPrecinctResultFor('${p.prec}')" style="font-size:10px;padding:3px 8px;border-radius:8px;border:1px solid ${p.reported?'#5DE0B0':'var(--border)'};background:${p.reported?'rgba(93,224,176,.1)':'transparent'};color:${p.reported?'#5DE0B0':'var(--text-muted)'};cursor:pointer;font-weight:700">${p.reported?'✓ Reported':'Pending'}</button></td></tr>`;}).join('')}</tbody>
+      </table></div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:10px;font-style:italic">Will County posts results at <a href="https://willcountyclerk.com/elections/election-results/" target="_blank" style="color:#7BB8F5">willcountyclerk.com</a></div>
+    </div>`;
+}
+function enterPrecinctResult(){
+  const idx=parseInt(prompt('Which precinct? Enter number 1-'+PRECS.length));
+  let prec;
+  if(idx&&idx>=1&&idx<=PRECS.length){prec=PRECS[idx-1];}
+  else{prec=prompt('Enter exact precinct name (e.g. HOMER PCT 004):');}
+  if(!prec||!PRECS.includes(prec)){alert('Invalid precinct');return;}
+  enterPrecinctResultFor(prec);
+}
+function enterPrecinctResultFor(prec){
+  const cur=(loadElectionResults()[prec])||{heidi:0,opp:0};
+  const h=prompt('Heidi votes in '+prec+':',cur.heidi);
+  if(h===null)return;
+  const o=prompt('Neitzke-Troike votes in '+prec+':',cur.opp);
+  if(o===null)return;
+  setPrecinctResult(prec,h,o,true);
+}
+function exportElectionNight(){
+  const data=loadElectionResults();
+  const rows=[['Precinct','Heidi votes','Opp votes','Margin','Reported','Timestamp']];
+  PRECS.forEach(p=>{const r=data[p]||{};rows.push([p,r.heidi||0,r.opp||0,(r.heidi||0)-(r.opp||0),r.reported?'YES':'NO',r.ts?new Date(r.ts).toLocaleString():'']);});
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='heidi_election_night_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
+// ── Referrals ──────────────────────────────────
+let referralsData=[];
+let refFilters={status:'all',method:'all',search:''};
+async function initReferrals(){await loadReferrals();renderReferrals();}
+async function loadReferrals(){
+  try{
+    let url='/api/referrals?limit=1000';
+    if(refFilters.status!=='all')url+='&status='+refFilters.status;
+    if(refFilters.method!=='all')url+='&method='+refFilters.method;
+    if(refFilters.search)url+='&search='+encodeURIComponent(refFilters.search);
+    const res=await fetch(url);
+    if(!res.ok)throw new Error('Failed');
+    const data=await res.json();
+    referralsData=data.referrals||[];
+  }catch(err){console.error('Referrals load error:',err);referralsData=[];}
+}
+function getStatusColor(status){const c={'sent':'#8BA3BE','opened':'#FBBF48','clicked':'#F9AA34','interested':'#1DB87A','converted':'#1DB87A','not_interested':'#E03434'};return c[status]||'#8BA3BE';}
+function renderReferrals(){
+  const tbody=document.getElementById('referrals-tbody');
+  if(!tbody)return;
+  if(referralsData.length===0){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:20px;">No referrals found</td></tr>';return;}
+  const statuses=['sent','opened','clicked','interested','converted','not_interested'];
+  tbody.innerHTML=referralsData.map(ref=>{
+    const date=new Date(ref.created_at).toLocaleDateString();
+    const sc=getStatusColor(ref.status);
+    return`<tr><td style="color:var(--text-muted);">${date}</td><td>${ref.referrer_name||'—'}</td><td>${ref.referred_first_name+' '+ref.referred_last_name}</td><td style="color:var(--text-muted);font-size:11px;">${ref.referred_email||'—'}</td><td style="color:var(--text-muted);font-size:11px;">${ref.referred_phone||'—'}</td><td><span class="chip" style="background:var(--navy);color:var(--text-muted);border-color:var(--border);font-size:10px;">${ref.contact_method}</span></td><td><span class="chip" style="background:${sc}20;color:${sc};border-color:${sc};font-size:10px;font-weight:700;">${ref.status}</span></td><td style="color:var(--text-muted);font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;">${ref.notes||'—'}</td><td><select data-id="${ref.id}" data-current="${ref.status}" style="font-size:10px;padding:4px 6px;width:90px;" onchange="updateReferralStatus(this)"><option value="">Change...</option>${statuses.map(s=>`<option value="${s}" ${s===ref.status?'selected':''}>${s}</option>`).join('')}</select></td></tr>`;
+  }).join('');
+  loadStats();
+}
+async function updateReferralStatus(selectEl){
+  const id=selectEl.dataset.id,status=selectEl.value;
+  if(!status)return;
+  try{
+    const res=await fetch('/api/referrals/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
+    if(!res.ok)throw new Error('Failed');
+    const idx=referralsData.findIndex(r=>r.id==id);
+    if(idx>=0){referralsData[idx].status=status;referralsData[idx].updated_at=new Date().toISOString();}
+    selectEl.dataset.current=status;renderReferrals();
+  }catch(err){console.error('Update error:',err);selectEl.value=selectEl.dataset.current;alert('Failed to update referral');}
+}
+function filterReferrals(type,value,el){
+  document.querySelectorAll('[data-'+type+']').forEach(c=>{c.classList.toggle('on',false);c.classList.toggle('on-g',false);});
+  el.classList.toggle('on',true);
+  if(type==='status')refFilters.status=value;
+  if(type==='method')refFilters.method=value;
+  applyReferralFilters();
+}
+async function applyReferralFilters(){
+  refFilters.search=document.getElementById('ref-search')?.value||'';
+  await loadReferrals();renderReferrals();
+}
+async function loadStats(){
+  try{
+    const res=await fetch('/api/referrals/stats');
+    if(!res.ok)throw new Error('Failed');
+    const stats=await res.json();
+    ['total','sent','opened','clicked','interested','converted'].forEach(k=>{const el=document.getElementById('ref-'+k);if(el)el.textContent=stats[k]||0;});
+    const cr=document.getElementById('ref-conversion-rate');if(cr)cr.textContent=(stats.conversionRate||0)+'%';
+  }catch(err){console.error('Stats load error:',err);}
+}
+
+// ── Mobile drawer ──────────────────────────────
+function dashOpenDrawer(){
+  document.getElementById('dashDrawer').classList.add('open');
+  document.getElementById('dashOverlay').classList.add('open');
+  document.getElementById('dashHamburger').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function dashCloseDrawer(){
+  document.getElementById('dashDrawer').classList.remove('open');
+  document.getElementById('dashOverlay').classList.remove('open');
+  document.getElementById('dashHamburger').classList.remove('open');
+  document.body.style.overflow='';
+}
+// Close drawer on Escape key
+document.addEventListener('keydown',function(e){if(e.key==='Escape')dashCloseDrawer();});
 </script>
 </body></html>

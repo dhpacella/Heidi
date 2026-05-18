@@ -37,7 +37,29 @@ const mockData = {
     }
   ],
   poll_votes: [],
-  system_logs: []
+  system_logs: [],
+  site_content: [
+    { key: 'hero_headline', value: 'Heidi For Homer' },
+    { key: 'hero_tagline', value: 'Preserving Open Space • Protecting Our Community' },
+    { key: 'hero_subtext', value: "Fighting to save Homer Glen's trees, farmland, and character" },
+    { key: 'about_para1', value: 'Heidi Pacella is an advocate for preserving open space and maintaining the assets of Homer Glen. With a degree in Psychology and minor in Creative Writing from DePaul University, she brings thoughtful leadership to community issues.' },
+    { key: 'about_para2', value: "Growing up in a family business, Heidi understands the dedication required to build thriving operations and vibrant communities. She's committed to championing small, local establishments that give Homer Glen its unique character." },
+    { key: 'about_para3', value: "Heidi believes Homer Glen's greatest strengths lie in its environment and natural biomes. She opposes unnecessary infrastructure projects and fights to preserve our trees, farmland, and community character for future generations." },
+    { key: 'platform_0_title', value: '✓ Environmental Protection' },
+    { key: 'platform_0_text', value: "Preserve Homer Glen's open spaces, natural habitats, and tree canopy. Oppose destructive infrastructure projects like the 143rd Street widening." },
+    { key: 'platform_1_title', value: '✓ Support Small Business' },
+    { key: 'platform_1_text', value: 'Champion local, family-run businesses. Sustain the economic vitality that keeps Homer Glen vibrant and unique.' },
+    { key: 'platform_2_title', value: '✓ Historic Preservation' },
+    { key: 'platform_2_text', value: 'Protect farmland and community character. Keep Homer Glen a place where people move to preserve, not escape.' },
+    { key: 'platform_3_title', value: '✓ Government Accountability' },
+    { key: 'platform_3_text', value: 'Professional, performance-focused leadership. Transparent decision-making that serves the whole community, not special interests.' },
+    { key: 'issue_0_icon', value: '🌳' }, { key: 'issue_0_title', value: 'Open Space Protection' }, { key: 'issue_0_desc', value: 'Preserve natural biomes & trees' },
+    { key: 'issue_1_icon', value: '🛑' }, { key: 'issue_1_title', value: 'Stop 143rd St Widening' }, { key: 'issue_1_desc', value: 'Oppose unnecessary expansion' },
+    { key: 'issue_2_icon', value: '🚜' }, { key: 'issue_2_title', value: 'Preserve Farmland' }, { key: 'issue_2_desc', value: 'Sustain agricultural heritage' },
+    { key: 'issue_3_icon', value: '🏪' }, { key: 'issue_3_title', value: 'Support Local Business' }, { key: 'issue_3_desc', value: 'Champion small family businesses' },
+    { key: 'cta_headline', value: 'Help Save Homer Glen' },
+    { key: 'cta_text', value: 'Join us in fighting to preserve open space, protect our trees and farmland, and keep Homer Glen a place where the environment matters. Every voice counts.' },
+  ]
 };
 
 const pool = {
@@ -389,6 +411,24 @@ const pool = {
         logs = logs.slice(0, limit);
       }
       return { rows: logs };
+    }
+
+    // SELECT FROM site_content
+    if (sql.includes('FROM site_content')) {
+      return { rows: mockData.site_content };
+    }
+
+    // INSERT INTO site_content ... ON CONFLICT (upsert)
+    if (sql.includes('INTO site_content')) {
+      const key = params[0];
+      const value = params[1];
+      const existing = mockData.site_content.find(r => r.key === key);
+      if (existing) {
+        existing.value = value;
+      } else {
+        mockData.site_content.push({ key, value });
+      }
+      return { rowCount: 1 };
     }
 
     // Generic UPDATE

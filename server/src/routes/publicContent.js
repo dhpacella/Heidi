@@ -188,6 +188,52 @@ router.post('/contact', async (req, res) => {
   }
 });
 
+// GET /api/public/site-content - dynamic voter website page content
+router.get('/site-content', async (req, res) => {
+  const DEFAULTS = {
+    hero_headline: 'Heidi For Homer',
+    hero_tagline: 'Preserving Open Space • Protecting Our Community',
+    hero_subtext: "Fighting to save Homer Glen's trees, farmland, and character",
+    about_para1: 'Heidi Pacella is an advocate for preserving open space and maintaining the assets of Homer Glen. With a degree in Psychology and minor in Creative Writing from DePaul University, she brings thoughtful leadership to community issues.',
+    about_para2: "Growing up in a family business, Heidi understands the dedication required to build thriving operations and vibrant communities. She's committed to championing small, local establishments that give Homer Glen its unique character.",
+    about_para3: "Heidi believes Homer Glen's greatest strengths lie in its environment and natural biomes. She opposes unnecessary infrastructure projects and fights to preserve our trees, farmland, and community character for future generations.",
+    platform_0_title: '✓ Environmental Protection',
+    platform_0_text: "Preserve Homer Glen's open spaces, natural habitats, and tree canopy. Oppose destructive infrastructure projects like the 143rd Street widening.",
+    platform_1_title: '✓ Support Small Business',
+    platform_1_text: 'Champion local, family-run businesses. Sustain the economic vitality that keeps Homer Glen vibrant and unique.',
+    platform_2_title: '✓ Historic Preservation',
+    platform_2_text: 'Protect farmland and community character. Keep Homer Glen a place where people move to preserve, not escape.',
+    platform_3_title: '✓ Government Accountability',
+    platform_3_text: 'Professional, performance-focused leadership. Transparent decision-making that serves the whole community, not special interests.',
+    issue_0_icon: '🌳', issue_0_title: 'Open Space Protection', issue_0_desc: 'Preserve natural biomes & trees',
+    issue_1_icon: '🛑', issue_1_title: 'Stop 143rd St Widening', issue_1_desc: 'Oppose unnecessary expansion',
+    issue_2_icon: '🚜', issue_2_title: 'Preserve Farmland', issue_2_desc: 'Sustain agricultural heritage',
+    issue_3_icon: '🏪', issue_3_title: 'Support Local Business', issue_3_desc: 'Champion small family businesses',
+    cta_headline: 'Help Save Homer Glen',
+    cta_text: 'Join us in fighting to preserve open space, protect our trees and farmland, and keep Homer Glen a place where the environment matters. Every voice counts.',
+  };
+
+  const buildContent = (map) => {
+    const c = { ...DEFAULTS, ...map };
+    return {
+      hero: { headline: c.hero_headline, tagline: c.hero_tagline, subtext: c.hero_subtext },
+      about: { para1: c.about_para1, para2: c.about_para2, para3: c.about_para3 },
+      platform: [0,1,2,3].map(i => ({ title: c[`platform_${i}_title`], text: c[`platform_${i}_text`] })),
+      issues: [0,1,2,3].map(i => ({ icon: c[`issue_${i}_icon`], title: c[`issue_${i}_title`], desc: c[`issue_${i}_desc`] })),
+      cta: { headline: c.cta_headline, text: c.cta_text },
+    };
+  };
+
+  try {
+    const { rows } = await pool.query('SELECT key, value FROM site_content');
+    const map = Object.fromEntries(rows.map(r => [r.key, r.value]));
+    res.json({ content: buildContent(map) });
+  } catch (err) {
+    console.error('❌ Get site content error:', err.message);
+    res.json({ content: buildContent({}) });
+  }
+});
+
 // GET /api/public/search - search published posts by title/content
 router.get('/search', async (req, res) => {
   try {

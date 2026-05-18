@@ -318,12 +318,126 @@
     <div class="alert alert-error" id="errorAlert"></div>
 
     <div class="tabs">
-      <button class="tab-btn active" onclick="showTab('posts')">Posts</button>
+      <button class="tab-btn active" onclick="showTab('pagecontent')">🎨 Page Content</button>
+      <button class="tab-btn" onclick="showTab('posts')">Posts</button>
       <button class="tab-btn" onclick="showTab('polls')">Polls</button>
     </div>
 
+    <!-- PAGE CONTENT TAB -->
+    <div id="pagecontent" class="tab-content active">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+        <h2 style="color:var(--gold);margin:0;">🎨 Your Website Content</h2>
+        <a href="https://heidi-production-55ef.up.railway.app" target="_blank" style="background:var(--navy-light);color:var(--text-muted);padding:10px 18px;border-radius:6px;text-decoration:none;font-size:13px;border:1px solid var(--border);">👁 Preview Site</a>
+      </div>
+      <p style="color:var(--text-muted);margin-bottom:30px;font-size:14px;">Edit any section below and click <strong style="color:var(--gold);">Save Changes</strong> to update your live website.</p>
+
+      <!-- Hero -->
+      <div style="background:var(--navy-mid);border:1px solid var(--border);border-radius:8px;padding:24px;margin-bottom:20px;">
+        <h3 style="color:var(--gold);margin:0 0 20px 0;font-size:16px;display:flex;align-items:center;gap:8px;">🌟 Hero Section <span style="color:var(--text-muted);font-size:12px;font-weight:400;">(top of homepage)</span></h3>
+        <div class="form-group">
+          <label>Main Headline</label>
+          <input type="text" id="hero_headline" placeholder="Heidi For Homer">
+        </div>
+        <div class="form-group">
+          <label>Tagline</label>
+          <input type="text" id="hero_tagline" placeholder="Preserving Open Space • Protecting Our Community">
+        </div>
+        <div class="form-group">
+          <label>Subtext</label>
+          <input type="text" id="hero_subtext" placeholder="Fighting to save Homer Glen's trees, farmland, and character">
+        </div>
+      </div>
+
+      <!-- About -->
+      <div style="background:var(--navy-mid);border:1px solid var(--border);border-radius:8px;padding:24px;margin-bottom:20px;">
+        <h3 style="color:var(--gold);margin:0 0 20px 0;font-size:16px;">👤 About Heidi</h3>
+        <div class="form-group">
+          <label>Paragraph 1</label>
+          <textarea id="about_para1" style="min-height:100px;" placeholder="Heidi Pacella is an advocate..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Paragraph 2</label>
+          <textarea id="about_para2" style="min-height:100px;" placeholder="Growing up in a family business..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Paragraph 3</label>
+          <textarea id="about_para3" style="min-height:100px;" placeholder="Heidi believes Homer Glen's..."></textarea>
+        </div>
+      </div>
+
+      <!-- Issues -->
+      <div style="background:var(--navy-mid);border:1px solid var(--border);border-radius:8px;padding:24px;margin-bottom:20px;">
+        <h3 style="color:var(--gold);margin:0 0 20px 0;font-size:16px;">🎯 Key Issue Cards</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+          <div style="background:var(--navy);border:1px solid var(--border);border-radius:6px;padding:16px;">
+            <div class="form-group" style="margin-bottom:10px;"><label>Issue 1 Icon (emoji)</label><input type="text" id="issue_0_icon" style="font-size:20px;text-align:center;" maxlength="4"></div>
+            <div class="form-group" style="margin-bottom:10px;"><label>Title</label><input type="text" id="issue_0_title"></div>
+            <div class="form-group" style="margin-bottom:0;"><label>Short Description</label><input type="text" id="issue_0_desc"></div>
+          </div>
+          <div style="background:var(--navy);border:1px solid var(--border);border-radius:6px;padding:16px;">
+            <div class="form-group" style="margin-bottom:10px;"><label>Issue 2 Icon (emoji)</label><input type="text" id="issue_1_icon" style="font-size:20px;text-align:center;" maxlength="4"></div>
+            <div class="form-group" style="margin-bottom:10px;"><label>Title</label><input type="text" id="issue_1_title"></div>
+            <div class="form-group" style="margin-bottom:0;"><label>Short Description</label><input type="text" id="issue_1_desc"></div>
+          </div>
+          <div style="background:var(--navy);border:1px solid var(--border);border-radius:6px;padding:16px;">
+            <div class="form-group" style="margin-bottom:10px;"><label>Issue 3 Icon (emoji)</label><input type="text" id="issue_2_icon" style="font-size:20px;text-align:center;" maxlength="4"></div>
+            <div class="form-group" style="margin-bottom:10px;"><label>Title</label><input type="text" id="issue_2_title"></div>
+            <div class="form-group" style="margin-bottom:0;"><label>Short Description</label><input type="text" id="issue_2_desc"></div>
+          </div>
+          <div style="background:var(--navy);border:1px solid var(--border);border-radius:6px;padding:16px;">
+            <div class="form-group" style="margin-bottom:10px;"><label>Issue 4 Icon (emoji)</label><input type="text" id="issue_3_icon" style="font-size:20px;text-align:center;" maxlength="4"></div>
+            <div class="form-group" style="margin-bottom:10px;"><label>Title</label><input type="text" id="issue_3_title"></div>
+            <div class="form-group" style="margin-bottom:0;"><label>Short Description</label><input type="text" id="issue_3_desc"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Platform -->
+      <div style="background:var(--navy-mid);border:1px solid var(--border);border-radius:8px;padding:24px;margin-bottom:20px;">
+        <h3 style="color:var(--gold);margin:0 0 20px 0;font-size:16px;">📋 Platform Pillars</h3>
+        <div style="margin-bottom:20px;">
+          <div class="form-group" style="margin-bottom:10px;"><label>Pillar 1 Title</label><input type="text" id="platform_0_title"></div>
+          <div class="form-group" style="margin-bottom:0;"><label>Pillar 1 Text</label><textarea id="platform_0_text" style="min-height:80px;"></textarea></div>
+        </div>
+        <hr style="border:none;border-top:1px solid var(--border);margin:0;">
+        <div style="margin:20px 0;">
+          <div class="form-group" style="margin-bottom:10px;"><label>Pillar 2 Title</label><input type="text" id="platform_1_title"></div>
+          <div class="form-group" style="margin-bottom:0;"><label>Pillar 2 Text</label><textarea id="platform_1_text" style="min-height:80px;"></textarea></div>
+        </div>
+        <hr style="border:none;border-top:1px solid var(--border);margin:0;">
+        <div style="margin:20px 0;">
+          <div class="form-group" style="margin-bottom:10px;"><label>Pillar 3 Title</label><input type="text" id="platform_2_title"></div>
+          <div class="form-group" style="margin-bottom:0;"><label>Pillar 3 Text</label><textarea id="platform_2_text" style="min-height:80px;"></textarea></div>
+        </div>
+        <hr style="border:none;border-top:1px solid var(--border);margin:0;">
+        <div style="margin-top:20px;">
+          <div class="form-group" style="margin-bottom:10px;"><label>Pillar 4 Title</label><input type="text" id="platform_3_title"></div>
+          <div class="form-group" style="margin-bottom:0;"><label>Pillar 4 Text</label><textarea id="platform_3_text" style="min-height:80px;"></textarea></div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div style="background:var(--navy-mid);border:1px solid var(--border);border-radius:8px;padding:24px;margin-bottom:28px;">
+        <h3 style="color:var(--gold);margin:0 0 20px 0;font-size:16px;">📣 Call to Action Banner</h3>
+        <div class="form-group">
+          <label>Headline</label>
+          <input type="text" id="cta_headline" placeholder="Help Save Homer Glen">
+        </div>
+        <div class="form-group">
+          <label>Text</label>
+          <textarea id="cta_text" style="min-height:80px;"></textarea>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <button class="btn-primary" onclick="savePageContent()" style="font-size:15px;padding:14px 32px;">💾 Save Changes</button>
+        <button class="btn-secondary" onclick="loadPageContent()">↺ Reset</button>
+        <span id="saveStatus" style="color:var(--green);font-size:13px;display:none;">✓ Saved! Changes are live.</span>
+      </div>
+    </div>
+
     <!-- POSTS TAB -->
-    <div id="posts" class="tab-content active">
+    <div id="posts" class="tab-content">
       <h2 style="margin-bottom: 30px; color: var(--gold);">Manage Posts</h2>
 
       <form id="postForm" onsubmit="handlePostSubmit(event)">
@@ -394,7 +508,7 @@
     </div>
 
   <script>
-    const API_URL = 'http://localhost:5000/api';
+    const API_URL = window.location.origin + '/api';
     let token = localStorage.getItem('token');
 
     // Check auth on page load
@@ -404,6 +518,7 @@
         document.getElementById('adminInterface').style.display = 'block';
         loadPosts();
         loadPolls();
+        loadPageContent();
       } else {
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('adminInterface').style.display = 'none';
@@ -599,6 +714,66 @@
 
     async function generatePost() {
       showAlert('✨ AI generation coming soon!');
+    }
+
+    // --- Page Content ---
+    async function loadPageContent() {
+      try {
+        const res = await fetch(`${API_URL}/content/site-content`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const { content } = await res.json();
+        if (!content) return;
+
+        const set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val; };
+
+        set('hero_headline', content.hero?.headline);
+        set('hero_tagline', content.hero?.tagline);
+        set('hero_subtext', content.hero?.subtext);
+        set('about_para1', content.about?.para1);
+        set('about_para2', content.about?.para2);
+        set('about_para3', content.about?.para3);
+        set('cta_headline', content.cta?.headline);
+        set('cta_text', content.cta?.text);
+
+        (content.platform || []).forEach((p, i) => {
+          set(`platform_${i}_title`, p.title);
+          set(`platform_${i}_text`, p.text);
+        });
+        (content.issues || []).forEach((iss, i) => {
+          set(`issue_${i}_icon`, iss.icon);
+          set(`issue_${i}_title`, iss.title);
+          set(`issue_${i}_desc`, iss.desc);
+        });
+      } catch (err) {
+        console.error('Failed to load page content:', err);
+      }
+    }
+
+    async function savePageContent() {
+      const get = (id) => document.getElementById(id)?.value || '';
+
+      const content = {
+        hero: { headline: get('hero_headline'), tagline: get('hero_tagline'), subtext: get('hero_subtext') },
+        about: { para1: get('about_para1'), para2: get('about_para2'), para3: get('about_para3') },
+        platform: [0,1,2,3].map(i => ({ title: get(`platform_${i}_title`), text: get(`platform_${i}_text`) })),
+        issues: [0,1,2,3].map(i => ({ icon: get(`issue_${i}_icon`), title: get(`issue_${i}_title`), desc: get(`issue_${i}_desc`) })),
+        cta: { headline: get('cta_headline'), text: get('cta_text') },
+      };
+
+      try {
+        const res = await fetch(`${API_URL}/content/site-content`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ content })
+        });
+        if (!res.ok) throw new Error('Save failed');
+        const statusEl = document.getElementById('saveStatus');
+        statusEl.style.display = 'inline';
+        setTimeout(() => statusEl.style.display = 'none', 4000);
+      } catch (err) {
+        showAlert('Failed to save: ' + err.message, 'error');
+      }
     }
 
     // Initialize on page load

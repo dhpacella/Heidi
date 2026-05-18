@@ -343,3 +343,41 @@ CREATE INDEX IF NOT EXISTS idx_heidi_posts_published ON heidi_posts(published, p
 CREATE INDEX IF NOT EXISTS idx_heidi_posts_slug ON heidi_posts(slug);
 CREATE INDEX IF NOT EXISTS idx_heidi_polls_active ON heidi_polls(active);
 CREATE INDEX IF NOT EXISTS idx_poll_votes_poll ON poll_votes(poll_id);
+
+-- Site content (editable page text for the voter website)
+CREATE TABLE IF NOT EXISTS site_content (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO site_content (key, value) VALUES
+  ('hero_headline', 'Heidi For Homer'),
+  ('hero_tagline', 'Preserving Open Space • Protecting Our Community'),
+  ('hero_subtext', 'Fighting to save Homer Glen''s trees, farmland, and character'),
+  ('about_para1', 'Heidi Pacella is an advocate for preserving open space and maintaining the assets of Homer Glen. With a degree in Psychology and minor in Creative Writing from DePaul University, she brings thoughtful leadership to community issues.'),
+  ('about_para2', 'Growing up in a family business, Heidi understands the dedication required to build thriving operations and vibrant communities. She''s committed to championing small, local establishments that give Homer Glen its unique character.'),
+  ('about_para3', 'Heidi believes Homer Glen''s greatest strengths lie in its environment and natural biomes. She opposes unnecessary infrastructure projects and fights to preserve our trees, farmland, and community character for future generations.'),
+  ('platform_0_title', '✓ Environmental Protection'),
+  ('platform_0_text', 'Preserve Homer Glen''s open spaces, natural habitats, and tree canopy. Oppose destructive infrastructure projects like the 143rd Street widening.'),
+  ('platform_1_title', '✓ Support Small Business'),
+  ('platform_1_text', 'Champion local, family-run businesses. Sustain the economic vitality that keeps Homer Glen vibrant and unique.'),
+  ('platform_2_title', '✓ Historic Preservation'),
+  ('platform_2_text', 'Protect farmland and community character. Keep Homer Glen a place where people move to preserve, not escape.'),
+  ('platform_3_title', '✓ Government Accountability'),
+  ('platform_3_text', 'Professional, performance-focused leadership. Transparent decision-making that serves the whole community, not special interests.'),
+  ('issue_0_icon', '🌳'),
+  ('issue_0_title', 'Open Space Protection'),
+  ('issue_0_desc', 'Preserve natural biomes & trees'),
+  ('issue_1_icon', '🛑'),
+  ('issue_1_title', 'Stop 143rd St Widening'),
+  ('issue_1_desc', 'Oppose unnecessary expansion'),
+  ('issue_2_icon', '🚜'),
+  ('issue_2_title', 'Preserve Farmland'),
+  ('issue_2_desc', 'Sustain agricultural heritage'),
+  ('issue_3_icon', '🏪'),
+  ('issue_3_title', 'Support Local Business'),
+  ('issue_3_desc', 'Champion small family businesses'),
+  ('cta_headline', 'Help Save Homer Glen'),
+  ('cta_text', 'Join us in fighting to preserve open space, protect our trees and farmland, and keep Homer Glen a place where the environment matters. Every voice counts.')
+ON CONFLICT (key) DO NOTHING;
