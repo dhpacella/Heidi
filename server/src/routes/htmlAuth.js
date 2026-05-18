@@ -191,6 +191,18 @@ router.get('/volunteer-leaderboard', requireSession, (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'volunteer-leaderboard.html'));
 });
 
+router.get('/content-manager', requireSession, (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'content-manager.html'));
+});
+
+router.get('/status-dashboard', requireSession, (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'status-dashboard.html'));
+});
+
+router.get('/volunteers-manager', requireSession, (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'volunteers-manager.html'));
+});
+
 router.get('/heidi', requireSession, (req, res) => {
   if (!['admin', 'campaign_manager'].includes(req.session.role)) {
     return res.redirect('/login');

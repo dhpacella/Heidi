@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -284,6 +284,23 @@
     .alert.show { display: block; }
     .alert-success { background: rgba(29, 184, 122, 0.1); color: var(--green); border: 1px solid rgba(29, 184, 122, 0.3); }
     .alert-error { background: rgba(224, 52, 52, 0.1); color: var(--red); border: 1px solid rgba(224, 52, 52, 0.3); }
+    @media (max-width: 768px) {
+      body { padding: 12px; }
+      .container { padding: 0; }
+      header { padding: 20px; margin-bottom: 24px; }
+      h1 { font-size: 24px; }
+      .tabs { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; gap: 0; }
+      .tab-btn { padding: 10px 14px; font-size: 13px; white-space: nowrap; flex-shrink: 0; }
+      .button-group { flex-direction: column; }
+      .button-group button { width: 100%; }
+      .post-card, .poll-card { flex-direction: column; gap: 12px; }
+      input, select, textarea { font-size: 16px !important; }
+      .logout-btn { position: static; display: block; width: 100%; margin-bottom: 8px; }
+    }
+    @media (max-width: 480px) {
+      header { padding: 16px; }
+      h1 { font-size: 20px; }
+    }
   </style>
 </head>
 <body>
@@ -298,9 +315,9 @@
     <a href="/email-history.html" class="hnav" data-path="/email-history.html">📋 History</a>
     <a href="/email-lists.html" class="hnav" data-path="/email-lists.html">🗂 Lists</a>
         <a href="/sms-compose.html" class="hnav" data-path="/sms-compose.html">📱 SMS</a>
-        <a href="/volunteers-manager.html" class="hnav" data-path="/volunteers-manager.html">👥 Volunteers</a>
-        <a href="/content-manager.html" class="hnav" data-path="/content-manager.html">📝 Website</a>
-        <a href="/status-dashboard.html" class="hnav" data-path="/status-dashboard.html">📡 Monitor</a>
+        <a href="/volunteers-manager" class="hnav" data-path="/volunteers-manager">👥 Volunteers</a>
+        <a href="/content-manager" class="hnav" data-path="/content-manager">📝 Website</a>
+        <a href="/status-dashboard" class="hnav" data-path="/status-dashboard">📡 Monitor</a>
       </div>
       <button class="hnav-hamburger" onclick="document.getElementById('hnavMenu').classList.toggle('hnav-open')" aria-label="Menu">☰</button>
     </nav>
@@ -333,7 +350,7 @@
     <div id="pagecontent" class="tab-content active">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
         <h2 style="color:var(--gold);margin:0;">🎨 Your Website Content</h2>
-        <a href="https://heidi-production-55ef.up.railway.app" target="_blank" style="background:var(--navy-light);color:var(--text-muted);padding:10px 18px;border-radius:6px;text-decoration:none;font-size:13px;border:1px solid var(--border);">👁 Preview Site</a>
+        <a href="https://main.dbgikokghbz7o.amplifyapp.com" target="_blank" style="background:var(--navy-light);color:var(--text-muted);padding:10px 18px;border-radius:6px;text-decoration:none;font-size:13px;border:1px solid var(--border);">👁 Preview Live Site</a>
       </div>
       <p style="color:var(--text-muted);margin-bottom:30px;font-size:14px;">Edit any section below and click <strong style="color:var(--gold);">Save Changes</strong> to update your live website.</p>
 
@@ -436,7 +453,7 @@
       </div>
 
       <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-        <button class="btn-primary" onclick="savePageContent()" style="font-size:15px;padding:14px 32px;">💾 Save Changes</button>
+        <button class="btn-primary" onclick="savePageContent().catch(e=>showAlert('Save failed: '+e.message,'error'))" style="font-size:15px;padding:14px 32px;">💾 Save Changes</button>
         <button class="btn-secondary" onclick="loadPageContent()">↺ Reset</button>
         <span id="saveStatus" style="color:var(--green);font-size:13px;display:none;">✓ Saved! Changes are live.</span>
       </div>
@@ -807,15 +824,19 @@
       }
     }
 
-    function applyAiChanges() {
+    async function applyAiChanges() {
       pendingAiChanges.forEach(({ key, value }) => {
         const fieldId = aiKeyToFieldId(key);
         const el = document.getElementById(fieldId);
         if (el) el.value = value;
       });
       discardAiChanges();
-      savePageContent();
-      addChatMessage('claude', 'Changes applied and saved to your live website!');
+      try {
+        await savePageContent();
+        addChatMessage('claude', '✅ Changes applied and saved to your live website! Refresh the voter site to see them.');
+      } catch (err) {
+        addChatMessage('claude', '⚠️ Changes were applied locally but failed to save: ' + err.message);
+      }
     }
 
     function discardAiChanges() {
@@ -869,19 +890,15 @@
         cta: { headline: get('cta_headline'), text: get('cta_text') },
       };
 
-      try {
-        const res = await fetch(`${API_URL}/content/site-content`, {
-          method: 'PUT',
-          credentials: 'include', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content })
-        });
-        if (!res.ok) throw new Error('Save failed');
-        const statusEl = document.getElementById('saveStatus');
-        statusEl.style.display = 'inline';
-        setTimeout(() => statusEl.style.display = 'none', 4000);
-      } catch (err) {
-        showAlert('Failed to save: ' + err.message, 'error');
-      }
+      const res = await fetch(`${API_URL}/content/site-content`, {
+        method: 'PUT',
+        credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      });
+      if (!res.ok) throw new Error('Save failed: ' + res.status);
+      const statusEl = document.getElementById('saveStatus');
+      statusEl.style.display = 'inline';
+      setTimeout(() => statusEl.style.display = 'none', 4000);
     }
 
     // Initialize on page load

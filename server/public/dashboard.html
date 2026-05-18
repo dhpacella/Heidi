@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -708,9 +708,9 @@ tr:hover td{background:var(--surface);}
     <a href="/email-history.html" class="hnav" data-path="/email-history.html">📋 History</a>
     <a href="/email-lists.html" class="hnav" data-path="/email-lists.html">🗂 Lists</a>
     <a href="/sms-compose.html" class="hnav" data-path="/sms-compose.html">📱 SMS</a>
-    <a href="/volunteers-manager.html" class="hnav" data-path="/volunteers-manager.html">👥 Volunteers</a>
-    <a href="/content-manager.html" class="hnav" data-path="/content-manager.html">📝 Website</a>
-    <a href="/status-dashboard.html" class="hnav" data-path="/status-dashboard.html">📡 Monitor</a>
+    <a href="/volunteers-manager" class="hnav" data-path="/volunteers-manager">👥 Volunteers</a>
+    <a href="/content-manager" class="hnav" data-path="/content-manager">📝 Website</a>
+    <a href="/status-dashboard" class="hnav" data-path="/status-dashboard">📡 Monitor</a>
   </div>
   <button class="hnav-hamburger" onclick="document.getElementById('hnavMenu').classList.toggle('hnav-open')" aria-label="Menu">☰</button>
 </nav>
@@ -747,7 +747,7 @@ tr:hover td{background:var(--surface);}
 
   <div class="dash-nav-section">Main</div>
   <a href="/dashboard.html" class="dash-nav-link current"><span class="ni">🗳</span>Voter Dashboard</a>
-  <a href="/status-dashboard.html" class="dash-nav-link"><span class="ni">📊</span>Status</a>
+  <a href="/status-dashboard" class="dash-nav-link"><span class="ni">📊</span>Status</a>
   <a href="/claude-assistant.html" class="dash-nav-link"><span class="ni">🤖</span>AI Assistant</a>
 
   <div class="dash-nav-section">Email Outreach</div>
@@ -762,13 +762,13 @@ tr:hover td{background:var(--surface);}
   <a href="/sms-history.html" class="dash-nav-link"><span class="ni">📜</span>SMS History</a>
 
   <div class="dash-nav-section">Volunteers</div>
-  <a href="/volunteers-manager.html" class="dash-nav-link"><span class="ni">👤</span>Volunteer Manager</a>
+  <a href="/volunteers-manager" class="dash-nav-link"><span class="ni">👤</span>Volunteer Manager</a>
   <a href="/volunteer-leaderboard.html" class="dash-nav-link"><span class="ni">🏆</span>Leaderboard</a>
   <a href="/volunteer-map.html" class="dash-nav-link"><span class="ni">🗺️</span>Volunteer Map</a>
 
   <div class="dash-nav-section">Website & Content</div>
   <a href="/website-manager.html" class="dash-nav-link"><span class="ni">🌐</span>Website Manager</a>
-  <a href="/content-manager.html" class="dash-nav-link"><span class="ni">📝</span>Content Manager</a>
+  <a href="/content-manager" class="dash-nav-link"><span class="ni">📝</span>Content Manager</a>
 
   <div class="dash-nav-section">Reports</div>
   <a href="/campaign-reports.html" class="dash-nav-link"><span class="ni">📈</span>Campaign Reports</a>
@@ -799,8 +799,8 @@ tr:hover td{background:var(--surface);}
       <div class="days" id="days">—</div>
       <div class="dayslbl">days to election</div>
       <div class="dash-banner-btns" style="display:flex;gap:8px;margin-top:12px">
-        <button onclick="window.open('/status-dashboard.html', '_blank')" style="font-size:11px;padding:6px 12px;background:rgba(30,100,200,.2);border:1px solid rgba(30,100,200,.4);border-radius:6px;color:#1E64C8;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s" onmouseover="this.style.background='rgba(30,100,200,.3)'" onmouseout="this.style.background='rgba(30,100,200,.2)'">📊 Status</button>
-        <button onclick="window.location.href='/content-manager.html'" style="font-size:11px;padding:6px 12px;background:rgba(245,166,35,.2);border:1px solid rgba(245,166,35,.4);border-radius:6px;color:#F5A623;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s" onmouseover="this.style.background='rgba(245,166,35,.3)'" onmouseout="this.style.background='rgba(245,166,35,.2)'">📝 Manager</button>
+        <button onclick="window.open('/status-dashboard', '_blank')" style="font-size:11px;padding:6px 12px;background:rgba(30,100,200,.2);border:1px solid rgba(30,100,200,.4);border-radius:6px;color:#1E64C8;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s" onmouseover="this.style.background='rgba(30,100,200,.3)'" onmouseout="this.style.background='rgba(30,100,200,.2)'">📊 Status</button>
+        <button onclick="window.location.href='/content-manager'" style="font-size:11px;padding:6px 12px;background:rgba(245,166,35,.2);border:1px solid rgba(245,166,35,.4);border-radius:6px;color:#F5A623;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s" onmouseover="this.style.background='rgba(245,166,35,.3)'" onmouseout="this.style.background='rgba(245,166,35,.2)'">📝 Manager</button>
         <form method="POST" action="/logout" style="margin:0">
           <button type="submit" style="font-size:11px;padding:6px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#8BA3BE;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.15)';this.style.color='#EEF2F7'" onmouseout="this.style.background='rgba(255,255,255,.1)';this.style.color='#8BA3BE'">Sign out</button>
         </form>
@@ -820,7 +820,7 @@ tr:hover td{background:var(--surface);}
   <button class="tab" onclick="sw('electionnight')" style="color:#5DE0B0">🗳 Election Night</button>
   <button class="tab" onclick="sw('strategy')">📅 Strategy</button>
   <button class="tab" onclick="sw('referrals')">📬 Voter Referrals</button>
-  <button class="tab" onclick="window.location.href='/status-dashboard.html'" style="margin-left:auto">📊 Monitor</button>
+  <button class="tab" onclick="window.location.href='/status-dashboard'" style="margin-left:auto">📊 Monitor</button>
   <button class="tab" onclick="window.location.href='/website-manager.html'">📝 Website Manager</button>
 </div>
 
